@@ -78,11 +78,11 @@ function App() {
     <div className="App">
       <header className="app-header">
         <nav className="main-nav">
-          <button onClick={() => setView('decks')} disabled={view === 'decks'}>
-            Deckbuilder
-          </button>
           <button onClick={() => setView('game')} disabled={view === 'game'}>
             Game
+          </button>
+          <button onClick={() => setView('decks')} disabled={view === 'decks'}>
+            Deckbuilder
           </button>
         </nav>
         
