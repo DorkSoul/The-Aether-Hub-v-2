@@ -45,9 +45,12 @@ body {
     flex-direction: column;
 }
 
+/* --- MODIFIED --- */
+/* Added display:flex so that direct children like the Deckbuilder can grow to fill the space. */
 main {
     flex-grow: 1;
     overflow-y: auto;
+    display: flex;
 }
 
 

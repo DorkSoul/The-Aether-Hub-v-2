@@ -17,18 +17,24 @@ interface DecksProps {
   onDeckLoaded: (deckName: string, cardCount: number) => void;
 }
 
-// --- NEW --- An interface to hold the complete info for a deck in the list.
 interface DeckInfo {
     fileHandle: FileSystemFileHandle;
     name: string;
     cardCount: number;
 }
 
-interface ContextMenuState {
+interface CardContextMenuState {
     x: number;
     y: number;
     card: CardType;
     cardIndex: number;
+}
+
+// --- NEW --- Interface for the deck context menu state.
+interface DeckContextMenuState {
+    x: number;
+    y: number;
+    deckInfo: DeckInfo;
 }
 
 type GroupedCards = Record<string, CardType[]>;
@@ -55,7 +61,6 @@ const Decks: React.FC<DecksProps> = ({
   onDeckLoaded
 }) => {
   const [activeDeckFile, setActiveDeckFile] = useState<FileSystemFileHandle | null>(null);
-  // --- MODIFIED --- This state now holds DeckInfo objects instead of just file handles.
   const [decks, setDecks] = useState<DeckInfo[]>([]);
   const [groupedCards, setGroupedCards] = useState<GroupedCards>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
@@ -63,9 +68,10 @@ const Decks: React.FC<DecksProps> = ({
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [notification, setNotification] = useState('');
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [cardContextMenu, setCardContextMenu] = useState<CardContextMenuState | null>(null);
+  // --- NEW --- State to manage the deck context menu's visibility and position.
+  const [deckContextMenu, setDeckContextMenu] = useState<DeckContextMenuState | null>(null);
   
-  // --- MODIFIED --- This function now reads each deck file to get its name and card count.
   const refreshDeckList = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
       const newDecks: DeckInfo[] = [];
       for await (const entry of dirHandle.values()) {
@@ -96,7 +102,6 @@ const Decks: React.FC<DecksProps> = ({
     }
   }, [decksDirectoryHandle, onDeckLoaded, refreshDeckList]);
 
-  // --- MODIFIED --- Logic to correctly update the deck file and refresh the list.
   const saveCurrentDeck = async (updatedCards: CardType[]) => {
       if (!activeDeckFile || !decksDirectoryHandle) return;
 
@@ -114,8 +119,8 @@ const Decks: React.FC<DecksProps> = ({
           await writable.close();
           
           setNotification('Deck saved successfully!');
-          refreshDeckList(decksDirectoryHandle); // Refresh list to show new card count
-          onDeckLoaded(deckData.name, updatedCards.length); // Update header
+          refreshDeckList(decksDirectoryHandle);
+          onDeckLoaded(deckData.name, updatedCards.length);
           
           setTimeout(() => setNotification(''), 3000);
       } catch (err) {
@@ -189,7 +194,6 @@ const Decks: React.FC<DecksProps> = ({
       }
       
       setLoadingMessage('Saving deck file...');
-      // The `name` property now stores the user-provided name with spaces etc.
       const deckDataToSave = { name: deckName, cards: fullDeckCards };
       const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
       const fileName = `${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
@@ -203,7 +207,6 @@ const Decks: React.FC<DecksProps> = ({
       
       setGroupedCards(groupCardsByType(fullDeckCards));
       setActiveDeckFile(fileHandle);
-      // --- MODIFIED --- Call with the user-provided name and the actual card count.
       onDeckLoaded(deckName, fullDeckCards.length);
 
       setNotification('Deck imported! Card images are downloading for the first time. This may be slow, but future loads will be instant from your local cache.');
@@ -217,7 +220,6 @@ const Decks: React.FC<DecksProps> = ({
     }
   };
 
-  // --- MODIFIED --- This handler now accepts a DeckInfo object.
   const handleDeckSelected = async (deckInfo: DeckInfo) => {
     setNotification('');
     setError('');
@@ -230,7 +232,6 @@ const Decks: React.FC<DecksProps> = ({
       const text = await file.text();
       const deckData: { name: string; cards: CardType[] } = JSON.parse(text);
       setGroupedCards(groupCardsByType(deckData.cards || []));
-      // --- MODIFIED --- Use the name and count from the loaded data.
       onDeckLoaded(deckData.name, (deckData.cards || []).length);
     } catch (err) {
       console.error("Error loading deck from JSON:", err);
@@ -245,16 +246,22 @@ const Decks: React.FC<DecksProps> = ({
     setCollapsedSections(prev => ({ ...prev, [sectionName]: !prev[sectionName] }));
   };
 
-  const handleRightClick = (event: React.MouseEvent, card: CardType, cardIndex: number) => {
+  const handleCardRightClick = (event: React.MouseEvent, card: CardType, cardIndex: number) => {
     event.preventDefault();
     if(cardIndex > -1) {
-        setContextMenu({ x: event.clientX, y: event.clientY, card, cardIndex });
+        setCardContextMenu({ x: event.clientX, y: event.clientY, card, cardIndex });
     }
   };
   
+  // --- NEW --- Handler to open the context menu for a deck.
+  const handleDeckRightClick = (event: React.MouseEvent, deckInfo: DeckInfo) => {
+      event.preventDefault();
+      setDeckContextMenu({ x: event.clientX, y: event.clientY, deckInfo });
+  };
+
   const handleAddCard = () => {
-      if (!contextMenu) return;
-      const { card, cardIndex } = contextMenu;
+      if (!cardContextMenu) return;
+      const { card, cardIndex } = cardContextMenu;
       const allCards = Object.values(groupedCards).flat();
       allCards.splice(cardIndex + 1, 0, card);
       setGroupedCards(groupCardsByType(allCards));
@@ -262,8 +269,8 @@ const Decks: React.FC<DecksProps> = ({
   };
 
   const handleRemoveCard = () => {
-      if (!contextMenu) return;
-      const { cardIndex } = contextMenu;
+      if (!cardContextMenu) return;
+      const { cardIndex } = cardContextMenu;
       const allCards = Object.values(groupedCards).flat();
       allCards.splice(cardIndex, 1);
       setGroupedCards(groupCardsByType(allCards));
@@ -271,8 +278,8 @@ const Decks: React.FC<DecksProps> = ({
   };
   
   const handleReplaceCard = async (faceToReplace: 0 | 1) => {
-      if (!contextMenu) return;
-      const { card: originalCard, cardIndex } = contextMenu;
+      if (!cardContextMenu) return;
+      const { card: originalCard, cardIndex } = cardContextMenu;
 
       const url = prompt(`Enter Scryfall URL for the new ${faceToReplace === 0 ? 'front' : 'back'} face:`);
       if (!url) return;
@@ -317,8 +324,8 @@ const Decks: React.FC<DecksProps> = ({
   };
 
   const handleAddBackFace = async () => {
-      if (!contextMenu) return;
-      const { card: frontCard, cardIndex } = contextMenu;
+      if (!cardContextMenu) return;
+      const { card: frontCard, cardIndex } = cardContextMenu;
 
       const url = prompt("Enter Scryfall URL for the new back face:");
       if (!url) return;
@@ -358,7 +365,7 @@ const Decks: React.FC<DecksProps> = ({
       }
   };
 
-  const buildContextMenuOptions = (card: CardType) => {
+  const buildCardContextMenuOptions = (card: CardType) => {
       const options = [
           { label: 'Add another copy', action: handleAddCard },
           { label: 'Remove a copy', action: handleRemoveCard }
@@ -380,17 +387,132 @@ const Decks: React.FC<DecksProps> = ({
       return options;
   }
 
+  // --- NEW --- Function to delete a deck file.
+  const handleDeleteDeck = async () => {
+    if (!deckContextMenu || !decksDirectoryHandle) return;
+    const { deckInfo } = deckContextMenu;
+
+    if (window.confirm(`Are you sure you want to delete the deck "${deckInfo.name}"?`)) {
+        try {
+            await decksDirectoryHandle.removeEntry(deckInfo.fileHandle.name);
+
+            setNotification(`Deck "${deckInfo.name}" deleted.`);
+            setTimeout(() => setNotification(''), 3000);
+
+            if (activeDeckFile?.name === deckInfo.fileHandle.name) {
+                setActiveDeckFile(null);
+                setGroupedCards({});
+                onDeckLoaded('', 0);
+            }
+            
+            refreshDeckList(decksDirectoryHandle);
+
+        } catch (err) {
+            console.error("Error deleting deck:", err);
+            setError("Could not delete the deck file.");
+        }
+    }
+  };
+
+  // --- NEW --- Function to duplicate a deck file.
+  const handleDuplicateDeck = async () => {
+      if (!deckContextMenu || !decksDirectoryHandle) return;
+      const { deckInfo } = deckContextMenu;
+
+      const newDeckName = prompt(`Enter name for the duplicated deck:`, `${deckInfo.name} - Copy`);
+      if (!newDeckName || newDeckName.trim() === '') return;
+
+      try {
+          setNotification('Duplicating deck...');
+          
+          const file = await deckInfo.fileHandle.getFile();
+          const text = await file.text();
+          const deckData = JSON.parse(text);
+
+          deckData.name = newDeckName;
+          const newDeckJsonString = JSON.stringify(deckData, null, 2);
+          const newFileName = `${newDeckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+
+          const newFileHandle = await decksDirectoryHandle.getFileHandle(newFileName, { create: true });
+          const writable = await newFileHandle.createWritable();
+          await writable.write(newDeckJsonString);
+          await writable.close();
+
+          refreshDeckList(decksDirectoryHandle);
+          setNotification(`Deck "${deckInfo.name}" duplicated as "${newDeckName}".`);
+          setTimeout(() => setNotification(''), 3000);
+
+      } catch (err) {
+          console.error("Error duplicating deck:", err);
+          setError("Could not duplicate the deck.");
+      }
+  };
+
+  // --- NEW --- Function to rename a deck file.
+  const handleRenameDeck = async () => {
+      if (!deckContextMenu || !decksDirectoryHandle) return;
+      const { deckInfo } = deckContextMenu;
+
+      const newDeckName = prompt("Enter new name for the deck:", deckInfo.name);
+      if (!newDeckName || newDeckName.trim() === '' || newDeckName === deckInfo.name) return;
+
+      try {
+          setNotification('Renaming deck...');
+
+          const file = await deckInfo.fileHandle.getFile();
+          const text = await file.text();
+          const deckData = JSON.parse(text);
+
+          deckData.name = newDeckName;
+          const newDeckJsonString = JSON.stringify(deckData, null, 2);
+          const newFileName = `${newDeckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+          
+          const newFileHandle = await decksDirectoryHandle.getFileHandle(newFileName, { create: true });
+          const writable = await newFileHandle.createWritable();
+          await writable.write(newDeckJsonString);
+          await writable.close();
+
+          await decksDirectoryHandle.removeEntry(deckInfo.fileHandle.name);
+
+          if (activeDeckFile?.name === deckInfo.fileHandle.name) {
+              setActiveDeckFile(newFileHandle);
+              onDeckLoaded(newDeckName, deckData.cards.length);
+          }
+
+          refreshDeckList(decksDirectoryHandle);
+          setNotification(`Deck renamed to "${newDeckName}".`);
+          setTimeout(() => setNotification(''), 3000);
+
+      } catch (err) {
+          console.error("Error renaming deck:", err);
+          setError("Could not rename the deck.");
+      }
+  };
+
   let cardCounter = 0;
 
   return (
     <>
       <DeckImportModal isOpen={isImportModalOpen} onClose={onCloseImportModal} onSave={handleSaveDeck} />
-      {contextMenu && (
+      {cardContextMenu && (
           <ContextMenu
-              x={contextMenu.x}
-              y={contextMenu.y}
-              onClose={() => setContextMenu(null)}
-              options={buildContextMenuOptions(contextMenu.card)}
+              x={cardContextMenu.x}
+              y={cardContextMenu.y}
+              onClose={() => setCardContextMenu(null)}
+              options={buildCardContextMenuOptions(cardContextMenu.card)}
+          />
+      )}
+      {/* --- NEW --- Render the ContextMenu for decks */}
+      {deckContextMenu && (
+          <ContextMenu
+              x={deckContextMenu.x}
+              y={deckContextMenu.y}
+              onClose={() => setDeckContextMenu(null)}
+              options={[
+                  { label: 'Rename', action: handleRenameDeck },
+                  { label: 'Duplicate', action: handleDuplicateDeck },
+                  { label: 'Delete', action: handleDeleteDeck },
+              ]}
           />
       )}
       <div className="deck-builder">
@@ -404,10 +526,16 @@ const Decks: React.FC<DecksProps> = ({
           <div className="deck-content">
             <div className="deck-list-pane">
               <h3>Decks</h3>
-              {/* --- MODIFIED --- The list now displays the proper name and card count. */}
+              {/* --- MODIFIED --- Added onContextMenu handler and card count display. */}
               <ul>{decks.map(deck => (
-                  <li key={deck.fileHandle.name} onClick={() => handleDeckSelected(deck)} className="list-item">
-                      {deck.name}
+                  <li 
+                    key={deck.fileHandle.name} 
+                    onClick={() => handleDeckSelected(deck)} 
+                    onContextMenu={(e) => handleDeckRightClick(e, deck)}
+                    className="list-item"
+                    title={deck.name}
+                  >
+                      {deck.name} ({deck.cardCount} cards)
                   </li>
               ))}</ul>
             </div>
@@ -436,7 +564,7 @@ const Decks: React.FC<DecksProps> = ({
                               card={card} 
                               imageDirectoryHandle={imagesDirectoryHandle}
                               size={cardSize}
-                              onContextMenu={(e) => handleRightClick(e, card, currentIndex)}
+                              onContextMenu={(e) => handleCardRightClick(e, card, currentIndex)}
                             />
                           );
                       })}
