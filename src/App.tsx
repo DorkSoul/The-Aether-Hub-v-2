@@ -1,8 +1,10 @@
 // src/App.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import GameBoard from './components/GameBoard.tsx';
 import Decks from './components/Decks.tsx';
 import { PlusIcon, MinusIcon } from './components/icons.tsx';
+// --- NEW --- Import the new settings functions.
+import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
 import './App.css';
 
 type View = 'decks' | 'game';
@@ -12,24 +14,46 @@ function App() {
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [cardSize, setCardSize] = useState(150);
+  // --- MODIFIED --- Initialize cardSize from saved settings.
+  const [cardSize, setCardSize] = useState(() => getCardSize(150));
   const [activeDeckName, setActiveDeckName] = useState('');
-  // --- NEW --- State to hold the card count of the active deck.
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
+
+  // --- NEW --- Effect to load saved settings on initial app load.
+  useEffect(() => {
+    const loadSavedHandles = async () => {
+      const savedDecksHandle = await getDirectoryHandle('decks');
+      if (savedDecksHandle) {
+        setDecksDirectoryHandle(savedDecksHandle);
+      }
+      const savedImagesHandle = await getDirectoryHandle('images');
+      if (savedImagesHandle) {
+        setImagesDirectoryHandle(savedImagesHandle);
+      }
+    };
+    loadSavedHandles();
+  }, []);
+  
+  // --- NEW --- Effect to save card size whenever it changes.
+  useEffect(() => {
+    saveCardSize(cardSize);
+  }, [cardSize]);
 
   const handleSelectAppFolder = async () => {
     try {
-      const rootHandle = await window.showDirectoryPicker({
-        mode: 'readwrite'
-      });
+      const rootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
       
       const decksHandle = await rootHandle.getDirectoryHandle('decks', { create: true });
       const imagesHandle = await rootHandle.getDirectoryHandle('images', { create: true });
       
       setDecksDirectoryHandle(decksHandle);
       setImagesDirectoryHandle(imagesHandle);
+      
+      // --- NEW --- Save the selected handles to IndexedDB for persistence.
+      await saveDirectoryHandle('decks', decksHandle);
+      await saveDirectoryHandle('images', imagesHandle);
+
       setActiveDeckName('');
-      // --- NEW --- Reset card count when folder is changed.
       setActiveDeckCardCount(0);
 
     } catch (err) {
@@ -41,10 +65,10 @@ function App() {
     }
   };
   
-  const zoomIn = () => setCardSize(s => Math.min(s + 20, 300));
+  // --- MODIFIED --- Increased max zoom size to 500.
+  const zoomIn = () => setCardSize(s => Math.min(s + 20, 500));
   const zoomOut = () => setCardSize(s => Math.max(s - 20, 80));
 
-  // --- MODIFIED --- The handler now accepts a card count along with the deck name.
   const handleDeckLoaded = useCallback((deckName: string, cardCount: number) => {
       setActiveDeckName(deckName.replace('.json', ''));
       setActiveDeckCardCount(cardCount);
@@ -64,7 +88,6 @@ function App() {
         
         <div className="app-title">
           <h2>The Aether Hub</h2>
-          {/* --- MODIFIED --- Display name and count. The count only shows if it's greater than 0. */}
           {view === 'decks' && activeDeckName && <h3>{activeDeckName} {activeDeckCardCount > 0 && `(${activeDeckCardCount} cards)`}</h3>}
         </div>
 
@@ -79,7 +102,8 @@ function App() {
             </>
           )}
           <button onClick={handleSelectAppFolder} title="Select a local folder to store your decks and cached images.">
-            {decksDirectoryHandle ? `Folder: decks` : 'Select App Folder'}
+            {/* --- MODIFIED --- The button text now reflects the saved folder name. */}
+            {decksDirectoryHandle ? `Folder: ${decksDirectoryHandle.name}` : 'Select App Folder'}
           </button>
         </div>
       </header>
