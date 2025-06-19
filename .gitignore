@@ -1,0 +1,80 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# .gitignore for a Vite + React + TypeScript project
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Build output
+/dist
+/build
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+
+# Vite build cache
+.vite
+
+# Local environment variables
+# These files may contain sensitive API keys or secrets
+.env
+.env.local
+.env.*.local
+
+# IDE and editor directories
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating System generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Test reports and coverage
+/coverage
+/htmlcov
+.tox
+.nox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+
+# User-specific content and generated files from your project
+# This includes downloaded card images and user-created decks.
+/decks/
+/deck_cache/
+/assets/card_images/
