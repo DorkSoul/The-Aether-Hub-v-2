@@ -3,7 +3,7 @@ import type { Card, CardIdentifier } from '../types';
 
 const API_BASE_URL = 'https://api.scryfall.com';
 
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+export const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export async function getCardByUri(uri: string): Promise<Card> {
     const response = await fetch(uri);
@@ -29,6 +29,39 @@ async function fetchCardCollection(identifiers: CardIdentifier[]): Promise<{ dat
     }
     return response.json();
 }
+
+/**
+ * Fetches a single card from a Scryfall URL.
+ * It parses the set and collector number from the URL to get the exact card.
+ */
+export async function getCardByUrl(url: string): Promise<Card | null> {
+    const match = url.match(/scryfall\.com\/card\/([a-z0-9]+)\/([\w\d-]+)/);
+
+    if (match && match[1] && match[2]) {
+        const set = match[1];
+        const collector_number = match[2];
+        const result = await fetchCardCollection([{ set, collector_number }]);
+        if (result.data && result.data.length > 0) {
+            const card = result.data[0];
+            // If the card is a meld card, we need to fetch its result part separately
+            if (card.layout === 'meld' && card.all_parts) {
+                const meldPart = card.all_parts.find(p => p.component === 'meld_result');
+                if (meldPart && meldPart.uri) {
+                    try {
+                        const meldResultCard = await getCardByUri(meldPart.uri);
+                        card.meld_result_card = meldResultCard;
+                    } catch(err) {
+                        console.error("Failed to fetch meld result card:", err)
+                    }
+                }
+            }
+            return card;
+        }
+    }
+    console.error("Could not parse a valid set and collector number from the URL:", url);
+    return null;
+}
+
 
 export async function getCardsFromNames(namesOrIdentifiers: (string | CardIdentifier)[]): Promise<Card[]> {
   if (namesOrIdentifiers.length === 0) {

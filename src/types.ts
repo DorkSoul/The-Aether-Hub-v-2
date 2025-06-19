@@ -37,6 +37,10 @@ export interface Card {
   card_faces?: CardFace[];
   all_parts?: RelatedCard[];
   meld_result_card?: Card; // To store the fetched meld result
+  is_custom?: boolean; // NEW: Flag for custom-made cards
+  // Scryfall data for single-faced cards can have these at the top level
+  mana_cost?: string;
+  oracle_text?: string;
 }
 
 export interface PlayerState {

@@ -1,3 +1,4 @@
+/* src/App.css */
 .App {
   text-align: center;
 }
@@ -62,6 +63,11 @@
   justify-content: center;
 }
 
+.deck-view-cards {
+    justify-content: flex-start;
+}
+
+
 .card {
   width: 80px;
   height: 112px; /* Adjusted for better aspect ratio */
@@ -110,11 +116,27 @@ button {
 .deck-content {
   display: flex;
   gap: 1rem;
-  height: 80vh; /* Increased height slightly */
+  height: 80vh; 
 }
 
-.deck-list-pane, .card-list-pane {
-  flex: 1; /* Takes 1 part of the space */
+.deck-list-pane {
+  flex: 0 0 250px; 
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+/* --- MODIFIED --- */
+.spoiler-view-pane {
+    flex: 1; /* Ensures the pane grows to fill available space */
+    overflow-y: auto;
+    padding: 0 1rem;
+}
+
+.card-list-pane {
+  flex: 1;
   background-color: rgba(0, 0, 0, 0.2);
   border: 1px solid #555;
   border-radius: 8px;
@@ -123,7 +145,7 @@ button {
 }
 
 .card-display-pane {
-  flex: 1.5; /* Make the card display a bit larger */
+  flex: 1.5;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -152,7 +174,7 @@ button {
 }
 
 .error-message {
-  color: #ff6b6b; /* A reddish color for errors */
+  color: #ff6b6b;
   font-weight: bold;
   padding: 1rem;
 }
@@ -209,15 +231,15 @@ button {
 }
 
 .spoiler-view-pane .card {
-  width: 150px; /* Make cards in the spoiler view larger */
-  height: 210px;
   margin: 5px;
-  border-radius: 10px; /* Slightly larger radius */
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .spoiler-view-pane .card img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 .card-type-section {
@@ -229,7 +251,7 @@ button {
   padding: 0.5rem;
   border-radius: 5px;
   cursor: pointer;
-  user-select: none; /* Prevents text selection on click */
+  user-select: none;
 }
 
 .section-header span {
@@ -245,7 +267,7 @@ button {
 
 .card-container-multiface {
   display: flex;
-  gap: 5px; /* Space between card faces */
+  gap: 5px;
 }
 
 .card-placeholder {
@@ -260,21 +282,6 @@ button {
   box-sizing: border-box;
   font-size: 0.8em;
   color: #aaa;
-}
-
-.spoiler-view-pane .card {
-  width: 150px;
-  height: 210px;
-  margin: 5px;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* Make sure the card images in the spoiler view fill their container */
-.spoiler-view-pane .card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .app-header {
@@ -292,15 +299,11 @@ button {
 
 .card-flipper {
   background-color: transparent;
-  /* Match the spoiler view card size for consistency */
-  width: 150px;
-  height: 210px;
-  perspective: 1000px; /* Required for the 3D flip effect */
+  perspective: 1000px;
   margin: 5px;
   cursor: pointer;
 }
 
-/* This container holds the front and back faces and performs the flip */
 .card-flipper .card-inner {
   position: relative;
   width: 100%;
@@ -309,29 +312,25 @@ button {
   transform-style: preserve-3d;
 }
 
-/* The .flipped class is added via JavaScript on click */
 .card-flipper .card-inner.flipped {
   transform: rotateY(180deg);
 }
 
-/* Position the front and back faces in the same 3D space */
 .card-flipper .card-front,
 .card-flipper .card-back {
   position: absolute;
   width: 100%;
   height: 100%;
-  -webkit-backface-visibility: hidden; /* Hide the back of the element when facing away */
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  border-radius: 10px; /* Match spoiler view card radius */
+  border-radius: 10px;
   overflow: hidden;
 }
 
-/* The back face is initially rotated 180 degrees */
 .card-flipper .card-back {
   transform: rotateY(180deg);
 }
 
-/* The .card element itself when inside a flipper should not have its own sizing or margin */
 .card-flipper .card {
   width: 100%;
   height: 100%;
@@ -339,11 +338,61 @@ button {
 }
 
 .notification-message {
-  background-color: #2e502e; /* A calming, dark green */
+  background-color: #2e502e;
   color: #e0e0e0;
   padding: 1rem;
-  margin: 0 0 1rem 0; /* Margin on bottom only */
+  margin: 0 0 1rem 0;
   border-radius: 8px;
   border: 1px solid #4a784a;
   text-align: left;
+}
+
+.spoiler-view-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.spoiler-view-controls button {
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.context-menu-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+}
+
+.context-menu {
+    position: absolute;
+    background-color: #3e4452;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 5px 0;
+    min-width: 240px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu li {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.context-menu li:hover {
+    background-color: #646cff;
 }

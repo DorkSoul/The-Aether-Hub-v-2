@@ -6,6 +6,10 @@ import { getAndCacheCardImageUrl } from '../utils/imageCaching';
 interface CardProps {
   card: CardType;
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
+  // Card size in pixels (width). Height will be calculated.
+  size?: number;
+  // Handler for right-click events
+  onContextMenu?: (event: React.MouseEvent, card: CardType) => void;
 }
 
 interface SingleCardViewProps {
@@ -36,13 +40,12 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
  * The main Card component. It handles different layouts (flippable, single-sided)
  * and manages fetching and displaying the correct card faces.
  */
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Define which layouts are flippable with a front and back face.
   const flippableLayouts = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card', 'meld'];
   const isFlippable = flippableLayouts.includes(card.layout || '');
   
@@ -53,24 +56,18 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle }) => {
     const loadImages = async () => {
       setIsLoading(true);
       
-      // Get front image URL. This is always face 0 of the card object.
       const frontUrl = await getAndCacheCardImageUrl(card, imageDirectoryHandle, 0);
       if (isMounted) setFrontImageUrl(frontUrl);
-      if (frontUrl.startsWith('blob:')) loadedUrls.push(frontUrl);
+      if (frontUrl?.startsWith('blob:')) loadedUrls.push(frontUrl);
 
-      // If the card is flippable, get the back image URL.
       if (isFlippable) {
-        // For 'meld' layout, the back image comes from the separate `meld_result_card` object.
         const backCardSource = card.layout === 'meld' ? card.meld_result_card : card;
-        
-        // For standard double-faced cards, the back is face index 1.
-        // For a meld result, it's a normal card, so we want its front face (index 0).
         const faceIndexForBack = card.layout === 'meld' ? 0 : 1;
         
         if (backCardSource) {
           const backUrl = await getAndCacheCardImageUrl(backCardSource, imageDirectoryHandle, faceIndexForBack);
           if (isMounted) setBackImageUrl(backUrl);
-          if (backUrl.startsWith('blob:')) loadedUrls.push(backUrl);
+          if (backUrl?.startsWith('blob:')) loadedUrls.push(backUrl);
         }
       }
       
@@ -79,37 +76,54 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle }) => {
 
     loadImages();
 
-    // Cleanup function to revoke blob URLs and prevent memory leaks.
     return () => {
       isMounted = false;
       loadedUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [card, imageDirectoryHandle, isFlippable]);
 
-  // Toggles the flipped state only for flippable cards.
   const handleFlip = () => {
     if (isFlippable) {
       setIsFlipped(!isFlipped);
     }
   };
 
-  // While images are loading, show a generic placeholder.
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (onContextMenu) {
+      e.preventDefault();
+      onContextMenu(e, card);
+    }
+  };
+  
+  // Style object for dynamic card sizing
+  const cardStyle = size ? {
+    width: `${size}px`,
+    height: `${size * 1.4}px`, // Maintain a standard card aspect ratio
+  } : {};
+
   if (isLoading) {
-    // Using the flipper container ensures consistent sizing.
     return (
-      <div className="card-flipper"> 
+      <div className="card-flipper" style={cardStyle} onContextMenu={handleContextMenu}>
         <SingleCardView name={card.name} imageUrl={null} />
       </div>
     );
   }
 
-  // If the card is flippable, render the two-sided component.
+  // --- MODIFIED ---
+  // The logic is now separated to avoid using a component-like variable inside the render function.
+  // This ensures the animation works correctly.
   if (isFlippable) {
     const frontName = card.card_faces?.[0]?.name || card.name;
     const backName = (card.layout === 'meld' ? card.meld_result_card?.name : card.card_faces?.[1]?.name) || 'Card Back';
 
     return (
-      <div className="card-flipper" onClick={handleFlip} title={`Click to flip to ${isFlipped ? frontName : backName}`}>
+      <div 
+        className="card-flipper" 
+        style={cardStyle}
+        onClick={handleFlip} 
+        onContextMenu={handleContextMenu}
+        title={`Click to flip to ${isFlipped ? frontName : backName}`}
+      >
         <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
             <SingleCardView name={frontName} imageUrl={frontImageUrl} />
@@ -122,10 +136,9 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle }) => {
     );
   }
   
-  // For all other single-image cards (normal, split, adventure, etc.),
-  // render just the front face in a non-flipping container.
+  // For all other single-image cards (normal, split, adventure, etc.)
   return (
-    <div className="card-flipper">
+    <div className="card-flipper" style={cardStyle} onContextMenu={handleContextMenu}>
         <SingleCardView name={card.name} imageUrl={frontImageUrl} />
     </div>
   );
