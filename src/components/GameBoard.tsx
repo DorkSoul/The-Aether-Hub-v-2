@@ -5,6 +5,10 @@ import { getCardsFromNames } from '../api/scryfall';
 import PlayerZone from './PlayerZone.tsx';
 import GameControls from './GameControls.tsx';
 
+interface GameBoardProps {
+    imagesDirectoryHandle: FileSystemDirectoryHandle | null;
+}
+
 // A simple array shuffle function
 const shuffleDeck = (deck: Card[]): Card[] => {
   return deck.sort(() => Math.random() - 0.5);
@@ -26,7 +30,7 @@ const opponentDecklist = [
 ];
 // -----------------------------------------------------------
 
-const GameBoard: React.FC = () => {
+const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle }) => {
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [opponentState, setOpponentState] = useState<PlayerState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,9 +92,9 @@ const GameBoard: React.FC = () => {
 
   return (
     <div className="game-board">
-      <PlayerZone player="Opponent" playerState={opponentState} />
+      <PlayerZone player="Opponent" playerState={opponentState} imagesDirectoryHandle={imagesDirectoryHandle} />
       <GameControls />
-      <PlayerZone player="Player" playerState={playerState} />
+      <PlayerZone player="Player" playerState={playerState} imagesDirectoryHandle={imagesDirectoryHandle} />
     </div>
   );
 };

@@ -6,9 +6,10 @@ import Card from './Card.tsx';
 interface PlayerZoneProps {
   player: string;
   playerState: PlayerState;
+  imagesDirectoryHandle: FileSystemDirectoryHandle | null;
 }
 
-const PlayerZone: React.FC<PlayerZoneProps> = ({ player, playerState }) => {
+const PlayerZone: React.FC<PlayerZoneProps> = ({ player, playerState, imagesDirectoryHandle }) => {
   return (
     <div className="player-zone">
       <h2>{player}: {playerState.life} Life</h2>
@@ -16,7 +17,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ player, playerState }) => {
         <div className="battlefield">
           <h3>Battlefield</h3>
           <div className="cards-container">
-            {playerState.battlefield.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={null} />)}
+            {playerState.battlefield.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={imagesDirectoryHandle} />)}
           </div>
         </div>
         <div className="library-graveyard">
@@ -33,7 +34,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ player, playerState }) => {
       <div className="hand">
         <h3>Hand</h3>
         <div className="cards-container">
-          {playerState.hand.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={null} />)}
+          {playerState.hand.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={imagesDirectoryHandle} />)}
         </div>
       </div>
     </div>

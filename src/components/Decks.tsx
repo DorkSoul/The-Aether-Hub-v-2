@@ -1,5 +1,5 @@
 // src/components/Decks.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Card as CardType, CardIdentifier, CardFace } from '../types';
 import { getCardsFromNames, getCardByUri, getCardByUrl, delay } from '../api/scryfall';
 import { groupCardsByType } from '../utils/cardUtils';
@@ -7,10 +7,14 @@ import { parseDecklist } from '../utils/parsing';
 import DeckImportModal from './DeckImportModal';
 import Card from './Card';
 import ContextMenu from './ContextMenu';
-import { PlusIcon, MinusIcon } from './icons';
 
 interface DecksProps {
-  imageDirectoryHandle: FileSystemDirectoryHandle | null;
+  decksDirectoryHandle: FileSystemDirectoryHandle | null;
+  imagesDirectoryHandle: FileSystemDirectoryHandle | null;
+  isImportModalOpen: boolean;
+  onCloseImportModal: () => void;
+  cardSize: number;
+  onDeckLoaded: (deckName: string) => void;
 }
 
 interface ContextMenuState {
@@ -38,49 +42,41 @@ const createCardFace = (card: CardType): CardFace => {
     };
 };
 
-
-const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
-  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+const Decks: React.FC<DecksProps> = ({ 
+  decksDirectoryHandle,
+  imagesDirectoryHandle,
+  isImportModalOpen,
+  onCloseImportModal,
+  cardSize,
+  onDeckLoaded
+}) => {
   const [activeDeckFile, setActiveDeckFile] = useState<FileSystemFileHandle | null>(null);
   const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [groupedCards, setGroupedCards] = useState<GroupedCards>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [notification, setNotification] = useState('');
-  const [cardSize, setCardSize] = useState(150);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   
-  const zoomIn = () => setCardSize(s => Math.min(s + 20, 300));
-  const zoomOut = () => setCardSize(s => Math.max(s - 20, 80));
-
-  const refreshDeckList = async (dirHandle: FileSystemDirectoryHandle) => {
-    const files = [];
-    for await (const entry of dirHandle.values()) {
-      if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-        files.push(entry);
-      }
+  useEffect(() => {
+    if (decksDirectoryHandle) {
+        const refreshDeckList = async (dirHandle: FileSystemDirectoryHandle) => {
+            const files = [];
+            for await (const entry of dirHandle.values()) {
+              if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                files.push(entry);
+              }
+            }
+            setDeckFiles(files);
+        };
+        refreshDeckList(decksDirectoryHandle);
+        setGroupedCards({});
+        setActiveDeckFile(null);
+        onDeckLoaded('');
     }
-    setDeckFiles(files);
-  };
-
-  const handleSelectFolder = async () => {
-    try {
-      const dirHandle = await window.showDirectoryPicker();
-      setDirectoryHandle(dirHandle);
-      await refreshDeckList(dirHandle);
-      setGroupedCards({});
-      setActiveDeckFile(null);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        console.info("User cancelled the folder selection dialog.");
-      } else {
-        console.error("Error selecting folder:", err);
-      }
-    }
-  };
+  }, [decksDirectoryHandle, onDeckLoaded]);
 
   const saveCurrentDeck = async (updatedCards: CardType[]) => {
       if (!activeDeckFile) return;
@@ -103,7 +99,7 @@ const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
 
 
   const handleSaveDeck = async (deckName: string, decklistText: string) => {
-    if (!directoryHandle) return;
+    if (!decksDirectoryHandle) return;
     setNotification('');
     setError('');
     setIsLoading(true);
@@ -171,15 +167,23 @@ const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
       const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
       const fileName = `${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
 
-      const fileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
+      const fileHandle = await decksDirectoryHandle.getFileHandle(fileName, { create: true });
       const writable = await fileHandle.createWritable();
       await writable.write(deckJsonString);
       await writable.close();
 
-      await refreshDeckList(directoryHandle);
+      // Refresh the deck list from the directory
+      const files = [];
+      for await (const entry of decksDirectoryHandle.values()) {
+        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+          files.push(entry);
+        }
+      }
+      setDeckFiles(files);
       
       setGroupedCards(groupCardsByType(fullDeckCards));
       setActiveDeckFile(fileHandle);
+      onDeckLoaded(fileHandle.name);
 
       setNotification('Deck imported! Card images are downloading for the first time. This may be slow, but future loads will be instant from your local cache.');
 
@@ -197,7 +201,10 @@ const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
     setError('');
     setIsLoading(true);
     setLoadingMessage('Loading deck from local file...');
-    setGroupedCards({});
+    // --- UX IMPROVEMENT ---
+    // By not clearing the groupedCards here, the old deck stays visible
+    // until the new one is ready to be displayed.
+    // setGroupedCards({});
     setActiveDeckFile(fileHandle);
 
     try {
@@ -205,6 +212,7 @@ const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
       const text = await file.text();
       const deckData: { name: string; cards: CardType[] } = JSON.parse(text);
       setGroupedCards(groupCardsByType(deckData.cards || []));
+      onDeckLoaded(fileHandle.name);
     } catch (err) {
       console.error("Error loading deck from JSON:", err);
       setError(err instanceof Error ? err.message : "Failed to load deck file. The file might be corrupted.");
@@ -242,129 +250,124 @@ const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
       setGroupedCards(groupCardsByType(allCards));
       saveCurrentDeck(allCards);
   };
-
-    // --- MODIFIED --- This function is now type-safe.
-    const handleReplaceCard = async (faceToReplace: 0 | 1) => {
-        if (!contextMenu) return;
-        const { card: originalCard, cardIndex } = contextMenu;
-
-        const url = prompt(`Enter Scryfall URL for the new ${faceToReplace === 0 ? 'front' : 'back'} face:`);
-        if (!url) return;
-
-        setIsLoading(true);
-        setLoadingMessage('Fetching replacement card...');
-        try {
-            const newCardData = await getCardByUrl(url);
-            if (!newCardData) throw new Error("Card not found at URL.");
-
-            const allCards = Object.values(groupedCards).flat();
-            const newFace = createCardFace(newCardData);
-            
-            const modifiedCard = { ...originalCard };
-
-            // Safely create or clone the card_faces array
-            const existingFaces = originalCard.card_faces ? [...originalCard.card_faces] : [createCardFace(originalCard)];
-            
-            // Place the new face at the correct index
-            existingFaces[faceToReplace] = newFace;
-
-            // Assign the updated array back to the card. Now it's guaranteed to be defined.
-            modifiedCard.card_faces = existingFaces;
-
-            // Update top-level properties based on which face was replaced
-            if (faceToReplace === 0) {
-                modifiedCard.name = `${newFace.name} // ${modifiedCard.card_faces[1]?.name || 'Back'}`;
-                modifiedCard.type_line = newFace.type_line;
-            } else {
-                modifiedCard.name = `${modifiedCard.card_faces[0]?.name || 'Front'} // ${newFace.name}`;
-            }
-
-            modifiedCard.id = crypto.randomUUID();
-            modifiedCard.is_custom = true;
-            modifiedCard.layout = 'transform';
-            
-            allCards[cardIndex] = modifiedCard;
-            setGroupedCards(groupCardsByType(allCards));
-            await saveCurrentDeck(allCards);
-
-        } catch (err) {
-            console.error("Error replacing card face:", err);
-            setError(err instanceof Error ? err.message : "An error occurred.");
-        } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-        }
-    };
-
-    const handleAddBackFace = async () => {
-        if (!contextMenu) return;
-        const { card: frontCard, cardIndex } = contextMenu;
-
-        const url = prompt("Enter Scryfall URL for the new back face:");
-        if (!url) return;
-        
-        setIsLoading(true);
-        setLoadingMessage('Fetching back face card...');
-        try {
-            const backCardData = await getCardByUrl(url);
-            if (!backCardData) throw new Error("Card not found at URL.");
-
-            const allCards = Object.values(groupedCards).flat();
-            
-            const frontFace = createCardFace(frontCard);
-            const backFace = createCardFace(backCardData);
-
-            const newDfc: CardType = {
-                ...frontCard,
-                id: crypto.randomUUID(),
-                layout: 'transform',
-                is_custom: true,
-                name: `${frontFace.name} // ${backFace.name}`,
-                type_line: `${frontFace.type_line} // ${backFace.type_line}`,
-                image_uris: undefined,
-                card_faces: [frontFace, backFace],
-            };
-            
-            allCards[cardIndex] = newDfc;
-            setGroupedCards(groupCardsByType(allCards));
-            await saveCurrentDeck(allCards);
-
-        } catch (err) {
-            console.error("Error adding back face:", err);
-            setError(err instanceof Error ? err.message : "An error occurred.");
-        } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-        }
-    };
   
-    const buildContextMenuOptions = (card: CardType) => {
-        const options = [
-            { label: 'Add another copy', action: handleAddCard },
-            { label: 'Remove a copy', action: handleRemoveCard }
-        ];
+  const handleReplaceCard = async (faceToReplace: 0 | 1) => {
+      if (!contextMenu) return;
+      const { card: originalCard, cardIndex } = contextMenu;
 
-        const isDfc = card.card_faces && card.card_faces.length > 0;
+      const url = prompt(`Enter Scryfall URL for the new ${faceToReplace === 0 ? 'front' : 'back'} face:`);
+      if (!url) return;
 
-        if (isDfc) {
-            options.push({ label: 'Replace Front Face from URL...', action: () => handleReplaceCard(0) });
-            if (card.card_faces && card.card_faces.length > 1) {
-                options.push({ label: 'Replace Back Face from URL...', action: () => handleReplaceCard(1) });
-            } else {
-                options.push({ label: 'Add Back Face from URL...', action: () => handleReplaceCard(1) });
-            }
-        } else {
-            options.push({ label: 'Replace Card from URL...', action: () => handleReplaceCard(0) });
-            options.push({ label: 'Add Back Face from URL...', action: () => handleAddBackFace() });
-        }
-        return options;
-    }
+      setIsLoading(true);
+      setLoadingMessage('Fetching replacement card...');
+      try {
+          const newCardData = await getCardByUrl(url);
+          if (!newCardData) throw new Error("Card not found at URL.");
+
+          const allCards = Object.values(groupedCards).flat();
+          const newFace = createCardFace(newCardData);
+          
+          const modifiedCard = { ...originalCard };
+
+          const existingFaces = originalCard.card_faces ? [...originalCard.card_faces] : [createCardFace(originalCard)];
+          
+          existingFaces[faceToReplace] = newFace;
+
+          modifiedCard.card_faces = existingFaces;
+
+          if (faceToReplace === 0) {
+              modifiedCard.name = `${newFace.name} // ${modifiedCard.card_faces[1]?.name || 'Back'}`;
+              modifiedCard.type_line = newFace.type_line;
+          } else {
+              modifiedCard.name = `${modifiedCard.card_faces[0]?.name || 'Front'} // ${newFace.name}`;
+          }
+
+          modifiedCard.id = crypto.randomUUID();
+          modifiedCard.is_custom = true;
+          modifiedCard.layout = 'transform';
+          
+          allCards[cardIndex] = modifiedCard;
+          setGroupedCards(groupCardsByType(allCards));
+          await saveCurrentDeck(allCards);
+
+      } catch (err) {
+          console.error("Error replacing card face:", err);
+          setError(err instanceof Error ? err.message : "An error occurred.");
+      } finally {
+          setIsLoading(false);
+          setLoadingMessage('');
+      }
+  };
+
+  const handleAddBackFace = async () => {
+      if (!contextMenu) return;
+      const { card: frontCard, cardIndex } = contextMenu;
+
+      const url = prompt("Enter Scryfall URL for the new back face:");
+      if (!url) return;
+      
+      setIsLoading(true);
+      setLoadingMessage('Fetching back face card...');
+      try {
+          const backCardData = await getCardByUrl(url);
+          if (!backCardData) throw new Error("Card not found at URL.");
+
+          const allCards = Object.values(groupedCards).flat();
+          
+          const frontFace = createCardFace(frontCard);
+          const backFace = createCardFace(backCardData);
+
+          const newDfc: CardType = {
+              ...frontCard,
+              id: crypto.randomUUID(),
+              layout: 'transform',
+              is_custom: true,
+              name: `${frontFace.name} // ${backFace.name}`,
+              type_line: `${frontFace.type_line} // ${backFace.type_line}`,
+              image_uris: undefined,
+              card_faces: [frontFace, backFace],
+          };
+          
+          allCards[cardIndex] = newDfc;
+          setGroupedCards(groupCardsByType(allCards));
+          await saveCurrentDeck(allCards);
+
+      } catch (err) {
+          console.error("Error adding back face:", err);
+          setError(err instanceof Error ? err.message : "An error occurred.");
+      } finally {
+          setIsLoading(false);
+          setLoadingMessage('');
+      }
+  };
+
+  const buildContextMenuOptions = (card: CardType) => {
+      const options = [
+          { label: 'Add another copy', action: handleAddCard },
+          { label: 'Remove a copy', action: handleRemoveCard }
+      ];
+
+      const isDfc = card.card_faces && card.card_faces.length > 0;
+
+      if (isDfc) {
+          options.push({ label: 'Replace Front Face from URL...', action: () => handleReplaceCard(0) });
+          if (card.card_faces && card.card_faces.length > 1) {
+              options.push({ label: 'Replace Back Face from URL...', action: () => handleReplaceCard(1) });
+          } else {
+              options.push({ label: 'Add Back Face from URL...', action: () => handleReplaceCard(1) });
+          }
+      } else {
+          options.push({ label: 'Replace Card from URL...', action: () => handleReplaceCard(0) });
+          options.push({ label: 'Add Back Face from URL...', action: () => handleAddBackFace() });
+      }
+      return options;
+  }
 
   let cardCounter = 0;
 
   return (
     <>
-      <DeckImportModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveDeck} />
+      <DeckImportModal isOpen={isImportModalOpen} onClose={onCloseImportModal} onSave={handleSaveDeck} />
       {contextMenu && (
           <ContextMenu
               x={contextMenu.x}
@@ -374,52 +377,54 @@ const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
           />
       )}
       <div className="deck-builder">
-        <div className="deck-controls">
-          <button onClick={handleSelectFolder}>Load Decks Folder</button>
-          <button onClick={() => setIsModalOpen(true)} disabled={!directoryHandle}>
-            Import New Deck
-          </button>
-        </div>
-        <div className="deck-content">
-          <div className="deck-list-pane">
-            <h3>Decks</h3>
-            <ul>{deckFiles.map(file => (<li key={file.name} onClick={() => handleDeckSelected(file)} className="list-item">{file.name.replace('.json', '')}</li>))}</ul>
-          </div>
-          <div className="spoiler-view-pane">
-            <div className="spoiler-view-controls">
-                <button onClick={zoomOut} title="Decrease card size"><MinusIcon /></button>
-                <span>Card Size</span>
-                <button onClick={zoomIn} title="Increase card size"><PlusIcon /></button>
+        {!decksDirectoryHandle && (
+            <div className="game-loading">
+                <h2>Please select an app folder to begin.</h2>
+                <p>This folder will be used to store your decks and cached card images.</p>
             </div>
-            {notification && <p className="notification-message">{notification}</p>}
-            {isLoading && <h2>{loadingMessage}</h2>}
-            {error && <p className="error-message">{error}</p>}
-            {!isLoading && Object.entries(groupedCards).map(([type, cards]) => (
-              <div key={type} className="card-type-section">
-                <h3 className="section-header" onClick={() => toggleSection(type)}>
-                  {type} ({cards.length})<span>{collapsedSections[type] ? ' (Click to expand)' : ''}</span>
-                </h3>
-                {!collapsedSections[type] && (
-                  <div className="cards-container deck-view-cards">
-                    {cards.map((card) => {
-                        const currentIndex = cardCounter;
-                        cardCounter++;
-                        return (
-                          <Card 
-                            key={`${card.id}-${currentIndex}`} 
-                            card={card} 
-                            imageDirectoryHandle={imageDirectoryHandle}
-                            size={cardSize}
-                            onContextMenu={(e) => handleRightClick(e, card, currentIndex)}
-                          />
-                        );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
+        )}
+        {decksDirectoryHandle && (
+          <div className="deck-content">
+            <div className="deck-list-pane">
+              <h3>Decks</h3>
+              <ul>{deckFiles.map(file => (<li key={file.name} onClick={() => handleDeckSelected(file)} className="list-item">{file.name.replace('.json', '')}</li>))}</ul>
+            </div>
+            <div className="spoiler-view-pane">
+              {notification && <p className="notification-message">{notification}</p>}
+              {isLoading && <h2>{loadingMessage}</h2>}
+              {error && <p className="error-message">{error}</p>}
+              {!isLoading && Object.keys(groupedCards).length === 0 && (
+                <div className="game-loading">
+                    <p>Select a deck from the list, or import a new one.</p>
+                </div>
+              )}
+              {!isLoading && Object.entries(groupedCards).map(([type, cards]) => (
+                <div key={type} className="card-type-section">
+                  <h3 className="section-header" onClick={() => toggleSection(type)}>
+                    {type} ({cards.length})<span>{collapsedSections[type] ? ' (Click to expand)' : ''}</span>
+                  </h3>
+                  {!collapsedSections[type] && (
+                    <div className="cards-container deck-view-cards">
+                      {cards.map((card) => {
+                          const currentIndex = cardCounter;
+                          cardCounter++;
+                          return (
+                            <Card 
+                              key={`${card.id}-${currentIndex}`} 
+                              card={card} 
+                              imageDirectoryHandle={imagesDirectoryHandle}
+                              size={cardSize}
+                              onContextMenu={(e) => handleRightClick(e, card, currentIndex)}
+                            />
+                          );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );
