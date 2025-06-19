@@ -1,3 +1,4 @@
+// src/utils/parsing.ts
 import type { CardIdentifier } from '../types';
 
 /**
@@ -21,43 +22,43 @@ export function parseDecklist(decklist: string): CardIdentifier[] {
     let quantityStr: string | undefined;
     let set: string | undefined;
     let collectorNumber: string | undefined;
+    let identifier: CardIdentifier;
 
     if (match) {
-      // Line matches the format with set/number
+      // Line matches the format with set and collector number.
       quantityStr = match[1];
-      name = match[2].trim();
       set = match[3];
       collectorNumber = match[4];
+
+      // Per Scryfall API docs, set & collector_number is a unique lookup.
+      // Providing name is optional and can cause conflicts. For the most
+      // reliable lookup, we create an identifier with ONLY set and collector_number.
+      identifier = {
+        set: set.toLowerCase(),
+        collector_number: collectorNumber,
+      };
+
     } else {
-      // If not, try the format with only a name
+      // If not, try the format with only a name.
       match = trimmedLine.match(withoutSetRegex);
       if (match) {
         quantityStr = match[1];
         name = match[2].trim();
+
+        // For name-only searches of multi-face cards, it's safest to use the front face name.
+        if (name.includes('//')) {
+          name = name.split('//')[0].trim();
+        }
+        identifier = { name };
+      } else {
+        console.warn(`Could not extract a valid card identifier from line: "${trimmedLine}"`);
+        return; // continue to next line in forEach
       }
     }
 
-    // Ensure a valid name was extracted before proceeding
-    if (name) {
-      const quantity = parseInt(quantityStr || '1', 10);
-
-      // For multi-faced cards, use only the front face name for the API search
-      if (name.includes('//')) {
-        name = name.split('//')[0].trim();
-      }
-      
-      const identifier: CardIdentifier = { name };
-      if (set && collectorNumber) {
-        identifier.set = set.toLowerCase();
-        identifier.collector_number = collectorNumber;
-      }
-
-      for (let i = 0; i < quantity; i++) {
-        identifiers.push({ ...identifier });
-      }
-
-    } else {
-      console.warn(`Could not extract a valid card name from line: "${trimmedLine}"`);
+    const quantity = parseInt(quantityStr || '1', 10);
+    for (let i = 0; i < quantity; i++) {
+      identifiers.push({ ...identifier });
     }
   });
 

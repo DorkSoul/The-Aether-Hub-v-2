@@ -5,6 +5,16 @@ const API_BASE_URL = 'https://api.scryfall.com';
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
+export async function getCardByUri(uri: string): Promise<Card> {
+    const response = await fetch(uri);
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Scryfall API error:', errorData);
+        throw new Error(`Failed to fetch from Scryfall URI ${uri}. Status: ${response.status}`);
+    }
+    return response.json();
+}
+
 async function fetchCardCollection(identifiers: CardIdentifier[]): Promise<{ data: Card[], not_found: CardIdentifier[] }> {
     const response = await fetch(`${API_BASE_URL}/cards/collection`, {
         method: 'POST',
@@ -25,12 +35,10 @@ export async function getCardsFromNames(namesOrIdentifiers: (string | CardIdenti
     return [];
   }
 
-  // Normalize input to CardIdentifier objects
   const identifiers: CardIdentifier[] = namesOrIdentifiers.map(item =>
     typeof item === 'string' ? { name: item } : item
   );
   
-  // Scryfall's collection endpoint takes up to 75 identifiers.
   const chunks: CardIdentifier[][] = [];
   for (let i = 0; i < identifiers.length; i += 75) {
     chunks.push(identifiers.slice(i, i + 75));
@@ -50,8 +58,8 @@ export async function getCardsFromNames(namesOrIdentifiers: (string | CardIdenti
         console.warn("Cards not found:", result.not_found);
     }
 
-    // Add delay, but not after the last chunk
     if (i < chunks.length - 1) {
+      // Increased delay to 1 second between batch requests for card data.
       await delay(1000);
     }
   }
