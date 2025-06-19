@@ -242,3 +242,50 @@ button {
 .section-header:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
+
+.card-container-multiface {
+  display: flex;
+  gap: 5px; /* Space between card faces */
+}
+
+.card-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #1a1a1a;
+  border: 1px dashed #555;
+  text-align: center;
+  padding: 5px;
+  box-sizing: border-box;
+  font-size: 0.8em;
+  color: #aaa;
+}
+
+.spoiler-view-pane .card {
+  width: 150px;
+  height: 210px;
+  margin: 5px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Make sure the card images in the spoiler view fill their container */
+.spoiler-view-pane .card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app-header {
+  background-color: #282c34;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main-nav button {
+  margin: 0 10px;
+}

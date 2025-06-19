@@ -1,15 +1,21 @@
-// src/components/Decks.tsx
-import React, { useState, useEffect } from 'react';
-import type { Card } from '../types';
+import React, { useState } from 'react';
+import type { Card as CardType, CardIdentifier } from '../types';
 import { getCardsFromNames } from '../api/scryfall';
 import { groupCardsByType } from '../utils/cardUtils';
 import { parseDecklist } from '../utils/parsing';
-import { saveCardsToDB, getCardsFromDB } from '../utils/db';
+import { saveCardsToDB } from '../utils/db';
 import DeckImportModal from './DeckImportModal';
+import Card from './Card';
 
-type GroupedCards = Record<string, Card[]>;
+// Define the props for this component, including the new directory handle
+interface DecksProps {
+  imageDirectoryHandle: FileSystemDirectoryHandle | null;
+}
 
-const Decks: React.FC = () => {
+// Define a type alias for the grouped cards state
+type GroupedCards = Record<string, CardType[]>;
+
+const Decks: React.FC<DecksProps> = ({ imageDirectoryHandle }) => {
   const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +25,9 @@ const Decks: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
 
+  /**
+   * Scans the selected directory for .txt files and updates the deck list.
+   */
   const refreshDeckList = async (dirHandle: FileSystemDirectoryHandle) => {
     const files = [];
     for await (const entry of dirHandle.values()) {
@@ -29,6 +38,9 @@ const Decks: React.FC = () => {
     setDeckFiles(files);
   };
 
+  /**
+   * Opens a directory picker for the user to select their main decks folder.
+   */
   const handleSelectFolder = async () => {
     try {
       const dirHandle = await window.showDirectoryPicker();
@@ -36,11 +48,17 @@ const Decks: React.FC = () => {
       await refreshDeckList(dirHandle);
       setGroupedCards({});
     } catch (err) {
-      console.info("Directory picker was closed.", err);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        console.info("User cancelled the folder selection dialog.");
+      } else {
+        console.error("Error selecting folder:", err);
+      }
     }
   };
 
-  // --- REFACTORED DECK IMPORT & SAVE LOGIC ---
+  /**
+   * Saves a new deck by fetching card data, caching it, and saving the decklist as a .txt file.
+   */
   const handleSaveDeck = async (deckName: string, decklistText: string) => {
     if (!directoryHandle) return;
 
@@ -48,19 +66,16 @@ const Decks: React.FC = () => {
     setError('');
 
     try {
-      // 1. Parse decklist to get individual card names
-      const allCardNames = parseDecklist(decklistText);
-      const uniqueNames = [...new Set(allCardNames)];
+      const allCardIdentifiers = parseDecklist(decklistText);
+      const uniqueIdentifierStrings = [...new Set(allCardIdentifiers.map(id => JSON.stringify(id)))];
+      const uniqueIdentifiers = uniqueIdentifierStrings.map(s => JSON.parse(s) as CardIdentifier);
 
-      // 2. Fetch from Scryfall API
-      setLoadingMessage(`Fetching ${uniqueNames.length} cards from Scryfall...`);
-      const cardsFromApi = await getCardsFromNames(uniqueNames);
+      setLoadingMessage(`Fetching ${uniqueIdentifiers.length} unique cards from Scryfall...`);
+      const cardsFromApi = await getCardsFromNames(uniqueIdentifiers);
 
-      // 3. Cache fetched cards in our local DB
       setLoadingMessage('Saving cards to local database...');
       await saveCardsToDB(cardsFromApi);
 
-      // 4. Save the original decklist text to a .txt file
       setLoadingMessage('Saving deck file...');
       const fileName = deckName.endsWith('.txt') ? deckName : `${deckName}.txt`;
       const fileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
@@ -68,58 +83,94 @@ const Decks: React.FC = () => {
       await writable.write(decklistText);
       await writable.close();
 
-      // 5. Refresh the file list
       await refreshDeckList(directoryHandle);
 
     } catch (err) {
       console.error("Error importing deck:", err);
-      setError("Failed to import deck. Check console for details.");
+      setError(err instanceof Error ? err.message : "Failed to import deck. Check console for details.");
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
     }
   };
 
-  // --- REFACTORED DECK SELECTION LOGIC ---
+  /**
+   * Loads a selected deck, fetches card data, and reconstructs the full list for display.
+   */
   const handleDeckSelected = async (fileHandle: FileSystemFileHandle) => {
     setIsLoading(true);
-    setLoadingMessage('Loading deck from local database...');
+    setLoadingMessage('Loading deck...');
     setError('');
     setGroupedCards({});
 
     try {
       const file = await fileHandle.getFile();
       const text = await file.text();
-      const cardNames = parseDecklist(text);
+      const decklistIdentifiers = parseDecklist(text);
 
-      if (cardNames.length === 0) return;
+      if (decklistIdentifiers.length === 0) {
+        setIsLoading(false);
+        return;
+      }
 
-      // We need Scryfall IDs to efficiently query our DB.
-      // This is a simplified approach; a real app might store a name->id map.
-      // For now, we'll fetch from DB using a name-based query if we had one,
-      // but our DB is keyed by ID. So we must fetch from API first to get IDs,
-      // then check DB. Let's adjust the flow.
+      const uniqueIdentifierStrings = [...new Set(decklistIdentifiers.map(id => JSON.stringify(id)))];
+      const uniqueIdentifiers = uniqueIdentifierStrings.map(s => JSON.parse(s) as CardIdentifier);
       
-      const uniqueNames = [...new Set(cardNames)];
-      const cardsFromApi = await getCardsFromNames(uniqueNames);
+      setLoadingMessage(`Fetching data for ${uniqueIdentifiers.length} unique cards...`);
+      const fetchedCards: CardType[] = await getCardsFromNames(uniqueIdentifiers);
       
-      // Now, map the full decklist to the fetched card data
-      const nameToCardMap = new Map<string, Card>();
-      cardsFromApi.forEach(card => nameToCardMap.set(card.name, card));
+      const cardLookup = new Map<string, CardType>();
+      fetchedCards.forEach((card: CardType) => {
+        const nameKey = card.name.toLowerCase();
+        const specificKey = `${nameKey}|${card.set}|${card.collector_number}`;
+        cardLookup.set(specificKey, card);
+        if (!cardLookup.has(nameKey)) {
+            cardLookup.set(nameKey, card);
+        }
+      });
+      
+      const notFoundIdentifiers: CardIdentifier[] = [];
+      const fullDeckCards: CardType[] = [];
 
-      const fullDeckCards = cardNames.map(name => nameToCardMap.get(name)).filter(Boolean) as Card[];
+      decklistIdentifiers.forEach(id => {
+        const nameKey = id.name.toLowerCase();
+        let foundCard: CardType | undefined;
+
+        if (id.set && id.collector_number) {
+            const specificKey = `${nameKey}|${id.set}|${id.collector_number}`;
+            foundCard = cardLookup.get(specificKey);
+        }
+        
+        if (!foundCard) {
+            foundCard = Array.from(cardLookup.values()).find(c => c.name.toLowerCase() === nameKey);
+        }
+        
+        if (foundCard) {
+            fullDeckCards.push(foundCard);
+        } else {
+            notFoundIdentifiers.push(id);
+        }
+      });
       
+      if (notFoundIdentifiers.length > 0) {
+           console.warn("Could not find a match for the following card identifiers:", notFoundIdentifiers);
+           setError(`Could not find all cards (${notFoundIdentifiers.length} missing). Check the console (F12) for details.`);
+      }
+
       setGroupedCards(groupCardsByType(fullDeckCards));
 
     } catch (err) {
       console.error("Error loading deck:", err);
-      setError("Failed to load deck. The file might be corrupted or cards not found.");
+      setError(err instanceof Error ? err.message : "Failed to load deck. The file might be corrupted or cards not found.");
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
     }
   };
 
+  /**
+   * Toggles the collapsed state of a card type section.
+   */
   const toggleSection = (sectionName: string) => {
     setCollapsedSections(prev => ({ ...prev, [sectionName]: !prev[sectionName] }));
   };
@@ -149,7 +200,9 @@ const Decks: React.FC = () => {
                 </h3>
                 {!collapsedSections[type] && (
                   <div className="cards-container">
-                    {cards.map(card => (<div key={card.id} className="card"><img src={card.image_uris.normal} alt={card.name} /></div>))}
+                    {cards.map((card, index) => (
+                      <Card key={`${card.id}-${index}`} card={card} imageDirectoryHandle={imageDirectoryHandle} />
+                    ))}
                   </div>
                 )}
               </div>

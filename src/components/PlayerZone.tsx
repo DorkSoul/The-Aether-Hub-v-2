@@ -1,6 +1,6 @@
 // src/components/PlayerZone.tsx
 import React from 'react';
-import type { PlayerState } from '../types';
+import type { PlayerState, Card as CardType } from '../types';
 import Card from './Card.tsx';
 
 interface PlayerZoneProps {
@@ -16,7 +16,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ player, playerState }) => {
         <div className="battlefield">
           <h3>Battlefield</h3>
           <div className="cards-container">
-            {playerState.battlefield.map(card => <Card key={card.id} card={card} />)}
+            {playerState.battlefield.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={null} />)}
           </div>
         </div>
         <div className="library-graveyard">
@@ -33,7 +33,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ player, playerState }) => {
       <div className="hand">
         <h3>Hand</h3>
         <div className="cards-container">
-          {playerState.hand.map(card => <Card key={card.id} card={card} />)}
+          {playerState.hand.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={null} />)}
         </div>
       </div>
     </div>
