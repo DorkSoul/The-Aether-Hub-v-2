@@ -9,6 +9,9 @@ type DownloadTask = {
 };
 
 const downloadQueue: DownloadTask[] = [];
+// A map to track URLs that are currently in the queue or being processed.
+// This prevents adding the same image URL to the queue multiple times.
+const pendingDownloads = new Map<string, Promise<Blob>>();
 let isProcessing = false;
 
 // The delay between each image download request.
@@ -33,6 +36,10 @@ async function processQueue() {
     } catch (error) {
         console.error("Image download failed:", error);
         task.reject(error);
+    } finally {
+        // Once the task is complete (success or fail), remove it from the pending map.
+        // This allows for future re-attempts if needed.
+        pendingDownloads.delete(task.url);
     }
 
     // Wait for the specified delay before processing the next item in the queue.
@@ -45,11 +52,21 @@ async function processQueue() {
  * @returns A promise that resolves with the image Blob when the download is complete.
  */
 export function queueImageDownload(url: string): Promise<Blob> {
-    return new Promise((resolve, reject) => {
+    // If a download for this URL is already in progress, return the existing promise.
+    if (pendingDownloads.has(url)) {
+        return pendingDownloads.get(url)!;
+    }
+
+    const promise = new Promise<Blob>((resolve, reject) => {
         downloadQueue.push({ url, resolve, reject });
         // If the queue is not currently being processed, start it.
         if (!isProcessing) {
             processQueue();
         }
     });
+
+    // Store the new promise in the map to deduplicate subsequent requests.
+    pendingDownloads.set(url, promise);
+
+    return promise;
 }
