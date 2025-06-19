@@ -38,6 +38,7 @@ export interface Card {
   all_parts?: RelatedCard[];
   meld_result_card?: Card; // To store the fetched meld result
   is_custom?: boolean; // NEW: Flag for custom-made cards
+  instanceId?: string; // --- NEW --- Unique identifier for this card instance within a deck
   // Scryfall data for single-faced cards can have these at the top level
   mana_cost?: string;
   oracle_text?: string;
