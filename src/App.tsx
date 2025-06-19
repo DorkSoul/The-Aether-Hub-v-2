@@ -14,6 +14,8 @@ function App() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [cardSize, setCardSize] = useState(150);
   const [activeDeckName, setActiveDeckName] = useState('');
+  // --- NEW --- State to hold the card count of the active deck.
+  const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
 
   const handleSelectAppFolder = async () => {
     try {
@@ -27,6 +29,8 @@ function App() {
       setDecksDirectoryHandle(decksHandle);
       setImagesDirectoryHandle(imagesHandle);
       setActiveDeckName('');
+      // --- NEW --- Reset card count when folder is changed.
+      setActiveDeckCardCount(0);
 
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
@@ -40,12 +44,11 @@ function App() {
   const zoomIn = () => setCardSize(s => Math.min(s + 20, 300));
   const zoomOut = () => setCardSize(s => Math.max(s - 20, 80));
 
-  // --- FIX ---
-  // The useCallback hook memoizes the function, so it isn't recreated on every render.
-  // This prevents the useEffect in Decks.tsx from re-running unnecessarily.
-  const handleDeckLoaded = useCallback((deckName: string) => {
+  // --- MODIFIED --- The handler now accepts a card count along with the deck name.
+  const handleDeckLoaded = useCallback((deckName: string, cardCount: number) => {
       setActiveDeckName(deckName.replace('.json', ''));
-  }, []); // Empty dependency array ensures the function is created only once.
+      setActiveDeckCardCount(cardCount);
+  }, []);
 
   return (
     <div className="App">
@@ -61,7 +64,8 @@ function App() {
         
         <div className="app-title">
           <h2>The Aether Hub</h2>
-          {view === 'decks' && activeDeckName && <h3>{activeDeckName}</h3>}
+          {/* --- MODIFIED --- Display name and count. The count only shows if it's greater than 0. */}
+          {view === 'decks' && activeDeckName && <h3>{activeDeckName} {activeDeckCardCount > 0 && `(${activeDeckCardCount} cards)`}</h3>}
         </div>
 
         <div className="settings-controls">

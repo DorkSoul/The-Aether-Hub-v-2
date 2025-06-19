@@ -1,5 +1,5 @@
 // src/components/Decks.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Card as CardType, CardIdentifier, CardFace } from '../types';
 import { getCardsFromNames, getCardByUri, getCardByUrl, delay } from '../api/scryfall';
 import { groupCardsByType } from '../utils/cardUtils';
@@ -14,7 +14,14 @@ interface DecksProps {
   isImportModalOpen: boolean;
   onCloseImportModal: () => void;
   cardSize: number;
-  onDeckLoaded: (deckName: string) => void;
+  onDeckLoaded: (deckName: string, cardCount: number) => void;
+}
+
+// --- NEW --- An interface to hold the complete info for a deck in the list.
+interface DeckInfo {
+    fileHandle: FileSystemFileHandle;
+    name: string;
+    cardCount: number;
 }
 
 interface ContextMenuState {
@@ -26,13 +33,10 @@ interface ContextMenuState {
 
 type GroupedCards = Record<string, CardType[]>;
 
-// Helper function to create a CardFace from a full Card object
 const createCardFace = (card: CardType): CardFace => {
-    // If the source card is a DFC, use its front face data
     if (card.card_faces && card.card_faces.length > 0) {
         return card.card_faces[0];
     }
-    // Otherwise, it's a single-faced card
     return {
         name: card.name,
         image_uris: card.image_uris,
@@ -51,7 +55,8 @@ const Decks: React.FC<DecksProps> = ({
   onDeckLoaded
 }) => {
   const [activeDeckFile, setActiveDeckFile] = useState<FileSystemFileHandle | null>(null);
-  const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
+  // --- MODIFIED --- This state now holds DeckInfo objects instead of just file handles.
+  const [decks, setDecks] = useState<DeckInfo[]>([]);
   const [groupedCards, setGroupedCards] = useState<GroupedCards>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -60,43 +65,64 @@ const Decks: React.FC<DecksProps> = ({
   const [notification, setNotification] = useState('');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   
+  // --- MODIFIED --- This function now reads each deck file to get its name and card count.
+  const refreshDeckList = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
+      const newDecks: DeckInfo[] = [];
+      for await (const entry of dirHandle.values()) {
+          if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+              try {
+                  const file = await entry.getFile();
+                  const text = await file.text();
+                  const deckData: { name: string; cards: CardType[] } = JSON.parse(text);
+                  newDecks.push({
+                      fileHandle: entry,
+                      name: deckData.name,
+                      cardCount: deckData.cards.length
+                  });
+              } catch(e) {
+                  console.error(`Could not read or parse ${entry.name}`, e);
+              }
+          }
+      }
+      setDecks(newDecks);
+  }, []);
+
   useEffect(() => {
     if (decksDirectoryHandle) {
-        const refreshDeckList = async (dirHandle: FileSystemDirectoryHandle) => {
-            const files = [];
-            for await (const entry of dirHandle.values()) {
-              if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-                files.push(entry);
-              }
-            }
-            setDeckFiles(files);
-        };
         refreshDeckList(decksDirectoryHandle);
         setGroupedCards({});
         setActiveDeckFile(null);
-        onDeckLoaded('');
+        onDeckLoaded('', 0);
     }
-  }, [decksDirectoryHandle, onDeckLoaded]);
+  }, [decksDirectoryHandle, onDeckLoaded, refreshDeckList]);
 
+  // --- MODIFIED --- Logic to correctly update the deck file and refresh the list.
   const saveCurrentDeck = async (updatedCards: CardType[]) => {
-      if (!activeDeckFile) return;
+      if (!activeDeckFile || !decksDirectoryHandle) return;
 
       setNotification('Saving...');
       try {
-          const deckDataToSave = { name: activeDeckFile.name.replace('.json', ''), cards: updatedCards };
-          const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
+          const file = await activeDeckFile.getFile();
+          const text = await file.text();
+          const deckData: { name: string; cards: CardType[] } = JSON.parse(text);
+
+          deckData.cards = updatedCards;
+          const deckJsonString = JSON.stringify(deckData, null, 2);
 
           const writable = await activeDeckFile.createWritable();
           await writable.write(deckJsonString);
           await writable.close();
+          
           setNotification('Deck saved successfully!');
+          refreshDeckList(decksDirectoryHandle); // Refresh list to show new card count
+          onDeckLoaded(deckData.name, updatedCards.length); // Update header
+          
           setTimeout(() => setNotification(''), 3000);
       } catch (err) {
           console.error("Failed to save deck:", err);
           setError("Could not save the deck file.");
       }
   };
-
 
   const handleSaveDeck = async (deckName: string, decklistText: string) => {
     if (!decksDirectoryHandle) return;
@@ -121,10 +147,10 @@ const Decks: React.FC<DecksProps> = ({
       });
 
       if (meldResultUrisToFetch.size > 0) {
-        setLoadingMessage(`Fetching ${meldResultUrisToFetch.size} meld result cards (1 per second)...`);
+        setLoadingMessage(`Fetching ${meldResultUrisToFetch.size} meld result cards...`);
         const meldResults = await Promise.all(
             Array.from(meldResultUrisToFetch).map(async (uri, i) => {
-                await delay(i * 1000);
+                await delay(i * 100);
                 return getCardByUri(uri).catch(err => {
                     console.error(`Failed to fetch meld card from ${uri}`, err);
                     return null;
@@ -163,6 +189,7 @@ const Decks: React.FC<DecksProps> = ({
       }
       
       setLoadingMessage('Saving deck file...');
+      // The `name` property now stores the user-provided name with spaces etc.
       const deckDataToSave = { name: deckName, cards: fullDeckCards };
       const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
       const fileName = `${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
@@ -172,18 +199,12 @@ const Decks: React.FC<DecksProps> = ({
       await writable.write(deckJsonString);
       await writable.close();
 
-      // Refresh the deck list from the directory
-      const files = [];
-      for await (const entry of decksDirectoryHandle.values()) {
-        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-          files.push(entry);
-        }
-      }
-      setDeckFiles(files);
+      refreshDeckList(decksDirectoryHandle);
       
       setGroupedCards(groupCardsByType(fullDeckCards));
       setActiveDeckFile(fileHandle);
-      onDeckLoaded(fileHandle.name);
+      // --- MODIFIED --- Call with the user-provided name and the actual card count.
+      onDeckLoaded(deckName, fullDeckCards.length);
 
       setNotification('Deck imported! Card images are downloading for the first time. This may be slow, but future loads will be instant from your local cache.');
 
@@ -196,23 +217,21 @@ const Decks: React.FC<DecksProps> = ({
     }
   };
 
-  const handleDeckSelected = async (fileHandle: FileSystemFileHandle) => {
+  // --- MODIFIED --- This handler now accepts a DeckInfo object.
+  const handleDeckSelected = async (deckInfo: DeckInfo) => {
     setNotification('');
     setError('');
     setIsLoading(true);
     setLoadingMessage('Loading deck from local file...');
-    // --- UX IMPROVEMENT ---
-    // By not clearing the groupedCards here, the old deck stays visible
-    // until the new one is ready to be displayed.
-    // setGroupedCards({});
-    setActiveDeckFile(fileHandle);
+    setActiveDeckFile(deckInfo.fileHandle);
 
     try {
-      const file = await fileHandle.getFile();
+      const file = await deckInfo.fileHandle.getFile();
       const text = await file.text();
       const deckData: { name: string; cards: CardType[] } = JSON.parse(text);
       setGroupedCards(groupCardsByType(deckData.cards || []));
-      onDeckLoaded(fileHandle.name);
+      // --- MODIFIED --- Use the name and count from the loaded data.
+      onDeckLoaded(deckData.name, (deckData.cards || []).length);
     } catch (err) {
       console.error("Error loading deck from JSON:", err);
       setError(err instanceof Error ? err.message : "Failed to load deck file. The file might be corrupted.");
@@ -268,11 +287,9 @@ const Decks: React.FC<DecksProps> = ({
           const newFace = createCardFace(newCardData);
           
           const modifiedCard = { ...originalCard };
-
           const existingFaces = originalCard.card_faces ? [...originalCard.card_faces] : [createCardFace(originalCard)];
           
           existingFaces[faceToReplace] = newFace;
-
           modifiedCard.card_faces = existingFaces;
 
           if (faceToReplace === 0) {
@@ -387,7 +404,12 @@ const Decks: React.FC<DecksProps> = ({
           <div className="deck-content">
             <div className="deck-list-pane">
               <h3>Decks</h3>
-              <ul>{deckFiles.map(file => (<li key={file.name} onClick={() => handleDeckSelected(file)} className="list-item">{file.name.replace('.json', '')}</li>))}</ul>
+              {/* --- MODIFIED --- The list now displays the proper name and card count. */}
+              <ul>{decks.map(deck => (
+                  <li key={deck.fileHandle.name} onClick={() => handleDeckSelected(deck)} className="list-item">
+                      {deck.name}
+                  </li>
+              ))}</ul>
             </div>
             <div className="spoiler-view-pane">
               {notification && <p className="notification-message">{notification}</p>}

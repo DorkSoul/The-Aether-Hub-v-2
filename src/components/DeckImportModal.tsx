@@ -1,5 +1,5 @@
 // src/components/DeckImportModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface DeckImportModalProps {
   isOpen: boolean;
@@ -11,6 +11,16 @@ const DeckImportModal: React.FC<DeckImportModalProps> = ({ isOpen, onClose, onSa
   const [deckName, setDeckName] = useState('');
   const [decklist, setDecklist] = useState('');
 
+  // --- MODIFIED ---
+  // This effect runs when the 'isOpen' prop changes.
+  // If the modal is being opened, it resets the state for the input fields.
+  useEffect(() => {
+    if (isOpen) {
+      setDeckName('');
+      setDecklist('');
+    }
+  }, [isOpen]);
+
   if (!isOpen) {
     return null;
   }
@@ -18,7 +28,7 @@ const DeckImportModal: React.FC<DeckImportModalProps> = ({ isOpen, onClose, onSa
   const handleSave = () => {
     if (deckName.trim() && decklist.trim()) {
       onSave(deckName, decklist);
-      onClose(); // Close the modal after saving
+      onClose();
     } else {
       alert('Please provide a deck name and a decklist.');
     }
