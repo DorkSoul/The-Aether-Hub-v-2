@@ -1,4 +1,4 @@
-/* src/components/Decks.css */
+/* src/components/Decks/Decks.css */
 .deck-builder {
   padding: 1rem;
   display: flex;
@@ -113,7 +113,12 @@
 }
 
 .deck-view-cards {
+    /* MODIFIED: Changed from wrapping grid to a non-wrapping, scrollable row. */
     justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 15px;
+    align-items: center;
 }
 
 .card-container-multiface {

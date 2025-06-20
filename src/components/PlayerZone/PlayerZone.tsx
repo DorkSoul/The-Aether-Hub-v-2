@@ -1,4 +1,4 @@
-// src/components/PlayerZone.tsx
+// src/components/PlayerZone/PlayerZone.tsx
 import React from 'react';
 import type { PlayerState } from '../../types';
 import Card from '../Card/Card';
@@ -13,9 +13,16 @@ interface PlayerZoneProps {
 const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesDirectoryHandle }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
 
+  // --- MODIFIED ---
+  // Calculate the aspect ratio for the command zone dynamically.
+  // It defaults to the size of one card if there are 0 or 1 commanders.
+  const numCommanders = playerState.commandZone.length;
+  const commandZoneAspectRatio = `${63 * Math.max(1, numCommanders)} / 88`;
+
   // JSX for each side zone is defined here for clarity
   const commandZoneJsx = (
-      <div className="zone command-zone" title="Command Zone">
+      // The style attribute will override the aspect-ratio from the CSS class.
+      <div className="zone command-zone" title="Command Zone" style={{ aspectRatio: commandZoneAspectRatio }}>
         <div className="cards-container">
             {playerState.commandZone.length > 0 ?
                 playerState.commandZone.map((card, index) => (
@@ -60,7 +67,6 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesD
       </div>
   );
 
-  // --- MODIFIED ---
   // Conditionally set the order of zones based on the `isFlipped` prop.
   // The default order is for the local player at the bottom of the screen.
   // The reversed order is for the opponent(s) at the top.
