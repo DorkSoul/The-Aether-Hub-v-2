@@ -6,6 +6,7 @@ import GameBoard from './components/GameBoard/GameBoard';
 import { PlusIcon, MinusIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
 import type { GameSettings } from './types';
+import Tabs from './components/Tabs/Tabs'; // Import the Tabs component
 import './App.css';
 
 type View = 'decks' | 'game-setup' | 'game';
@@ -19,6 +20,8 @@ function App() {
   const [activeDeckName, setActiveDeckName] = useState('');
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
+  // --- MODIFIED --- State for active opponent is now managed here.
+  const [activeOpponentId, setActiveOpponentId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadSavedHandles = async () => {
@@ -64,6 +67,10 @@ function App() {
 
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings);
+    // When starting a game, set the initial active opponent for the '1vAll' layout
+    if (settings.layout === '1vAll' && settings.players.length > 1) {
+      setActiveOpponentId(settings.players[1].id);
+    }
     setView('game');
   };
   
@@ -73,7 +80,15 @@ function App() {
         return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} />;
       case 'game':
         if (gameSettings) {
-          return <GameBoard imagesDirectoryHandle={imagesDirectoryHandle} settings={gameSettings} />;
+          // --- MODIFIED --- Pass down the active opponent state and its setter.
+          return (
+            <GameBoard 
+              imagesDirectoryHandle={imagesDirectoryHandle} 
+              settings={gameSettings}
+              activeOpponentId={activeOpponentId}
+              onOpponentChange={setActiveOpponentId} 
+            />
+          );
         }
         // Fallback if settings are missing
         setView('game-setup');
@@ -92,6 +107,12 @@ function App() {
         );
     }
   };
+  
+  // --- MODIFIED --- Prepare opponent data for the Tabs component.
+  const opponents = view === 'game' && gameSettings && gameSettings.layout === '1vAll'
+    ? gameSettings.players.slice(1)
+    : [];
+  const activeOpponent = opponents.find(p => p.id === activeOpponentId);
 
   return (
     <div className="App">
@@ -100,15 +121,31 @@ function App() {
           <button onClick={() => setView('decks')} disabled={view === 'decks'}>
             Deckbuilder
           </button>
-          <button onClick={() => setView('game-setup')} disabled={view.startsWith('game')}>
+          <button onClick={() => {
+            setView('game-setup');
+            setGameSettings(null); // Reset game settings when leaving game view
+          }} disabled={view.startsWith('game')}>
             Game
           </button>
         </nav>
         
+        {/* --- MODIFIED --- Tabs are now rendered in the header during a game. */}
+        {view === 'game' && gameSettings?.layout === '1vAll' && opponents.length > 0 && (
+          <Tabs
+            items={opponents.map(p => p.name)}
+            activeItem={activeOpponent?.name || ''}
+            onItemClick={(name) => {
+              const opponent = opponents.find(p => p.name === name);
+              if (opponent) setActiveOpponentId(opponent.id);
+            }}
+          />
+        )}
+
+        {/* --- MODIFIED --- Title and subtitle structure updated for better alignment. */}
         <div className="app-title">
           <h2>The Aether Hub</h2>
           {view === 'decks' && activeDeckName && <h3>{activeDeckName} {activeDeckCardCount > 0 && `(${activeDeckCardCount} cards)`}</h3>}
-          {view === 'game' && gameSettings && <h3>{gameSettings.players.length}-Player Game</h3>}
+          {view === 'game' && gameSettings && <h3 className="game-player-count">{gameSettings.players.length}-Player Game</h3>}
         </div>
 
         <div className="settings-controls">

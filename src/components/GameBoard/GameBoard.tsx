@@ -1,4 +1,4 @@
-// src/components/GameBoard.tsx
+// src/components/GameBoard/GameBoard.tsx
 import React, { useState, useEffect } from 'react';
 import type { PlayerState, GameSettings, Card as CardType } from '../../types';
 import { getCardsFromDB } from '../../utils/db';
@@ -9,6 +9,9 @@ import './GameBoard.css';
 interface GameBoardProps {
     imagesDirectoryHandle: FileSystemDirectoryHandle | null;
     settings: GameSettings;
+    // --- MODIFIED --- Added props to manage opponent view from the parent.
+    activeOpponentId: string | null;
+    onOpponentChange: (id: string | null) => void;
 }
 
 // A simple array shuffle function
@@ -16,11 +19,11 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return deck.sort(() => Math.random() - 0.5);
 };
 
-const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings }) => {
+// --- MODIFIED --- Updated component signature to accept new props.
+const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings, activeOpponentId, onOpponentChange }) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  // --- FIX --- Added the missing state for the loading message.
   const [loadingMessage, setLoadingMessage] = useState('Initializing game...');
 
   useEffect(() => {
@@ -106,7 +109,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings }
     initializeGame();
   }, [settings]);
 
-  // --- FIX --- The loading indicator now displays the dynamic message from the state.
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
   }
@@ -116,9 +118,14 @@ const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings }
   if (!playerStates) {
     return <div className="game-loading"><h2>Could not initialize players.</h2></div>;
   }
-
+    
+  // --- MODIFIED --- Pass the activeOpponentId down to the LayoutOne component.
   if (settings.layout === '1vAll') {
-    return <LayoutOne playerStates={playerStates} imagesDirectoryHandle={imagesDirectoryHandle} />;
+    return <LayoutOne 
+                playerStates={playerStates} 
+                imagesDirectoryHandle={imagesDirectoryHandle} 
+                activeOpponentId={activeOpponentId}
+           />;
   }
   
   return <LayoutTwo playerStates={playerStates} imagesDirectoryHandle={imagesDirectoryHandle} />;

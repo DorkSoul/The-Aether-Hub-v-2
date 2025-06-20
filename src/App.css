@@ -4,18 +4,23 @@
   text-align: center;
 }
 
+/* --- MODIFIED --- Switched to flexbox for better control over header items. */
 .app-header {
   background-color: #282c34;
   padding: 1rem;
-  margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
 }
 
+/* --- MODIFIED --- Title now grows to fill space, pushing other items to the edges. */
 .app-title {
-  flex-grow: 1;
+  flex-grow: 1; /* Allows the title to take up remaining space */
+  display: flex; /* Use flex to align title and player count */
+  justify-content: center; /* Center the items within this container */
+  align-items: baseline; /* Align text along the baseline */
+  gap: 1rem; /* Space between title and player count */
   text-align: center;
 }
 .app-title h2, .app-title h3 {
@@ -29,8 +34,13 @@
   font-size: 1rem;
   font-weight: 400;
   color: #aaa;
-  margin-top: 4px;
 }
+
+/* --- NEW --- Added style for the player count to distinguish it. */
+.game-player-count {
+    font-style: italic;
+}
+
 
 .main-nav {
   display: flex; 

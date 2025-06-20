@@ -1,39 +1,39 @@
-// src/components/LayoutOne.tsx
-import React, { useState } from 'react';
+// src/components/Layouts/LayoutOne.tsx
+import React from 'react'; // Removed useState as it's no longer needed here
 import type { PlayerState } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
-import Tabs from '../Tabs/Tabs';
+// import Tabs from '../Tabs/Tabs'; // Tabs are no longer rendered here
 import './Layouts.css';
 
 interface LayoutOneProps {
   playerStates: PlayerState[];
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
+  // --- MODIFIED --- Now receives the active opponent ID from props.
+  activeOpponentId: string | null;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
-  const [activeOpponentId, setActiveOpponentId] = useState(opponents[0]?.id || '');
-
+  
+  // --- MODIFIED --- No local state. The active opponent is found based on the prop.
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
 
   return (
     <div className="game-layout-1vAll">
       <div className="top-section">
-        <Tabs
-          items={opponents.map(p => p.name)}
-          activeItem={activeOpponent?.name || ''}
-          onItemClick={(name) => {
-            const opponent = opponents.find(p => p.name === name);
-            if (opponent) setActiveOpponentId(opponent.id);
-          }}
-        />
-        {activeOpponent && (
+        {/* --- MODIFIED --- The Tabs component has been removed from here. */}
+        {activeOpponent ? (
           <PlayerZone
             playerState={activeOpponent}
             isFlipped={true}
             imagesDirectoryHandle={imagesDirectoryHandle}
           />
+        ) : (
+          <div className="game-loading">
+             {/* Show a message if there's no active opponent (e.g., in a 1-player game) */}
+            <p>No opponent to display.</p>
+          </div>
         )}
       </div>
       <div className="bottom-section">
