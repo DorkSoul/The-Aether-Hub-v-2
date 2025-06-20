@@ -1,8 +1,5 @@
 /* src/index.css */
 
-/* --- MODIFIED --- */
-/* The background-color is now set here on the root element to ensure it covers the entire page.
-   The previous conflicting background-color on the body has been removed. */
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -10,7 +7,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #333; /* This is the lighter grey color */
+  background-color: #333;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -45,7 +42,14 @@ body {
 }
 
 /* --- MODIFIED --- */
-/* Set main to be a column flex container to properly contain the expanding game board. */
+/*
+ * This is the key to the fix. We are ensuring the main element acts as a strict container.
+ * 1. `display: flex` and `flex-direction: column` make it a vertical flex container.
+ * 2. `flex-grow: 1` ensures it expands to fill all available space left by the header.
+ * 3. `overflow: hidden` is the crucial property. It prevents this element from ever becoming
+ * larger than the space it is allocated. This contains both the scrollable deck view and
+ * the fixed-size game board, ensuring a clean switch between them without the layout breaking.
+ */
 main {
     flex-grow: 1;
     display: flex;
@@ -68,7 +72,7 @@ button {
   font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color: 0.25s;
+  transition: border-color 0.25s;
 }
 button:hover {
   border-color: #646cff;
@@ -78,8 +82,6 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* --- MODIFIED --- */
-/* This rule is for the light color scheme, it should still have its own distinct background. */
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

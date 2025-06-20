@@ -59,8 +59,13 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesD
       </div>
   );
 
-  // An array mapping each zone to its corresponding battlefield row index
-  const zones = [commandZoneJsx, exileZoneJsx, graveyardZoneJsx, libraryZoneJsx];
+  // --- MODIFIED ---
+  // Conditionally set the order of zones based on the `isFlipped` prop.
+  // The default order is for the local player at the bottom of the screen.
+  // The reversed order is for the opponent(s) at the top.
+  const zones = isFlipped 
+    ? [libraryZoneJsx, graveyardZoneJsx, exileZoneJsx, commandZoneJsx] 
+    : [commandZoneJsx, exileZoneJsx, graveyardZoneJsx, libraryZoneJsx];
 
   return (
     <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
