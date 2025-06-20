@@ -13,11 +13,18 @@
 
 .player-zone {
   flex-grow: 1;
+  display: flex;
+  flex-direction: column; /* Default direction: header, play-area, hand */
+  border: 2px solid var(--player-color, #555);
   background-color: rgba(0, 0, 0, 0.2);
-  border: 1px solid #555;
-  padding: 10px;
-  margin: 5px;
+  padding: 5px;
+  margin: 2px;
   border-radius: 8px;
+  overflow: hidden;
+}
+
+.player-zone.flipped {
+  flex-direction: column-reverse; /* Flipped direction: hand, play-area, header */
 }
 
 .play-area {
@@ -182,8 +189,6 @@ button {
   padding: 1rem;
 }
 
-/* --- MODIFIED --- */
-/* Replaced fixed height with flex-grow to ensure this container fills its parent. */
 .game-loading {
   display: flex;
   flex-direction: column;
@@ -191,6 +196,7 @@ button {
   align-items: center;
   flex-grow: 1;
   width: 100%;
+  text-align: center;
 }
 
 .modal-backdrop {
@@ -414,4 +420,252 @@ button {
 
 .context-menu li:hover {
     background-color: #646cff;
+}
+
+/* --- NEW STYLES --- */
+
+/* Game Setup Screen */
+.game-setup {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.setup-section {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.player-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-color-input {
+  height: 40px;
+  width: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.player-name-input {
+  flex-grow: 1;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.player-deck-select {
+  flex-grow: 2;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.remove-player-btn,
+.start-game-btn {
+  font-weight: bold;
+}
+
+.start-game-btn {
+  padding: 1rem;
+  font-size: 1.2rem;
+}
+
+.layout-options {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Game Layouts */
+.game-layout-1vAll, .game-layout-split {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  height: 100%;
+}
+
+.top-section, .bottom-section,
+.top-players, .bottom-players {
+  flex: 1;
+  display: flex;
+  min-height: 0; /* Important for flex children to not overflow */
+}
+.top-section {
+  flex-direction: column;
+}
+
+/* Player Zone */
+.player-zone {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--player-color, #555);
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 5px;
+  margin: 2px;
+  border-radius: 8px;
+  overflow: hidden; /* Prevent content from breaking out */
+}
+
+.player-zone.flipped .player-header {
+  order: 1; /* Puts header at the bottom of the flex container (which is now at the top of the screen) */
+}
+.player-zone.flipped .play-area {
+  flex-direction: row-reverse; /* Puts side-zones on the right */
+}
+.player-zone.flipped .battlefield {
+  flex-direction: column-reverse; /* Reverses the order of the 4 battlefield rows */
+}
+
+.player-header {
+  text-align: center;
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+.player-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.play-area {
+  flex-grow: 1;
+  display: flex;
+  gap: 5px;
+  min-height: 0;
+  padding: 5px 0;
+}
+
+/* Side Zones (Command, Library, etc.) */
+.side-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.side-zones.flipped {
+  order: 1; /* Move to the right side when flipped */
+}
+
+.zone {
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+}
+
+.zone-label {
+  font-weight: bold;
+  align-self: flex-start;
+}
+
+.card-outline {
+  width: 80px;
+  height: 112px;
+  border: 1px dashed #555;
+  border-radius: 5px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.command-zone .cards-container {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap; /* Allow commanders to wrap */
+  justify-content: flex-start;
+}
+
+.command-zone .card-outline {
+  display: none; /* Hide placeholder if empty */
+}
+.command-zone.zone {
+  flex-grow: 1; /* Allow command zone to take more space */
+}
+
+.zone-count {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+.card-back-mockup {
+    width: 100%;
+    height: 100%;
+    background-color: #5a3a7e;
+    border-radius: 5px;
+}
+
+/* Battlefield */
+.battlefield {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0; /* Flexbox fix */
+}
+
+.battlefield-row {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  padding: 5px;
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.battlefield-row .card {
+  height: 100%; /* Scale card height to the row */
+  width: auto;   /* Auto-adjust width to maintain aspect ratio */
+  margin: 0;
+}
+
+.hand {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  padding: 5px;
+  height: 130px; /* --- MODIFIED --- Increased height slightly for padding */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  overflow-x: auto;
+}
+
+/* --- NEW --- Specific sizing for cards in the hand to prevent being cut off */
+.hand .card-flipper {
+    height: calc(100% - 10px); /* Fill the container's height, accounting for padding */
+    width: auto; /* Let width scale with aspect ratio */
+    margin: 0;
+    flex-shrink: 0; /* Prevent cards from being squashed */
+}
+
+.hand .card-flipper .card {
+    margin: 0;
 }

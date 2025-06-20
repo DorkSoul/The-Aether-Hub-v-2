@@ -1,40 +1,36 @@
 // src/App.tsx
 import React, { useState, useCallback, useEffect } from 'react';
-import GameBoard from './components/GameBoard.tsx';
-import Decks from './components/Decks.tsx';
-import { PlusIcon, MinusIcon } from './components/icons.tsx';
-// --- NEW --- Import the new settings functions.
+import Decks from './components/Decks';
+import GameSetup from './components/GameSetup';
+import GameBoard from './components/GameBoard';
+import { PlusIcon, MinusIcon } from './components/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
+import type { GameSettings } from './types';
 import './App.css';
 
-type View = 'decks' | 'game';
+type View = 'decks' | 'game-setup' | 'game';
 
 function App() {
   const [view, setView] = useState<View>('decks');
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [availableDeckFiles, setAvailableDeckFiles] = useState<FileSystemFileHandle[]>([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  // --- MODIFIED --- Initialize cardSize from saved settings.
   const [cardSize, setCardSize] = useState(() => getCardSize(150));
   const [activeDeckName, setActiveDeckName] = useState('');
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
+  const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
 
-  // --- NEW --- Effect to load saved settings on initial app load.
   useEffect(() => {
     const loadSavedHandles = async () => {
       const savedDecksHandle = await getDirectoryHandle('decks');
-      if (savedDecksHandle) {
-        setDecksDirectoryHandle(savedDecksHandle);
-      }
+      if (savedDecksHandle) setDecksDirectoryHandle(savedDecksHandle);
       const savedImagesHandle = await getDirectoryHandle('images');
-      if (savedImagesHandle) {
-        setImagesDirectoryHandle(savedImagesHandle);
-      }
+      if (savedImagesHandle) setImagesDirectoryHandle(savedImagesHandle);
     };
     loadSavedHandles();
   }, []);
   
-  // --- NEW --- Effect to save card size whenever it changes.
   useEffect(() => {
     saveCardSize(cardSize);
   }, [cardSize]);
@@ -42,20 +38,14 @@ function App() {
   const handleSelectAppFolder = async () => {
     try {
       const rootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-      
       const decksHandle = await rootHandle.getDirectoryHandle('decks', { create: true });
       const imagesHandle = await rootHandle.getDirectoryHandle('images', { create: true });
-      
       setDecksDirectoryHandle(decksHandle);
       setImagesDirectoryHandle(imagesHandle);
-      
-      // --- NEW --- Save the selected handles to IndexedDB for persistence.
       await saveDirectoryHandle('decks', decksHandle);
       await saveDirectoryHandle('images', imagesHandle);
-
       setActiveDeckName('');
       setActiveDeckCardCount(0);
-
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         console.info("User cancelled the folder selection dialog.");
@@ -65,30 +55,62 @@ function App() {
     }
   };
   
-  // --- MODIFIED --- Increased max zoom size to 500.
   const zoomIn = () => setCardSize(s => Math.min(s + 20, 500));
   const zoomOut = () => setCardSize(s => Math.max(s - 20, 80));
 
   const handleDeckLoaded = useCallback((deckName: string, cardCount: number) => {
-      setActiveDeckName(deckName.replace('.json', ''));
-      setActiveDeckCardCount(cardCount);
+    setActiveDeckName(deckName.replace('.json', ''));
+    setActiveDeckCardCount(cardCount);
   }, []);
+
+  const handleStartGame = (settings: GameSettings) => {
+    setGameSettings(settings);
+    setView('game');
+  };
+  
+  const renderView = () => {
+    switch (view) {
+      case 'game-setup':
+        return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} />;
+      case 'game':
+        if (gameSettings) {
+          return <GameBoard imagesDirectoryHandle={imagesDirectoryHandle} settings={gameSettings} />;
+        }
+        // Fallback if settings are missing
+        setView('game-setup');
+        return null;
+      case 'decks':
+      default:
+        return (
+          <Decks
+            decksDirectoryHandle={decksDirectoryHandle}
+            imagesDirectoryHandle={imagesDirectoryHandle}
+            isImportModalOpen={isImportModalOpen}
+            onCloseImportModal={() => setIsImportModalOpen(false)}
+            cardSize={cardSize}
+            onDeckLoaded={handleDeckLoaded}
+            onDecksAvailable={setAvailableDeckFiles}
+          />
+        );
+    }
+  };
 
   return (
     <div className="App">
       <header className="app-header">
         <nav className="main-nav">
-          <button onClick={() => setView('game')} disabled={view === 'game'}>
-            Game
-          </button>
           <button onClick={() => setView('decks')} disabled={view === 'decks'}>
             Deckbuilder
+          </button>
+          <button onClick={() => setView('game-setup')} disabled={view.startsWith('game')}>
+            Game
           </button>
         </nav>
         
         <div className="app-title">
           <h2>The Aether Hub</h2>
           {view === 'decks' && activeDeckName && <h3>{activeDeckName} {activeDeckCardCount > 0 && `(${activeDeckCardCount} cards)`}</h3>}
+          {view === 'game' && gameSettings && <h3>{gameSettings.players.length}-Player Game</h3>}
         </div>
 
         <div className="settings-controls">
@@ -102,24 +124,13 @@ function App() {
             </>
           )}
           <button onClick={handleSelectAppFolder} title="Select a local folder to store your decks and cached images.">
-            {/* --- MODIFIED --- The button text now reflects the saved folder name. */}
-            {decksDirectoryHandle ? `Folder: ${decksDirectoryHandle.name}` : 'Select App Folder'}
+            {decksDirectoryHandle ? `Data: ${decksDirectoryHandle.name}` : 'Select App Folder'}
           </button>
         </div>
       </header>
       
       <main>
-        {view === 'decks' && (
-          <Decks 
-            decksDirectoryHandle={decksDirectoryHandle}
-            imagesDirectoryHandle={imagesDirectoryHandle}
-            isImportModalOpen={isImportModalOpen}
-            onCloseImportModal={() => setIsImportModalOpen(false)}
-            cardSize={cardSize}
-            onDeckLoaded={handleDeckLoaded}
-          />
-        )}
-        {view === 'game' && <GameBoard imagesDirectoryHandle={imagesDirectoryHandle} />}
+        {renderView()}
       </main>
     </div>
   );

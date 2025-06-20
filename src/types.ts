@@ -36,24 +36,44 @@ export interface Card {
   layout?: string;
   card_faces?: CardFace[];
   all_parts?: RelatedCard[];
-  meld_result_card?: Card; // To store the fetched meld result
-  is_custom?: boolean; // NEW: Flag for custom-made cards
-  instanceId?: string; // --- NEW --- Unique identifier for this card instance within a deck
-  // Scryfall data for single-faced cards can have these at the top level
+  meld_result_card?: Card;
+  is_custom?: boolean;
+  instanceId?: string;
   mana_cost?: string;
   oracle_text?: string;
 }
 
+// --- NEW --- Configuration for a single player in the game setup screen.
+export interface PlayerConfig {
+    id: string;
+    name: string;
+    deckFile: FileSystemFileHandle | null;
+    color: string;
+}
+
+// --- NEW --- Settings for the entire game session.
+export interface GameSettings {
+    players: PlayerConfig[];
+    layout: '1vAll' | 'split';
+}
+
+// --- MODIFIED --- PlayerState now includes more zones and links to the initial config.
 export interface PlayerState {
+  id: string;
+  name: string;
+  color: string;
   life: number;
   hand: Card[];
   library: Card[];
   graveyard: Card[];
-  battlefield: Card[];
+  exile: Card[];
+  commandZone: Card[];
+  battlefield: Card[][]; // Array of 4 arrays, one for each row
 }
 
+
 export interface CardIdentifier {
-  name?: string; // Name is optional if set/collector_number are provided
+  name?: string;
   set?: string;
   collector_number?: string;
 }

@@ -1,41 +1,53 @@
 // src/components/PlayerZone.tsx
 import React from 'react';
-import type { PlayerState, Card as CardType } from '../types';
-import Card from './Card.tsx';
+import type { PlayerState } from '../types';
+import Card from './Card';
+import SideZones from './SideZones';
 
 interface PlayerZoneProps {
-  player: string;
   playerState: PlayerState;
+  isFlipped: boolean;
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
 }
 
-const PlayerZone: React.FC<PlayerZoneProps> = ({ player, playerState, imagesDirectoryHandle }) => {
+const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesDirectoryHandle }) => {
+  // --- MODIFIED --- No longer applies a CSS transform. The 'flipped' class will now control flex-direction.
+  const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
+
   return (
-    <div className="player-zone">
-      <h2>{player}: {playerState.life} Life</h2>
+    <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
+      <div className="player-header">
+        <h3>{playerState.name}: {playerState.life} Life</h3>
+      </div>
       <div className="play-area">
+        <SideZones
+          playerState={playerState}
+          isFlipped={isFlipped}
+          imagesDirectoryHandle={imagesDirectoryHandle}
+        />
         <div className="battlefield">
-          <h3>Battlefield</h3>
-          <div className="cards-container">
-            {playerState.battlefield.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={imagesDirectoryHandle} />)}
-          </div>
-        </div>
-        <div className="library-graveyard">
-          <div className="library">
-            <h3>Library</h3>
-            <div className="card-pile">{playerState.library.length}</div>
-          </div>
-          <div className="graveyard">
-            <h3>Graveyard</h3>
-            <div className="card-pile">{playerState.graveyard.length}</div>
-          </div>
+          {playerState.battlefield.map((row, rowIndex) => (
+            <div key={rowIndex} className="battlefield-row">
+              {row.map((card, cardIndex) => (
+                <Card
+                  key={card.instanceId || `${card.id}-${cardIndex}`}
+                  card={card}
+                  imageDirectoryHandle={imagesDirectoryHandle}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
       <div className="hand">
-        <h3>Hand</h3>
-        <div className="cards-container">
-          {playerState.hand.map((card: CardType) => <Card key={card.id} card={card} imageDirectoryHandle={imagesDirectoryHandle} />)}
-        </div>
+        {playerState.hand.map((card, index) => (
+          <Card
+            key={card.instanceId || `${card.id}-${index}`}
+            card={card}
+            imageDirectoryHandle={imagesDirectoryHandle}
+            // --- MODIFIED --- size prop is removed to allow CSS to control the size
+          />
+        ))}
       </div>
     </div>
   );

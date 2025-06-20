@@ -1,102 +1,127 @@
 // src/components/GameBoard.tsx
-import React, { useState } from 'react';
-import type { PlayerState, Card } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { PlayerState, GameSettings, Card as CardType } from '../types';
 import { getCardsFromNames } from '../api/scryfall';
-import PlayerZone from './PlayerZone.tsx';
-import GameControls from './GameControls.tsx';
+import { getCardsFromDB } from '../utils/db';
+import LayoutOne from './LayoutOne';
+import LayoutTwo from './LayoutTwo';
 
 interface GameBoardProps {
     imagesDirectoryHandle: FileSystemDirectoryHandle | null;
+    settings: GameSettings;
 }
 
 // A simple array shuffle function
-const shuffleDeck = (deck: Card[]): Card[] => {
+const shuffleDeck = (deck: CardType[]): CardType[] => {
   return deck.sort(() => Math.random() - 0.5);
 };
 
-// --- Sample Decks (a simple 20-card deck for testing) ---
-const playerDecklist = [
-  "Island", "Island", "Island", "Island", "Mountain", "Mountain", "Mountain", "Mountain",
-  "Delver of Secrets", "Delver of Secrets", "Dragon's Rage Channeler", "Dragon's Rage Channeler",
-  "Lightning Bolt", "Lightning Bolt", "Consider", "Consider", "Spell Pierce", "Spell Pierce",
-  "Expressive Iteration", "Expressive Iteration",
-];
-
-const opponentDecklist = [
-  "Forest", "Forest", "Forest", "Forest", "Plains", "Plains", "Plains", "Plains",
-  "Llanowar Elves", "Llanowar Elves", "Avacyn's Pilgrim", "Avacyn's Pilgrim",
-  "Grizzly Bears", "Grizzly Bears", "Voice of Resurgence", "Voice of Resurgence",
-  "Swords to Plowshares", "Swords to Plowshares", "Rancor", "Rancor",
-];
-// -----------------------------------------------------------
-
-const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle }) => {
-  const [playerState, setPlayerState] = useState<PlayerState | null>(null);
-  const [opponentState, setOpponentState] = useState<PlayerState | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings }) => {
+  const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  // --- FIX --- Added the missing state for the loading message.
+  const [loadingMessage, setLoadingMessage] = useState('Initializing game...');
 
-  const startGame = async () => {
-    setIsLoading(true);
-    setError('');
+  useEffect(() => {
+    const initializeGame = async () => {
+      setIsLoading(true);
+      setError('');
+      try {
+        // Step 1: Read all deck files and parse them.
+        setLoadingMessage('Reading deck files...');
+        const deckFilePromises = settings.players.map(p => {
+            if (!p.deckFile) throw new Error(`Player ${p.name} has no deck file.`);
+            return p.deckFile.getFile().then(file => file.text().then(text => JSON.parse(text)));
+        });
+        const parsedDecks: { name: string, cards: CardType[], commanders?: string[] }[] = await Promise.all(deckFilePromises);
 
-    try {
-      // Fetch all card data for both decks in parallel
-      const [playerDeckData, opponentDeckData] = await Promise.all([
-        getCardsFromNames(playerDecklist),
-        getCardsFromNames(opponentDecklist)
-      ]);
+        // Step 2: Gather all unique card IDs from all decks.
+        const allCardIds = new Set<string>();
+        parsedDecks.forEach(deck => {
+          deck.cards.forEach(card => allCardIds.add(card.id));
+        });
 
-      const shuffledPlayerDeck = shuffleDeck(playerDeckData);
-      const shuffledOpponentDeck = shuffleDeck(opponentDeckData);
+        // Step 3: Fetch all required cards from IndexedDB.
+        setLoadingMessage(`Loading ${allCardIds.size} cards from local cache...`);
+        const cachedCards = await getCardsFromDB(Array.from(allCardIds));
+        const cardDataMap = new Map(cachedCards.map(c => [c.id, c]));
 
-      // Set initial state for both players
-      setPlayerState({
-        life: 20,
-        library: shuffledPlayerDeck.slice(7),
-        hand: shuffledPlayerDeck.slice(0, 7),
-        graveyard: [],
-        battlefield: [],
-      });
+        // Step 4: Identify any cards that were NOT in the cache.
+        const missingCardIds = Array.from(allCardIds).filter(id => !cardDataMap.has(id));
+        if (missingCardIds.length > 0) {
+          console.warn(`Could not find ${missingCardIds.length} cards in the local DB. Game may be incomplete.`);
+          // A more robust solution could re-fetch missing cards here.
+        }
 
-      setOpponentState({
-        life: 20,
-        library: shuffledOpponentDeck.slice(7),
-        hand: shuffledOpponentDeck.slice(0, 7),
-        graveyard: [],
-        battlefield: [],
-      });
+        // Step 5: Create initial PlayerState for each player.
+        setLoadingMessage('Shuffling decks and drawing hands...');
+        const initialPlayerStates: PlayerState[] = settings.players.map((playerConfig, index) => {
+          const deckData = parsedDecks[index];
+          const commanderInstanceIds = new Set(deckData.commanders || []);
+          
+          const commanders: CardType[] = [];
+          const mainDeck: CardType[] = [];
 
-    } catch (err) {
-      console.error("Failed to start game:", err);
-      setError("Could not fetch card data to start the game. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+          deckData.cards.forEach(cardStub => {
+            const fullCardData = cardDataMap.get(cardStub.id);
+            if (fullCardData) {
+              const cardWithInstance = { ...fullCardData, instanceId: cardStub.instanceId || crypto.randomUUID() };
+              if (commanderInstanceIds.has(cardWithInstance.instanceId)) {
+                commanders.push(cardWithInstance);
+              } else {
+                mainDeck.push(cardWithInstance);
+              }
+            }
+          });
 
-  // Render logic
+          const shuffledLibrary = shuffleDeck(mainDeck);
+          const initialHand = shuffledLibrary.slice(0, 7);
+          const library = shuffledLibrary.slice(7);
+
+          return {
+            id: playerConfig.id,
+            name: playerConfig.name,
+            color: playerConfig.color,
+            life: 40,
+            hand: initialHand,
+            library: library,
+            graveyard: [],
+            exile: [],
+            commandZone: commanders,
+            battlefield: [[], [], [], []],
+          };
+        });
+
+        setPlayerStates(initialPlayerStates);
+
+      } catch (err) {
+        console.error("Failed to initialize game:", err);
+        setError(err instanceof Error ? err.message : "An unknown error occurred during game setup.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeGame();
+  }, [settings]);
+
+  // --- FIX --- The loading indicator now displays the dynamic message from the state.
   if (isLoading) {
-    return <div className="game-loading"><h2>Setting up the game...</h2></div>;
+    return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
   }
   if (error) {
     return <div className="game-loading error-message"><h2>Error</h2><p>{error}</p></div>;
   }
-  if (!playerState || !opponentState) {
-    return (
-      <div className="game-loading">
-        <button onClick={startGame}>Start New Game</button>
-      </div>
-    );
+  if (!playerStates) {
+    return <div className="game-loading"><h2>Could not initialize players.</h2></div>;
   }
 
-  return (
-    <div className="game-board">
-      <PlayerZone player="Opponent" playerState={opponentState} imagesDirectoryHandle={imagesDirectoryHandle} />
-      <GameControls />
-      <PlayerZone player="Player" playerState={playerState} imagesDirectoryHandle={imagesDirectoryHandle} />
-    </div>
-  );
+  if (settings.layout === '1vAll') {
+    return <LayoutOne playerStates={playerStates} imagesDirectoryHandle={imagesDirectoryHandle} />;
+  }
+  
+  return <LayoutTwo playerStates={playerStates} imagesDirectoryHandle={imagesDirectoryHandle} />;
 };
 
 export default GameBoard;
