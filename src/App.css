@@ -468,11 +468,12 @@ button {
   gap: 1rem;
 }
 
+/* --- MODIFIED --- */
+/* Removed height: 100% and rely on flex-grow to fill the parent container. */
 .game-layout-1vAll, .game-layout-split {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  height: 100%;
 }
 
 .top-section, .bottom-section,

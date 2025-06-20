@@ -30,7 +30,6 @@ a:hover {
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
 }
 
 #root {
@@ -46,10 +45,11 @@ body {
 }
 
 /* --- MODIFIED --- */
-/* Removed overflow-y: auto to prevent scrolling and ensure the layout fits the screen. */
+/* Set main to be a column flex container to properly contain the expanding game board. */
 main {
     flex-grow: 1;
     display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
