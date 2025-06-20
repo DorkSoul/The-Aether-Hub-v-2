@@ -1,4 +1,4 @@
-/* src/components/PlayerZone.css */
+/* src/components/PlayerZone/PlayerZone.css */
 .player-zone {
   flex-grow: 1;
   display: flex;
@@ -89,18 +89,16 @@
     border: none;
 }
 
-/* Command Zone specific overrides */
-.command-zone {
-    width: auto; /* Allow width to be determined by content */
-    min-width: 84px; /* Ensure it's at least one card wide when empty */
-}
+/*
+ * The special override for .command-zone that allowed it to grow has been removed.
+ * It will now default to the standard .zone width of 84px.
+ */
 
 .command-zone .cards-container {
     display: flex;
-    gap: 4px;
-    flex-wrap: nowrap; /* Commanders line up horizontally */
-    justify-content: flex-start;
+    gap: 2px; /* A smaller gap to fit cards better */
     align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
 }
@@ -122,7 +120,7 @@
     min-height: 0;
 }
 
-/* Card scaling to fit row/zone height */
+/* Default card scaling for most zones */
 .zone .card-flipper,
 .zone .card,
 .battlefield-row .card-flipper,
@@ -131,6 +129,16 @@
     width: auto;
     margin: 0;
     aspect-ratio: 63 / 88; /* Standard MTG card aspect ratio */
+}
+
+/* --- NEW FIX --- */
+/* This new rule overrides the default sizing for cards in the command zone.
+   It allows them to be flexible and scale down to fit the container. */
+.command-zone .card-flipper {
+    flex: 1 1 0;
+    width: 0; /* Allows flex items to shrink below their content size */
+    height: auto; /* Height will be determined by the flexible width and aspect-ratio */
+    max-height: 100%; /* Prevents a single card from becoming taller than the row */
 }
 
 .zone-count {
