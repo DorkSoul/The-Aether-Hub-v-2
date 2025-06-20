@@ -12,7 +12,8 @@ import './App.css';
 type View = 'decks' | 'game-setup' | 'game';
 
 function App() {
-  const [view, setView] = useState<View>('decks');
+  // --- MODIFIED --- The app will now start on the game setup screen.
+  const [view, setView] = useState<View>('game-setup');
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -20,7 +21,6 @@ function App() {
   const [activeDeckName, setActiveDeckName] = useState('');
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
-  // --- MODIFIED --- State for active opponent is now managed here.
   const [activeOpponentId, setActiveOpponentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,20 +67,25 @@ function App() {
 
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings);
-    // When starting a game, set the initial active opponent for the '1vAll' layout
     if (settings.layout === '1vAll' && settings.players.length > 1) {
       setActiveOpponentId(settings.players[1].id);
     }
     setView('game');
   };
   
+  const handleQuitGame = () => {
+    setGameSettings(null);
+    setActiveOpponentId(null);
+    // --- MODIFIED --- Quitting a game now returns to the game setup screen.
+    setView('game-setup');
+  };
+
   const renderView = () => {
     switch (view) {
       case 'game-setup':
         return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} />;
       case 'game':
         if (gameSettings) {
-          // --- MODIFIED --- Pass down the active opponent state and its setter.
           return (
             <GameBoard 
               imagesDirectoryHandle={imagesDirectoryHandle} 
@@ -90,7 +95,6 @@ function App() {
             />
           );
         }
-        // Fallback if settings are missing
         setView('game-setup');
         return null;
       case 'decks':
@@ -108,7 +112,6 @@ function App() {
     }
   };
   
-  // --- MODIFIED --- Prepare opponent data for the Tabs component.
   const opponents = view === 'game' && gameSettings && gameSettings.layout === '1vAll'
     ? gameSettings.players.slice(1)
     : [];
@@ -122,14 +125,21 @@ function App() {
             Deckbuilder
           </button>
           <button onClick={() => {
-            setView('game-setup');
-            setGameSettings(null); // Reset game settings when leaving game view
-          }} disabled={view.startsWith('game')}>
+            if (gameSettings) {
+              setView('game');
+            } else {
+              setView('game-setup');
+            }
+          }} 
+          // --- MODIFIED --- Disabled when on any game-related view.
+          disabled={view.startsWith('game')}>
             Game
           </button>
+          {view === 'game' && gameSettings && (
+            <button onClick={handleQuitGame}>Quit Game</button>
+          )}
         </nav>
         
-        {/* --- MODIFIED --- Tabs are now rendered in the header during a game. */}
         {view === 'game' && gameSettings?.layout === '1vAll' && opponents.length > 0 && (
           <Tabs
             items={opponents.map(p => p.name)}
@@ -141,7 +151,6 @@ function App() {
           />
         )}
 
-        {/* --- MODIFIED --- Title and subtitle structure updated for better alignment. */}
         <div className="app-title">
           <h2>The Aether Hub</h2>
           {view === 'decks' && activeDeckName && <h3>{activeDeckName} {activeDeckCardCount > 0 && `(${activeDeckCardCount} cards)`}</h3>}

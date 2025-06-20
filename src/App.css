@@ -94,3 +94,25 @@
   width: 100%;
   text-align: center;
 }
+
+/* --- NEW --- Styles for main navigation tabs */
+.main-nav button {
+    border: 1px solid transparent;
+    transition: opacity 0.2s, border-color 0.25s;
+}
+
+.main-nav button:not(:disabled) {
+    opacity: 0.7;
+}
+
+.main-nav button:not(:disabled):hover {
+    opacity: 1;
+    border-color: #646cff; /* From index.css */
+}
+
+/* --- NEW --- The disabled button is the "active" tab */
+.main-nav button:disabled {
+    opacity: 1;
+    border: 1px solid white;
+    cursor: default;
+}

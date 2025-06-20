@@ -1,6 +1,9 @@
 /* src/components/PlayerZone/PlayerZone.css */
 .player-zone {
-  flex-grow: 1;
+  /* --- MODIFIED --- Ensure player zones are equally sized and can shrink. */
+  flex: 1 1 0;
+  min-width: 0; /* Allows the flex item to shrink below its content size. */
+  
   display: flex;
   flex-direction: column; /* Default direction: header, play-area, hand */
   border: 2px solid var(--player-color, #555);
@@ -99,11 +102,6 @@
     height: 100%;
 }
 
-/*
- * MODIFIED: The following rule that forced a min-width on the empty
- * command zone outline has been removed to fix the sizing bug.
- */
-
 /* Battlefield row fills remaining space */
 .battlefield-row {
     flex: 1 1 auto;
@@ -159,13 +157,7 @@
     aspect-ratio: 63 / 88;
 }
 
-.hand {
-  background-color: rgba(0, 0, 0, 0.3);
-  min-height: 120px;
-  border-radius: 5px;
-  padding: 5px;
-}
-
+/* --- MODIFIED --- Hand container styles updated */
 .hand {
   background-color: rgba(0, 0, 0, 0.3);
   border-radius: 5px;
@@ -175,16 +167,22 @@
   justify-content: center;
   align-items: center;
   gap: 5px;
-  overflow-x: auto;
+  overflow: hidden; /* Hide overflowing cards instead of scrolling */
 }
 
+/* --- MODIFIED --- Card Flipper in hand can now shrink */
 .hand .card-flipper {
     height: calc(100% - 10px); 
     width: auto; 
     margin: 0;
-    flex-shrink: 0;
+    flex-shrink: 1; /* Allow cards to shrink */
+    min-width: 20px; /* Prevent cards from disappearing completely */
+    aspect-ratio: 63 / 88; /* Maintain aspect ratio while shrinking */
 }
 
+/* --- MODIFIED --- Ensure card component fills the shrinking flipper */
 .hand .card-flipper .card {
     margin: 0;
+    width: 100%;
+    height: 100%;
 }
