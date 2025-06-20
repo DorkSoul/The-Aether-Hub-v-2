@@ -46,11 +46,11 @@ body {
 }
 
 /* --- MODIFIED --- */
-/* Added display:flex so that direct children like the Deckbuilder can grow to fill the space. */
+/* Removed overflow-y: auto to prevent scrolling and ensure the layout fits the screen. */
 main {
     flex-grow: 1;
-    overflow-y: auto;
     display: flex;
+    overflow: hidden;
 }
 
 
@@ -68,7 +68,7 @@ button {
   font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color: 0.25s;
 }
 button:hover {
   border-color: #646cff;
