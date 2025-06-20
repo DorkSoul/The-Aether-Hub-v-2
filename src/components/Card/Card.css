@@ -1,0 +1,66 @@
+/* src/components/Card.css */
+.card {
+  width: 80px;
+  height: 112px; /* Adjusted for better aspect ratio */
+  margin: 5px;
+  border-radius: 5px;
+  overflow: hidden; /* Ensures the image respects the border-radius */
+}
+.card img {
+  width: 100%;
+  height: 100%;
+}
+
+.card-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #1a1a1a;
+  border: 1px dashed #555;
+  text-align: center;
+  padding: 5px;
+  box-sizing: border-box;
+  font-size: 0.8em;
+  color: #aaa;
+}
+
+.card-flipper {
+  background-color: transparent;
+  perspective: 1000px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+.card-flipper .card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.card-flipper .card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-flipper .card-front,
+.card-flipper .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-flipper .card-back {
+  transform: rotateY(180deg);
+}
+
+.card-flipper .card {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}

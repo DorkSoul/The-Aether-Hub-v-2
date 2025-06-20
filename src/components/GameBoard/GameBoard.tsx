@@ -1,10 +1,10 @@
 // src/components/GameBoard.tsx
 import React, { useState, useEffect } from 'react';
-import type { PlayerState, GameSettings, Card as CardType } from '../types';
-import { getCardsFromNames } from '../api/scryfall';
-import { getCardsFromDB } from '../utils/db';
-import LayoutOne from './LayoutOne';
-import LayoutTwo from './LayoutTwo';
+import type { PlayerState, GameSettings, Card as CardType } from '../../types';
+import { getCardsFromDB } from '../../utils/db';
+import LayoutOne from '../Layouts/LayoutOne';
+import LayoutTwo from '../Layouts/LayoutTwo';
+import './GameBoard.css';
 
 interface GameBoardProps {
     imagesDirectoryHandle: FileSystemDirectoryHandle | null;

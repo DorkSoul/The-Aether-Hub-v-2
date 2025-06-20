@@ -1,0 +1,122 @@
+/* src/components/Decks.css */
+.deck-builder {
+  padding: 1rem;
+  display: flex;
+  flex-grow: 1;
+}
+
+.deck-controls {
+  margin-bottom: 1rem;
+}
+
+.deck-content {
+  display: flex;
+  gap: 1rem;
+  flex-grow: 1;
+}
+
+.deck-list-pane {
+  flex: 0 0 250px; 
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.spoiler-view-pane {
+    flex: 1; 
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid #555;
+    border-radius: 8px;
+}
+
+.card-list-pane {
+  flex: 1;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.card-display-pane {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-display-pane img {
+  max-width: 100%;
+  max-height: 80%;
+  border-radius: 15px;
+}
+
+.deck-list-pane ul, .card-list-pane ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.spoiler-view-pane .card {
+  margin: 5px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.spoiler-view-pane .card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-type-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-header {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-header span {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #aaa;
+  margin-left: 10px;
+}
+
+.section-header:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.deck-view-cards {
+    justify-content: flex-start;
+}
+
+.card-container-multiface {
+  display: flex;
+  gap: 5px;
+}

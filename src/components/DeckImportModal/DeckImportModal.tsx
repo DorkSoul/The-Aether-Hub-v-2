@@ -1,5 +1,6 @@
 // src/components/DeckImportModal.tsx
 import React, { useState, useEffect } from 'react';
+import './DeckImportModal.css';
 
 interface DeckImportModalProps {
   isOpen: boolean;

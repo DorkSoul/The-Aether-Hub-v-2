@@ -1,9 +1,9 @@
 // src/App.tsx
 import React, { useState, useCallback, useEffect } from 'react';
-import Decks from './components/Decks';
-import GameSetup from './components/GameSetup';
-import GameBoard from './components/GameBoard';
-import { PlusIcon, MinusIcon } from './components/icons';
+import Decks from './components/Decks/Decks';
+import GameSetup from './components/GameSetup/GameSetup';
+import GameBoard from './components/GameBoard/GameBoard';
+import { PlusIcon, MinusIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
 import type { GameSettings } from './types';
 import './App.css';
@@ -14,7 +14,6 @@ function App() {
   const [view, setView] = useState<View>('decks');
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const [availableDeckFiles, setAvailableDeckFiles] = useState<FileSystemFileHandle[]>([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [cardSize, setCardSize] = useState(() => getCardSize(150));
   const [activeDeckName, setActiveDeckName] = useState('');
@@ -89,7 +88,6 @@ function App() {
             onCloseImportModal={() => setIsImportModalOpen(false)}
             cardSize={cardSize}
             onDeckLoaded={handleDeckLoaded}
-            onDecksAvailable={setAvailableDeckFiles}
           />
         );
     }

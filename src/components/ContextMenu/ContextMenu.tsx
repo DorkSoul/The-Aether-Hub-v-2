@@ -1,5 +1,6 @@
 // src/components/ContextMenu.tsx
 import React, { useEffect, useRef } from 'react';
+import './ContextMenu.css';
 
 interface ContextMenuProps {
   x: number;

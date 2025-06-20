@@ -1,8 +1,9 @@
 // src/components/LayoutOne.tsx
 import React, { useState } from 'react';
-import type { PlayerState } from '../types';
-import PlayerZone from './PlayerZone';
-import Tabs from './Tabs';
+import type { PlayerState } from '../../types';
+import PlayerZone from '../PlayerZone/PlayerZone';
+import Tabs from '../Tabs/Tabs';
+import './Layouts.css';
 
 interface LayoutOneProps {
   playerStates: PlayerState[];

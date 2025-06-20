@@ -1,7 +1,8 @@
 // src/components/PlayerZone.tsx
 import React from 'react';
-import type { PlayerState } from '../types';
-import Card from './Card';
+import type { PlayerState } from '../../types';
+import Card from '../Card/Card';
+import './PlayerZone.css';
 
 interface PlayerZoneProps {
   playerState: PlayerState;

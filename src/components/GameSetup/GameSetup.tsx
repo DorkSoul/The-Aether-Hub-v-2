@@ -1,7 +1,8 @@
 // src/components/GameSetup.tsx
 import React, { useState, useEffect } from 'react';
-import type { PlayerConfig, GameSettings } from '../types';
-import PlayerSetupRow from './PlayerSetupRow';
+import type { PlayerConfig, GameSettings } from '../../types';
+import PlayerSetupRow from '../PlayerSetupRow/PlayerSetupRow';
+import './GameSetup.css';
 
 interface GameSetupProps {
   decksDirectoryHandle: FileSystemDirectoryHandle | null;

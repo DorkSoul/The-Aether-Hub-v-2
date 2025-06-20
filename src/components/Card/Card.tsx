@@ -1,7 +1,8 @@
 // src/components/Card.tsx
 import React, { useState, useEffect } from 'react';
-import type { Card as CardType } from '../types';
-import { getAndCacheCardImageUrl } from '../utils/imageCaching';
+import type { Card as CardType } from '../../types';
+import { getAndCacheCardImageUrl } from '../../utils/imageCaching';
+import './Card.css';
 
 interface CardProps {
   card: CardType;

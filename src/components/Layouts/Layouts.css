@@ -1,0 +1,16 @@
+/* src/components/Layouts.css */
+.game-layout-1vAll, .game-layout-split {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.top-section, .bottom-section,
+.top-players, .bottom-players {
+  flex: 1;
+  display: flex;
+  min-height: 0; 
+}
+.top-section {
+  flex-direction: column;
+}

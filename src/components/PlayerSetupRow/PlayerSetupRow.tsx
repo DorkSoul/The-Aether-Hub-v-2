@@ -1,6 +1,6 @@
 // src/components/PlayerSetupRow.tsx
 import React from 'react';
-import type { PlayerConfig } from '../types';
+import type { PlayerConfig } from '../../types';
 
 interface PlayerSetupRowProps {
   player: PlayerConfig;

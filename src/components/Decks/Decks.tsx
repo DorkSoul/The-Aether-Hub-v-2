@@ -1,13 +1,14 @@
 // src/components/Decks.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Card as CardType, CardIdentifier, CardFace } from '../types';
-import { getCardsFromNames, getCardByUri, getCardByUrl, delay } from '../api/scryfall';
-import { groupCardsByType } from '../utils/cardUtils';
-import { parseDecklist } from '../utils/parsing';
-import DeckImportModal from './DeckImportModal';
-import Card from './Card';
-import ContextMenu from './ContextMenu';
-import { saveCardsToDB } from '../utils/db'; // --- FIX: Import the function to save cards to the DB
+import type { Card as CardType, CardIdentifier, CardFace } from '../../types';
+import { getCardsFromNames, getCardByUri, getCardByUrl, delay } from '../../api/scryfall';
+import { groupCardsByType } from '../../utils/cardUtils';
+import { parseDecklist } from '../../utils/parsing';
+import DeckImportModal from '../DeckImportModal/DeckImportModal';
+import Card from '../Card/Card';
+import ContextMenu from '../ContextMenu/ContextMenu';
+import { saveCardsToDB } from '../../utils/db';
+import './Decks.css';
 
 interface DecksProps {
   decksDirectoryHandle: FileSystemDirectoryHandle | null;
@@ -16,7 +17,6 @@ interface DecksProps {
   onCloseImportModal: () => void;
   cardSize: number;
   onDeckLoaded: (deckName: string, cardCount: number) => void;
-  onDecksAvailable: (deckFiles: FileSystemFileHandle[]) => void;
 }
 
 interface DeckInfo {
@@ -61,7 +61,6 @@ const Decks: React.FC<DecksProps> = ({
   onCloseImportModal,
   cardSize,
   onDeckLoaded,
-  onDecksAvailable
 }) => {
   const [activeDeckFile, setActiveDeckFile] = useState<FileSystemFileHandle | null>(null);
   const [decks, setDecks] = useState<DeckInfo[]>([]);
@@ -77,11 +76,9 @@ const Decks: React.FC<DecksProps> = ({
   
   const refreshDeckList = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
       const newDecks: DeckInfo[] = [];
-      const newDeckFiles: FileSystemFileHandle[] = [];
       for await (const entry of dirHandle.values()) {
           if (entry.kind === 'file' && entry.name.endsWith('.json')) {
               try {
-                  newDeckFiles.push(entry);
                   const file = await entry.getFile();
                   const text = await file.text();
                   const deckData: { name: string; cards: CardType[] } = JSON.parse(text);
@@ -96,8 +93,7 @@ const Decks: React.FC<DecksProps> = ({
           }
       }
       setDecks(newDecks);
-      onDecksAvailable(newDeckFiles);
-  }, [onDecksAvailable]);
+  }, []);
 
   useEffect(() => {
     if (decksDirectoryHandle) {
@@ -152,10 +148,8 @@ const Decks: React.FC<DecksProps> = ({
       setLoadingMessage(`Fetching ${uniqueIdentifiers.length} unique cards...`);
       const fetchedCards: CardType[] = await getCardsFromNames(uniqueIdentifiers);
       
-      // --- FIX: Save the fetched card data to IndexedDB so the game board can find it. ---
       setLoadingMessage('Saving cards to local database...');
       await saveCardsToDB(fetchedCards);
-      // ------------------------------------------------------------------------------------
       
       const meldResultUrisToFetch = new Set<string>();
       fetchedCards.forEach(card => {

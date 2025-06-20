@@ -1,7 +1,8 @@
 // src/components/LayoutTwo.tsx
 import React from 'react';
-import type { PlayerState } from '../types';
-import PlayerZone from './PlayerZone';
+import type { PlayerState } from '../../types';
+import PlayerZone from '../PlayerZone/PlayerZone';
+import './Layouts.css';
 
 interface LayoutTwoProps {
   playerStates: PlayerState[];

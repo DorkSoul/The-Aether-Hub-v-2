@@ -1,0 +1,186 @@
+/* src/components/PlayerZone.css */
+.player-zone {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column; /* Default direction: header, play-area, hand */
+  border: 2px solid var(--player-color, #555);
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 5px;
+  margin: 2px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.player-zone.flipped {
+  flex-direction: column-reverse; /* Flipped direction: hand, play-area, header */
+}
+
+.player-zone.flipped .game-row {
+  flex-direction: row-reverse;
+}
+
+.player-zone.flipped .battlefield {
+  flex-direction: column-reverse; 
+}
+
+.player-header {
+  text-align: center;
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+.player-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.play-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column; /* Lays out game-rows vertically */
+  gap: 5px;
+  min-height: 0;
+  padding: 5px 0;
+}
+
+.game-row {
+    flex: 1;
+    display: flex;
+    gap: 5px;
+    min-height: 0;
+}
+
+.zone {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    position: relative;
+    /* Zones are not flexible and have a width based on their content */
+    flex: 0 0 auto;
+    width: 84px;
+}
+
+.zone-label-full {
+    font-weight: bold;
+    color: #888;
+    text-transform: uppercase;
+    text-align: center;
+    /* Clamp font size to be responsive but not too big or small */
+    font-size: clamp(10px, 1.2vw, 14px);
+    line-height: 1.1;
+    word-break: break-word; /* Break long words if necessary */
+}
+
+.card-outline {
+    width: 100%;
+    height: 100%;
+    border: 1px dashed #555;
+    border-radius: 5px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.zone .card-outline:has(.zone-label-full) {
+    border: none;
+}
+
+/* Command Zone specific overrides */
+.command-zone {
+    width: auto; /* Allow width to be determined by content */
+    min-width: 84px; /* Ensure it's at least one card wide when empty */
+}
+
+.command-zone .cards-container {
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap; /* Commanders line up horizontally */
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.command-zone .cards-container .card-outline {
+    min-width: 80px; /* Ensure empty outline has a size */
+}
+
+/* Battlefield row fills remaining space */
+.battlefield-row {
+    flex: 1 1 auto;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    padding: 5px;
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-height: 0;
+}
+
+/* Card scaling to fit row/zone height */
+.zone .card-flipper,
+.zone .card,
+.battlefield-row .card-flipper,
+.battlefield-row .card {
+    height: 100%;
+    width: auto;
+    margin: 0;
+    aspect-ratio: 63 / 88; /* Standard MTG card aspect ratio */
+}
+
+.zone-count {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+.card-back-mockup {
+    width: 100%;
+    height: 100%;
+    background-color: #5a3a7e;
+    border-radius: 5px;
+    aspect-ratio: 63 / 88;
+}
+
+.hand {
+  background-color: rgba(0, 0, 0, 0.3);
+  min-height: 120px;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.hand {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  padding: 5px;
+  height: 130px; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  overflow-x: auto;
+}
+
+.hand .card-flipper {
+    height: calc(100% - 10px); 
+    width: auto; 
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.hand .card-flipper .card {
+    margin: 0;
+}

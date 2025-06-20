@@ -1,7 +1,7 @@
 // src/components/SideZones.tsx
 import React from 'react';
-import type { Card as CardType } from '../types';
-import Card from './Card';
+import type { Card as CardType } from '../../types';
+import Card from '../Card/Card';
 
 interface SideZonesProps {
   playerState: {
