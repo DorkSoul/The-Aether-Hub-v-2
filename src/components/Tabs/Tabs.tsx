@@ -10,13 +10,13 @@ interface TabsProps {
 // Simple styling for the tabs, can be expanded in App.css
 const tabStyle: React.CSSProperties = {
     display: 'flex',
-    padding: '5px',
+    padding: '0',
     backgroundColor: '#282c34',
     gap: '5px',
 };
 
 const tabButtonStyle = (isActive: boolean): React.CSSProperties => ({
-    padding: '10px 15px',
+    padding: '5px 10px',
     cursor: 'pointer',
     border: '1px solid #555',
     backgroundColor: isActive ? '#646cff' : '#1a1a1a',

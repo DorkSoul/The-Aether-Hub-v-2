@@ -12,7 +12,6 @@ import './App.css';
 type View = 'decks' | 'game-setup' | 'game';
 
 function App() {
-  // --- MODIFIED --- The app will now start on the game setup screen.
   const [view, setView] = useState<View>('game-setup');
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
@@ -76,7 +75,6 @@ function App() {
   const handleQuitGame = () => {
     setGameSettings(null);
     setActiveOpponentId(null);
-    // --- MODIFIED --- Quitting a game now returns to the game setup screen.
     setView('game-setup');
   };
 
@@ -120,56 +118,63 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <nav className="main-nav">
-          <button onClick={() => setView('decks')} disabled={view === 'decks'}>
-            Deckbuilder
-          </button>
-          <button onClick={() => {
-            if (gameSettings) {
-              setView('game');
-            } else {
-              setView('game-setup');
-            }
-          }} 
-          // --- MODIFIED --- Disabled when on any game-related view.
-          disabled={view.startsWith('game')}>
-            Game
-          </button>
-          {view === 'game' && gameSettings && (
-            <button onClick={handleQuitGame}>Quit Game</button>
+        <div className="header-left">
+          <nav className="main-nav">
+            <button onClick={() => setView('decks')} disabled={view === 'decks'}>
+              Deckbuilder
+            </button>
+            <button onClick={() => {
+              if (gameSettings) {
+                setView('game');
+              } else {
+                setView('game-setup');
+              }
+            }} 
+            disabled={view.startsWith('game')}>
+              Game
+            </button>
+            {view === 'game' && gameSettings && (
+              <button onClick={handleQuitGame}>Quit Game</button>
+            )}
+          </nav>
+          
+          {view === 'game' && gameSettings?.layout === '1vAll' && opponents.length > 0 && (
+            <div className="opponent-tabs-wrapper">
+              <div className="opponent-tabs-container">
+                <Tabs
+                  items={opponents.map(p => p.name)}
+                  activeItem={activeOpponent?.name || ''}
+                  onItemClick={(name) => {
+                    const opponent = opponents.find(p => p.name === name);
+                    if (opponent) setActiveOpponentId(opponent.id);
+                  }}
+                />
+              </div>
+            </div>
           )}
-        </nav>
+        </div>
         
-        {view === 'game' && gameSettings?.layout === '1vAll' && opponents.length > 0 && (
-          <Tabs
-            items={opponents.map(p => p.name)}
-            activeItem={activeOpponent?.name || ''}
-            onItemClick={(name) => {
-              const opponent = opponents.find(p => p.name === name);
-              if (opponent) setActiveOpponentId(opponent.id);
-            }}
-          />
-        )}
-
         <div className="app-title">
           <h2>The Aether Hub</h2>
           {view === 'decks' && activeDeckName && <h3>{activeDeckName} {activeDeckCardCount > 0 && `(${activeDeckCardCount} cards)`}</h3>}
           {view === 'game' && gameSettings && <h3 className="game-player-count">{gameSettings.players.length}-Player Game</h3>}
         </div>
 
-        <div className="settings-controls">
-          {view === 'decks' && (
-            <>
-              <button onClick={zoomOut} title="Decrease card size"><MinusIcon /></button>
-              <button onClick={zoomIn} title="Increase card size"><PlusIcon /></button>
-              <button onClick={() => setIsImportModalOpen(true)} disabled={!decksDirectoryHandle} title="Import a new deck from a list">
-                Import Deck
-              </button>
-            </>
-          )}
-          <button onClick={handleSelectAppFolder} title="Select a local folder to store your decks and cached images.">
-            {decksDirectoryHandle ? `Data: ${decksDirectoryHandle.name}` : 'Select App Folder'}
-          </button>
+        <div className="header-right">
+          <div className="settings-controls">
+            {view === 'decks' && (
+              <>
+                <button onClick={zoomOut} title="Decrease card size"><MinusIcon /></button>
+                <button onClick={zoomIn} title="Increase card size"><PlusIcon /></button>
+                <button onClick={() => setIsImportModalOpen(true)} disabled={!decksDirectoryHandle} title="Import a new deck from a list">
+                  Import Deck
+                </button>
+              </>
+            )}
+            <button onClick={handleSelectAppFolder} title="Select a local folder to store your decks and cached images.">
+              {decksDirectoryHandle ? `Data: ${decksDirectoryHandle.name}` : 'Select App Folder'}
+            </button>
+          </div>
         </div>
       </header>
       

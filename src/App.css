@@ -4,7 +4,7 @@
   text-align: center;
 }
 
-/* --- MODIFIED --- Switched to flexbox for better control over header items. */
+/* --- MODIFIED --- Using a three-column flexbox layout. */
 .app-header {
   background-color: #282c34;
   padding: 1rem;
@@ -14,13 +14,40 @@
   gap: 1rem;
 }
 
-/* --- MODIFIED --- Title now grows to fill space, pushing other items to the edges. */
+/* --- MODIFIED --- Let flex children determine alignment. */
+.header-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.header-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* --- MODIFIED --- This container no longer needs a margin. */
+.opponent-tabs-container {
+  /* No special layout styles needed here anymore */
+}
+
+/* --- NEW --- This wrapper grows to fill available space and centers the tabs. */
+.opponent-tabs-wrapper {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+/* --- MODIFIED --- Title is centered by its flexbox parent. */
 .app-title {
-  flex-grow: 1; /* Allows the title to take up remaining space */
-  display: flex; /* Use flex to align title and player count */
-  justify-content: center; /* Center the items within this container */
-  align-items: baseline; /* Align text along the baseline */
-  gap: 1rem; /* Space between title and player count */
+  flex-shrink: 0; /* Prevents title from shrinking */
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 1rem;
   text-align: center;
 }
 .app-title h2, .app-title h3 {
@@ -36,11 +63,9 @@
   color: #aaa;
 }
 
-/* --- NEW --- Added style for the player count to distinguish it. */
 .game-player-count {
     font-style: italic;
 }
-
 
 .main-nav {
   display: flex; 
@@ -95,7 +120,6 @@
   text-align: center;
 }
 
-/* --- NEW --- Styles for main navigation tabs */
 .main-nav button {
     border: 1px solid transparent;
     transition: opacity 0.2s, border-color 0.25s;
@@ -110,7 +134,6 @@
     border-color: #646cff; /* From index.css */
 }
 
-/* --- NEW --- The disabled button is the "active" tab */
 .main-nav button:disabled {
     opacity: 1;
     border: 1px solid white;
