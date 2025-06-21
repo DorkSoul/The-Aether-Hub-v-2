@@ -28,8 +28,15 @@
 
 .player-header {
   text-align: center;
-  padding: 5px;
   background-color: rgba(0, 0, 0, 0.3);
+  /* --- MODIFIED --- Set a fixed height, padding, and box-sizing. */
+  height: 24px;
+  padding: 5px;
+  box-sizing: border-box;
+  flex-shrink: 0; /* Prevent the header from shrinking */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .player-header h3 {
   margin: 0;
@@ -37,9 +44,10 @@
 }
 
 .play-area {
-  flex-grow: 1;
+  /* --- MODIFIED --- Takes up 4/5 of available space */
+  flex: 4;
   display: flex;
-  flex-direction: column; /* Lays out game-rows vertically */
+  flex-direction: column;
   gap: 5px;
   min-height: 0;
   padding: 5px 0;
@@ -160,15 +168,17 @@
 
 /* --- MODIFIED --- Hand container styles updated */
 .hand {
+  /* --- MODIFIED --- Takes up 1/5 of available space */
+  flex: 1;
+  min-height: 0;
   background-color: rgba(0, 0, 0, 0.3);
   border-radius: 5px;
   padding: 5px;
-  height: 130px; 
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 5px;
-  overflow: hidden; /* Hide overflowing cards instead of scrolling */
+  overflow: hidden;
 }
 
 /* --- MODIFIED --- Card Flipper in hand can now shrink */
