@@ -22,6 +22,11 @@
   flex-direction: row-reverse;
 }
 
+/* --- NEW --- Aligns cards to the right within the battlefield for flipped (top) players. */
+.player-zone.flipped .battlefield-row {
+  justify-content: flex-end;
+}
+
 .player-zone.flipped .battlefield {
   flex-direction: column-reverse; 
 }

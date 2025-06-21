@@ -121,7 +121,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       <div {...getZoneProps({ zone: 'exile' })} title="Exile">
         <div className="card-outline">
             {playerState.exile.length > 0 ? (
-                <img src={cardBackUrl} alt="Card back" className="card-back-image" />
+                renderGameCard(playerState.exile[playerState.exile.length - 1], { zone: 'exile' })
             ) : <span className="zone-label-full">Exile</span>}
             {playerState.exile.length > 0 && <span className="zone-count">{playerState.exile.length}</span>}
         </div>
@@ -132,7 +132,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       <div {...getZoneProps({ zone: 'graveyard' })} title="Graveyard">
         <div className="card-outline">
             {playerState.graveyard.length > 0 ? (
-                <img src={cardBackUrl} alt="Card back" className="card-back-image" />
+                renderGameCard(playerState.graveyard[playerState.graveyard.length - 1], { zone: 'graveyard' })
             ) : <span className="zone-label-full">Graveyard</span>}
             {playerState.graveyard.length > 0 && <span className="zone-count">{playerState.graveyard.length}</span>}
         </div>
