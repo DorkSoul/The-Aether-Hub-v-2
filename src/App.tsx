@@ -4,17 +4,17 @@ import { createPortal } from 'react-dom';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
-import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon } from './components/Icons/icons';
+// --- MODIFIED --- Import new icons
+import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
-import { saveGameState, loadGameState } from './utils/gameUtils';
+import { saveGameState } from './utils/gameUtils';
 import type { GameSettings, GameState, Card as CardType } from './types';
 import Tabs from './components/Tabs/Tabs';
-import Card from './components/Card/Card'; // Import Card for the preview
+import Card from './components/Card/Card'; 
 import './App.css';
 
 type View = 'decks' | 'game-setup' | 'game';
 
-// --- NEW --- Stack Panel Component
 interface StackPanelProps {
   isMinimized: boolean;
   onToggleMinimize: () => void;
@@ -58,8 +58,6 @@ const StackPanel: React.FC<StackPanelProps> = ({ isMinimized, onToggleMinimize, 
   );
 };
 
-
-// --- NEW --- Card Preview Component defined inside App.tsx
 interface CardPreviewProps {
   card: CardType | null;
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
@@ -131,18 +129,44 @@ function App() {
   const isResizing = useRef(false);
   const gameBoardRef = useRef<GameBoardHandle>(null);
 
-  // --- NEW --- State for the Stack panel
   const [isStackMinimized, setIsStackMinimized] = useState(false);
   const [stackPopout, setStackPopout] = useState<Window | null>(null);
   const [stackPopoutContainer, setStackPopoutContainer] = useState<HTMLElement | null>(null);
   const [stackWidth, setStackWidth] = useState(300);
   const isResizingStack = useRef(false);
+  
+  // --- NEW --- State for fullscreen mode and notification
+  const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+  const [showFullscreenNotification, setShowFullscreenNotification] = useState(false);
+
+  // --- NEW --- Effect to listen for fullscreen changes (e.g., user pressing ESC)
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  // --- NEW --- Function to toggle fullscreen and show notification
+  const handleToggleFullscreen = () => {
+    if (!isFullscreen) {
+      document.documentElement.requestFullscreen();
+      setShowFullscreenNotification(true);
+      setTimeout(() => {
+        setShowFullscreenNotification(false);
+      }, 4000); // Hide after 4 seconds
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
 
   const handleResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return;
     const newWidth = window.innerWidth - e.clientX;
-    // Add constraints to prevent the pane from becoming too small or too large
     if (newWidth > 200 && newWidth < 800) {
         setPreviewWidth(newWidth);
     }
@@ -162,14 +186,12 @@ function App() {
   }, [handleResizeMouseMove, handleResizeMouseUp]);
 
   useEffect(() => {
-    // Cleanup listeners if the component unmounts
     return () => {
         window.removeEventListener('mousemove', handleResizeMouseMove);
         window.removeEventListener('mouseup', handleResizeMouseUp);
     }
   }, [handleResizeMouseMove, handleResizeMouseUp]);
 
-  // --- MODIFIED --- Resize logic for Stack Panel is now for a right-aligned panel
   const handleStackResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizingStack.current) return;
     const newWidth = window.innerWidth - e.clientX;
@@ -192,7 +214,6 @@ function App() {
   }, [handleStackResizeMouseMove, handleStackResizeMouseUp]);
 
   useEffect(() => {
-    // Cleanup listeners if the component unmounts
     return () => {
         window.removeEventListener('mousemove', handleStackResizeMouseMove);
         window.removeEventListener('mouseup', handleStackResizeMouseUp);
@@ -211,7 +232,6 @@ function App() {
         container.style.width = '100vw';
         container.style.height = '100vh';
 
-        // Copy styles from main window to pop-out
         Array.from(document.styleSheets).forEach(styleSheet => {
             try {
                 const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
@@ -233,7 +253,6 @@ function App() {
     }
   }, []);
 
-  // --- NEW --- Popout logic for Stack Panel
   const handleStackPopOut = useCallback(() => {
     const newWindow = window.open('', 'Stack', 'width=350,height=490,resizable');
     if (newWindow) {
@@ -245,7 +264,6 @@ function App() {
         container.style.width = '100vw';
         container.style.height = '100vh';
 
-        // Copy styles
         Array.from(document.styleSheets).forEach(styleSheet => {
             try {
                 const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
@@ -287,7 +305,6 @@ function App() {
     };
   }, [popout]);
 
-  // --- NEW --- useEffect for stack popout
   useEffect(() => {
     if (!stackPopout) return;
 
@@ -416,7 +433,6 @@ function App() {
       />
   );
 
-  // --- NEW --- JSX for Stack Panel
   const stackPanelContent = (
     <div className="stack-placeholder">
       <p>The stack is currently empty.</p>
@@ -480,6 +496,11 @@ function App() {
 
   return (
     <div className="App">
+       {/* --- NEW --- Fullscreen Notification */}
+       <div className={`fullscreen-notification ${showFullscreenNotification ? 'visible' : ''}`}>
+        <p>Press ESC to exit fullscreen</p>
+      </div>
+
       <header className="app-header">
         <div className="header-left">
           <nav className="main-nav">
@@ -537,6 +558,10 @@ function App() {
                 </button>
               </>
             )}
+             {/* --- NEW --- Fullscreen Button */}
+            <button onClick={handleToggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
+              {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
+            </button>
             <button onClick={handleSelectAppFolder} title="Select a local folder to store your decks and cached images.">
               {decksDirectoryHandle ? `Data: ${decksDirectoryHandle.name}` : 'Select App Folder'}
             </button>
@@ -556,7 +581,6 @@ function App() {
         </div>,
         popoutContainer
       )}
-      {/* --- NEW --- Portal for Stack popout */}
       {stackPopoutContainer && createPortal(
         <div className='stack-panel-content' style={{width: '100%', height: '100%', padding: '1rem', boxSizing: 'border-box' }}>
             {stackPanelContent}

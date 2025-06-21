@@ -24,7 +24,6 @@ export const MinusIcon = () => (
   </svg>
 );
 
-// --- NEW --- Save Icon
 export const SaveIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -33,7 +32,6 @@ export const SaveIcon = () => (
     </svg>
 );
 
-// --- NEW --- Eye Icon for showing preview
 export const EyeIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -41,14 +39,12 @@ export const EyeIcon = () => (
     </svg>
 );
 
-// --- NEW --- Minimize Icon
 export const MinimizeIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
 );
 
-// --- NEW --- Pop-out Icon
 export const PopOutIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -57,7 +53,20 @@ export const PopOutIcon = () => (
     </svg>
 );
 
-// --- NEW --- Mana Icons
+// --- NEW --- Fullscreen Icons
+export const EnterFullscreenIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+  </svg>
+);
+
+export const ExitFullscreenIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+  </svg>
+);
+
+
 export const WhiteManaIcon = ({ width = 24, height = 24, ...props }: IconProps) => (
   <svg
     version="1.1"
@@ -216,4 +225,3 @@ export const ColorlessManaIcon = ({ width = 24, height = 24, ...props }: IconPro
     </g>
   </svg>
 );
-
