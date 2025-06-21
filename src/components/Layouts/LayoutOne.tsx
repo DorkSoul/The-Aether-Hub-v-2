@@ -1,6 +1,6 @@
 // src/components/Layouts/LayoutOne.tsx
 import React from 'react';
-import type { PlayerState, Card as CardType, CardLocation, DraggedItem } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
@@ -17,6 +17,7 @@ interface LayoutOneProps {
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
+  onCardHover: (card: CardType | null) => void; // --- NEW ---
 }
 
 const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, ...interactionProps }) => {

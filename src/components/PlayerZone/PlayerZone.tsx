@@ -14,6 +14,7 @@ interface GameCardRendererProps {
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
   onCardDragStart: (card: CardType, source: CardLocation) => void;
+  onCardHover: (card: CardType | null) => void; // --- NEW ---
 }
 
 // --- NEW --- A memoized component to render a single card.
@@ -34,6 +35,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       onFlip={() => rest.onCardFlip(card.instanceId!)}
       onContextMenu={(e) => rest.onCardContextMenu(e, card)}
       onDragStart={handleDragStart}
+      onCardHover={rest.onCardHover} // --- NEW ---
     />
   );
 });
@@ -51,6 +53,7 @@ interface PlayerZoneProps {
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
+  onCardHover: (card: CardType | null) => void; // --- NEW ---
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -65,7 +68,8 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   onZoneDrop,
   onZoneDragOver,
   onZoneDragLeave,
-  dropTarget
+  dropTarget,
+  onCardHover, // --- NEW ---
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -83,6 +87,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onCardFlip={onCardFlip}
         onCardContextMenu={onCardContextMenu}
         onCardDragStart={onCardDragStart}
+        onCardHover={onCardHover} // --- NEW ---
       />
     );
   };

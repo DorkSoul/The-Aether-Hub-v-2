@@ -17,6 +17,7 @@ interface DecksProps {
   onCloseImportModal: () => void;
   cardSize: number;
   onDeckLoaded: (deckName: string, cardCount: number) => void;
+  onCardHover: (card: CardType | null) => void; // --- NEW ---
 }
 
 interface DeckInfo {
@@ -61,6 +62,7 @@ const Decks: React.FC<DecksProps> = ({
   onCloseImportModal,
   cardSize,
   onDeckLoaded,
+  onCardHover, // --- NEW ---
 }) => {
   const [activeDeckFile, setActiveDeckFile] = useState<FileSystemFileHandle | null>(null);
   const [decks, setDecks] = useState<DeckInfo[]>([]);
@@ -657,6 +659,7 @@ const Decks: React.FC<DecksProps> = ({
                                       imageDirectoryHandle={imagesDirectoryHandle}
                                       size={cardSize}
                                       onContextMenu={(e) => handleCardRightClick(e, card, index, true)}
+                                      onCardHover={onCardHover} // --- NEW ---
                                   />
                               ))}
                           </div>
@@ -688,6 +691,7 @@ const Decks: React.FC<DecksProps> = ({
                                               imageDirectoryHandle={imagesDirectoryHandle}
                                               size={cardSize}
                                               onContextMenu={(e) => handleCardRightClick(e, card, currentIndex, false)}
+                                              onCardHover={onCardHover} // --- NEW ---
                                           />
                                       );
                                   })}

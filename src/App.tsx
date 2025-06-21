@@ -3,14 +3,58 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
-import { PlusIcon, MinusIcon } from './components/Icons/icons'; // --- MODIFIED
+import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
-import { saveGameState } from './utils/gameUtils';
-import type { GameSettings, GameState } from './types';
+import { saveGameState, loadGameState } from './utils/gameUtils';
+import type { GameSettings, GameState, Card as CardType } from './types';
 import Tabs from './components/Tabs/Tabs';
+import Card from './components/Card/Card'; // Import Card for the preview
 import './App.css';
 
 type View = 'decks' | 'game-setup' | 'game';
+
+// --- NEW --- Card Preview Component defined inside App.tsx
+interface CardPreviewProps {
+  card: CardType | null;
+  imageDirectoryHandle: FileSystemDirectoryHandle | null;
+  isMinimized: boolean;
+  onToggleMinimize: () => void;
+}
+
+const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, isMinimized, onToggleMinimize }) => {
+  if (isMinimized) {
+    return (
+      <div className="card-preview-container minimized">
+        <button onClick={onToggleMinimize} title="Show Card Preview">
+          <EyeIcon />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-preview-container">
+      <div className="card-preview-header">
+        <h3>Card Preview</h3>
+        <button onClick={onToggleMinimize} title="Minimize Preview">
+          <MinimizeIcon />
+        </button>
+      </div>
+      <div className="card-preview-content">
+        {card ? (
+          <Card
+            card={card}
+            imageDirectoryHandle={imageDirectoryHandle}
+          />
+        ) : (
+          <div className="card-preview-placeholder">
+            <p>Hover over a card to see details</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 function App() {
   const [view, setView] = useState<View>('game-setup');
@@ -23,6 +67,8 @@ function App() {
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
   const [activeOpponentId, setActiveOpponentId] = useState<string | null>(null);
   const [loadedGameState, setLoadedGameState] = useState<GameState | null>(null);
+  const [previewCard, setPreviewCard] = useState<CardType | null>(null);
+  const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
   const gameBoardRef = useRef<GameBoardHandle>(null);
 
   useEffect(() => {
@@ -61,6 +107,10 @@ function App() {
   
   const zoomIn = () => setCardSize(s => Math.min(s + 20, 500));
   const zoomOut = () => setCardSize(s => Math.max(s - 20, 80));
+
+  const handleCardHover = (card: CardType | null) => {
+    setPreviewCard(card);
+  };
 
   const handleDeckLoaded = useCallback((deckName: string, cardCount: number) => {
     setActiveDeckName(deckName.replace('.json', ''));
@@ -119,7 +169,8 @@ function App() {
               settings={gameSettings}
               initialState={loadedGameState}
               activeOpponentId={activeOpponentId}
-              onOpponentChange={setActiveOpponentId} 
+              onOpponentChange={setActiveOpponentId}
+              onCardHover={handleCardHover}
             />
           );
         }
@@ -135,6 +186,7 @@ function App() {
             onCloseImportModal={() => setIsImportModalOpen(false)}
             cardSize={cardSize}
             onDeckLoaded={handleDeckLoaded}
+            onCardHover={handleCardHover}
           />
         );
     }
@@ -165,7 +217,7 @@ function App() {
             </button>
             {view === 'game' && (
               <>
-                <button onClick={handleSaveGame} title="Save Game">Save Game</button>
+                <button onClick={handleSaveGame} title="Save Game"><SaveIcon/> Save Game</button>
                 <button onClick={handleQuitGame}>Quit Game</button>
               </>
             )}
@@ -212,7 +264,15 @@ function App() {
       </header>
       
       <main>
-        {renderView()}
+        <div className="main-content-area">
+          {renderView()}
+        </div>
+        <CardPreview
+            card={previewCard}
+            imageDirectoryHandle={imagesDirectoryHandle}
+            isMinimized={isPreviewMinimized}
+            onToggleMinimize={() => setIsPreviewMinimized(p => !p)}
+        />
       </main>
     </div>
   );

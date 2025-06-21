@@ -93,6 +93,80 @@
   border-bottom: 2px solid #555;
 }
 
+/* --- NEW --- Container for the main view (Decks or GameBoard) */
+.main-content-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* --- NEW --- Styles for the Card Preview Pane */
+.card-preview-container {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  flex-shrink: 0;
+  background-color: #282c34;
+  border-left: 2px solid #555;
+  padding: 1rem;
+  overflow-y: auto;
+  transition: width 0.3s ease, padding 0.3s ease;
+}
+
+.card-preview-container.minimized {
+  width: 50px;
+  padding: 1rem 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-preview-container.minimized .card-preview-header {
+  display: none;
+}
+
+.card-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card-preview-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.card-preview-content {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-preview-content .card-flipper {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 63 / 88;
+    margin: 0;
+}
+
+.card-preview-placeholder {
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border: 2px dashed #555;
+  border-radius: 10px;
+  color: #aaa;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+
 /* Utility Classes */
 .error-message {
   color: #ff6b6b;

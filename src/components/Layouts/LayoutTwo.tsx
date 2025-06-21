@@ -16,6 +16,7 @@ interface LayoutTwoProps {
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
+  onCardHover: (card: CardType | null) => void; // --- NEW ---
 }
 
 const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, ...interactionProps }) => {

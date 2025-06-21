@@ -12,6 +12,7 @@ interface GameBoardProps {
     initialState?: GameState | null;
     activeOpponentId: string | null;
     onOpponentChange: (id: string | null) => void;
+    onCardHover: (card: CardType | null) => void; // --- NEW ---
 }
 
 export interface GameBoardHandle {
@@ -22,7 +23,7 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return [...deck].sort(() => Math.random() - 0.5);
 };
 
-const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange }, ref) => {
+const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover }, ref) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -332,6 +333,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       handleDragStart({ type: 'library', source });
   }, [handleDragStart]);
 
+  // --- MODIFIED --- Added onCardHover to interactionProps
   const interactionProps = useMemo(() => ({
       imagesDirectoryHandle,
       onCardTap: handleCardTap,
@@ -343,7 +345,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onZoneDragOver: handleDragOver,
       onZoneDragLeave: handleDragLeave,
       dropTarget: dropTarget,
-  }), [imagesDirectoryHandle, handleCardTap, handleCardFlip, handleCardContextMenu, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget]);
+      onCardHover: onCardHover,
+  }), [imagesDirectoryHandle, handleCardTap, handleCardFlip, handleCardContextMenu, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;

@@ -14,6 +14,7 @@ interface CardProps {
   onFlip?: () => void;
   onTap?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
+  onCardHover?: (card: CardType | null) => void; // --- NEW ---
 }
 
 interface SingleCardViewProps {
@@ -37,7 +38,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
   );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onCardHover }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
@@ -124,14 +125,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
       }
   };
   
-  if (isLoading) {
-    return (
-      <div className={flipperClasses} style={cardStyle} onContextMenu={handleContextMenu}>
-        <SingleCardView name={card.name} imageUrl={null} />
-      </div>
-    );
-  }
-
+  // --- MODIFIED --- Added mouse enter/leave handlers
   const baseDivProps = {
     className: flipperClasses,
     style: cardStyle,
@@ -139,7 +133,17 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
     title: title,
     draggable: !!onDragStart,
     onDragStart: onDragStart,
+    onMouseEnter: () => onCardHover?.(card),
+    onMouseLeave: () => onCardHover?.(null),
   };
+  
+  if (isLoading) {
+    return (
+      <div {...baseDivProps}>
+        <SingleCardView name={card.name} imageUrl={null} />
+      </div>
+    );
+  }
 
   if (isFlippable) {
     const frontName = card.card_faces?.[0]?.name || card.name;
