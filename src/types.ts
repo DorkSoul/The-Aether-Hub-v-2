@@ -81,6 +81,30 @@ export interface CardIdentifier {
   collector_number?: string;
 }
 
+// --- NEW --- Location of a card within the game state.
+export interface CardLocation {
+    playerId: string;
+    zone: 'hand' | 'library' | 'graveyard' | 'exile' | 'commandZone' | 'battlefield';
+    row?: number; // for battlefield
+}
+
+// --- NEW --- Represents a single card being moved in a drag-and-drop operation.
+export interface DraggedCard {
+    type: 'card';
+    card: Card;
+    source: CardLocation;
+}
+
+// --- NEW --- Represents the top card of a library being moved, without revealing its identity.
+export interface DraggedLibraryCard {
+    type: 'library';
+    source: CardLocation;
+}
+
+// --- NEW --- A union type for any item that can be dragged on the game board.
+export type DraggedItem = DraggedCard | DraggedLibraryCard;
+
+
 // --- NEW --- Represents the entire savable state of a game.
 export interface GameState {
     playerStates: PlayerState[];

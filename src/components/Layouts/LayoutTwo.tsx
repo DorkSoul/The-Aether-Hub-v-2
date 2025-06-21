@@ -1,6 +1,6 @@
 // src/components/Layouts/LayoutTwo.tsx
 import React from 'react';
-import type { PlayerState, Card as CardType } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
@@ -10,6 +10,12 @@ interface LayoutTwoProps {
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
+  onCardDragStart: (card: CardType, source: CardLocation) => void;
+  onLibraryDragStart: (source: CardLocation) => void;
+  onZoneDrop: (destination: CardLocation) => void;
+  onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
+  onZoneDragLeave: (event: React.DragEvent) => void;
+  dropTarget: CardLocation | null;
 }
 
 const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, ...interactionProps }) => {
@@ -53,4 +59,4 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
   );
 };
 
-export default LayoutTwo;
+export default React.memo(LayoutTwo);

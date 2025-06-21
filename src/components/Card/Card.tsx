@@ -13,6 +13,7 @@ interface CardProps {
   isFlipped?: boolean;
   onFlip?: () => void;
   onTap?: () => void;
+  onDragStart?: (event: React.DragEvent) => void;
 }
 
 interface SingleCardViewProps {
@@ -36,7 +37,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
   );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
@@ -111,7 +112,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
   const cardStyle = size ? { width: `${size}px`, height: `${size * 1.4}px` } : {};
   const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''}`;
   const title = isControlled
-      ? "Click to Tap, Ctrl+Click to Flip"
+      ? "Click to Tap, Ctrl+Click to Flip, Drag to Move"
       : isFlippable ? "Click to Flip" : card.name;
       
   const clickHandler = (e: React.MouseEvent) => {
@@ -131,17 +132,23 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
     );
   }
 
+  const baseDivProps = {
+    className: flipperClasses,
+    style: cardStyle,
+    onContextMenu: handleContextMenu,
+    title: title,
+    draggable: !!onDragStart,
+    onDragStart: onDragStart,
+  };
+
   if (isFlippable) {
     const frontName = card.card_faces?.[0]?.name || card.name;
     const backName = (card.layout === 'meld' ? card.meld_result_card?.name : card.card_faces?.[1]?.name) || 'Card Back';
 
     return (
       <div 
-        className={flipperClasses}
-        style={cardStyle}
+        {...baseDivProps}
         onClick={clickHandler} 
-        onContextMenu={handleContextMenu}
-        title={title}
       >
         <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
@@ -157,15 +164,13 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
   
   return (
     <div 
-        className={flipperClasses} 
-        style={cardStyle} 
+        {...baseDivProps}
         onClick={clickHandler} 
-        onContextMenu={handleContextMenu}
-        title={title}
     >
         <SingleCardView name={card.name} imageUrl={frontImageUrl} />
     </div>
   );
 };
 
-export default Card;
+// --- MODIFIED --- Export a memoized version of the component to prevent unnecessary re-renders.
+export default React.memo(Card);

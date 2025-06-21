@@ -203,7 +203,17 @@ const Decks: React.FC<DecksProps> = ({
       
       setLoadingMessage('Saving deck file...');
       const cardsWithInstanceIds = fullDeckCards.map(card => ({ ...card, instanceId: crypto.randomUUID() }));
-      const deckDataToSave = { name: deckName, cards: cardsWithInstanceIds, commanders: [] };
+      
+      // --- MODIFIED --- Auto-detect commanders on import
+      const importedCommanders = cardsWithInstanceIds.filter(card => {
+          const typeLine = card.card_faces ? card.card_faces[0].type_line : card.type_line;
+          return (typeLine.includes('Legendary') && typeLine.includes('Creature')) || typeLine.includes('Planeswalker');
+      });
+      const importedCommanderIds = importedCommanders.map(c => c.instanceId!);
+      const mainDeckCards = cardsWithInstanceIds.filter(c => !importedCommanderIds.includes(c.instanceId!));
+      // --- END MODIFICATION ---
+
+      const deckDataToSave = { name: deckName, cards: cardsWithInstanceIds, commanders: importedCommanderIds };
       const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
       const fileName = `${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
 
@@ -214,8 +224,8 @@ const Decks: React.FC<DecksProps> = ({
 
       refreshDeckList(decksDirectoryHandle);
       
-      setCommanders([]);
-      setGroupedCards(groupCardsByType(cardsWithInstanceIds));
+      setCommanders(importedCommanders);
+      setGroupedCards(groupCardsByType(mainDeckCards));
       setActiveDeckFile(fileHandle);
       onDeckLoaded(deckName, cardsWithInstanceIds.length);
 
