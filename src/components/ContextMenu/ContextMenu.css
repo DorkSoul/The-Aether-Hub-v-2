@@ -1,4 +1,4 @@
-/* src/components/ContextMenu.css */
+/* src/components/ContextMenu/ContextMenu.css */
 .context-menu-backdrop {
     position: fixed;
     top: 0;
@@ -16,6 +16,9 @@
     padding: 5px 0;
     min-width: 240px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    /* --- NEW --- Added a transition for a smoother appearance */
+    opacity: 0;
+    transition: opacity 0.05s linear;
 }
 
 .context-menu ul {

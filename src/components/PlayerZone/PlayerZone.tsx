@@ -34,11 +34,10 @@ interface GameCardRendererProps {
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
   onCardDragStart: (card: CardType, source: CardLocation) => void;
-  onCardHover: (card: CardType | null) => void; // --- NEW ---
+  onCardHover: (card: CardType | null) => void; 
 }
 
-// --- NEW --- A memoized component to render a single card.
-// This prevents re-rendering cards that haven't changed and memoizes the onDragStart callback.
+// A memoized component to render a single card.
 const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
@@ -55,7 +54,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       onFlip={() => rest.onCardFlip(card.instanceId!)}
       onContextMenu={(e) => rest.onCardContextMenu(e, card)}
       onDragStart={handleDragStart}
-      onCardHover={rest.onCardHover} // --- NEW ---
+      onCardHover={rest.onCardHover} 
     />
   );
 });
@@ -67,13 +66,15 @@ interface PlayerZoneProps {
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
+  // --- NEW --- Added library context menu handler prop
+  onLibraryContextMenu: (event: React.MouseEvent, playerId: string) => void;
   onCardDragStart: (card: CardType, source: CardLocation) => void;
   onLibraryDragStart: (source: CardLocation) => void;
   onZoneDrop: (destination: CardLocation) => void;
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
-  onCardHover: (card: CardType | null) => void; // --- NEW ---
+  onCardHover: (card: CardType | null) => void; 
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -83,18 +84,19 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   onCardTap, 
   onCardFlip, 
   onCardContextMenu,
+  // --- MODIFIED --- Destructure new prop
+  onLibraryContextMenu,
   onCardDragStart,
   onLibraryDragStart,
   onZoneDrop,
   onZoneDragOver,
   onZoneDragLeave,
   dropTarget,
-  onCardHover, // --- NEW ---
+  onCardHover, 
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
 
-  // --- MODIFIED --- Use the new renderer component
   const renderGameCard = (card: CardType, location: Omit<CardLocation, 'playerId'>) => {
     const source: CardLocation = { ...location, playerId };
     return (
@@ -107,7 +109,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onCardFlip={onCardFlip}
         onCardContextMenu={onCardContextMenu}
         onCardDragStart={onCardDragStart}
-        onCardHover={onCardHover} // --- NEW ---
+        onCardHover={onCardHover} 
       />
     );
   };
@@ -172,6 +174,14 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onDragStart={(e) => {
           e.stopPropagation();
           onLibraryDragStart({ playerId, zone: 'library' });
+        }}
+        // --- MODIFIED --- Added context menu handler to the library zone
+        onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (playerState.library.length > 0) {
+                onLibraryContextMenu(e, playerId);
+            }
         }}
       >
         <div className="card-outline">

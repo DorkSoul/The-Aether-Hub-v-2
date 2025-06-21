@@ -4,6 +4,8 @@ import type { PlayerState, GameSettings, Card as CardType, GameState, DraggedIte
 import { getCardsFromDB } from '../../utils/db';
 import LayoutOne from '../Layouts/LayoutOne';
 import LayoutTwo from '../Layouts/LayoutTwo';
+import ContextMenu from '../ContextMenu/ContextMenu';
+import ScryModal from '../ScryModal/ScryModal';
 import './GameBoard.css';
 
 interface GameBoardProps {
@@ -12,9 +14,9 @@ interface GameBoardProps {
     initialState?: GameState | null;
     activeOpponentId: string | null;
     onOpponentChange: (id: string | null) => void;
-    onCardHover: (card: CardType | null) => void; // --- NEW ---
+    onCardHover: (card: CardType | null) => void; 
     cardPreview: React.ReactNode;
-    stackPanel: React.ReactNode; // --- NEW ---
+    stackPanel: React.ReactNode; 
 }
 
 export interface GameBoardHandle {
@@ -32,6 +34,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [loadingMessage, setLoadingMessage] = useState('Initializing game...');
   const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null);
   const [dropTarget, setDropTarget] = useState<CardLocation | null>(null);
+  const [libraryContextMenu, setLibraryContextMenu] = useState<{ x: number, y: number, playerId: string } | null>(null);
+  const [scryState, setScryState] = useState<{ playerId: string; cards: CardType[] } | null>(null);
 
   useImperativeHandle(ref, () => ({
       getGameState: () => {
@@ -190,7 +194,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   
           const { source } = draggedItem;
   
-          // Prevent dropping a card into its own spot
           if (draggedItem.type === 'card' &&
               source.playerId === destination.playerId &&
               source.zone === destination.zone &&
@@ -201,7 +204,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           let cardToMove: CardType | undefined;
           let nextStates = [...currentStates];
   
-          // --- Remove card from source ---
           const sourcePlayerIndex = nextStates.findIndex(p => p.id === source.playerId);
           if (sourcePlayerIndex === -1) return currentStates;
   
@@ -252,7 +254,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           
           nextStates[sourcePlayerIndex] = nextSourcePlayer;
   
-          // --- Add card to destination ---
           const destPlayerIndex = nextStates.findIndex(p => p.id === destination.playerId);
           if (destPlayerIndex === -1) return currentStates;
   
@@ -329,6 +330,109 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       console.log("Context menu for:", card.name, card.instanceId);
   }, []);
 
+  // --- NEW --- Handlers for library actions
+  const handleDraw = useCallback((playerId: string, count: number) => {
+    setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+        const playerIndex = currentStates.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) return currentStates;
+
+        const player = currentStates[playerIndex];
+        const numToDraw = Math.min(count, player.library.length);
+        if (numToDraw <= 0) return currentStates;
+
+        const cardsToDraw = player.library.slice(0, numToDraw);
+        const newLibrary = player.library.slice(numToDraw);
+        const newHand = [...player.hand, ...cardsToDraw];
+
+        const newPlayerState = { ...player, library: newLibrary, hand: newHand };
+        const newPlayerStates = [...currentStates];
+        newPlayerStates[playerIndex] = newPlayerState;
+        return newPlayerStates;
+    });
+  }, []);
+
+  const handleScry = useCallback((playerId: string, count: number) => {
+    setPlayerStates(currentStates => {
+        if (!currentStates) return currentStates;
+        const playerIndex = currentStates.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) return currentStates;
+        
+        const player = currentStates[playerIndex];
+        const numToScry = Math.min(count, player.library.length);
+        if (numToScry <= 0) return currentStates;
+
+        const cardsToScry = player.library.slice(0, numToScry);
+        const remainingLibrary = player.library.slice(numToScry);
+
+        setScryState({ playerId, cards: cardsToScry });
+
+        const updatedPlayer = { ...player, library: remainingLibrary };
+        const newPlayerStates = [...currentStates];
+        newPlayerStates[playerIndex] = updatedPlayer;
+        return newPlayerStates;
+    });
+  }, []);
+
+  const handleCloseScry = useCallback((toTop: CardType[], toBottom: CardType[]) => {
+    if (!scryState) return;
+    const { playerId } = scryState;
+    
+    setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+        const playerIndex = currentStates.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) return currentStates;
+
+        const player = currentStates[playerIndex];
+        // Reverse top cards so the last one chosen for top ends up on top.
+        const newLibrary = [...toTop.reverse(), ...player.library, ...toBottom];
+        
+        const newPlayerState = { ...player, library: newLibrary };
+        const newPlayerStates = [...currentStates];
+        newPlayerStates[playerIndex] = newPlayerState;
+        return newPlayerStates;
+    });
+
+    setScryState(null);
+  }, [scryState]);
+
+  const handleLibraryContextMenu = useCallback((event: React.MouseEvent, playerId: string) => {
+      event.preventDefault();
+      setLibraryContextMenu({ x: event.clientX, y: event.clientY, playerId });
+  }, []);
+
+  const buildLibraryContextMenuOptions = useCallback((playerId: string) => {
+      const createDrawAction = (count: number | 'X') => () => {
+          if (count === 'X') {
+              const num = parseInt(prompt("Draw how many cards?") || '0', 10);
+              if (num > 0) handleDraw(playerId, num);
+          } else {
+              handleDraw(playerId, count);
+          }
+      };
+
+      const createScryAction = (count: number | 'X') => () => {
+          if (count === 'X') {
+              const num = parseInt(prompt("Scry how many cards?") || '0', 10);
+              if (num > 0) handleScry(playerId, num);
+          } else {
+              handleScry(playerId, count);
+          }
+      };
+
+      return [
+          { label: 'Draw 1 Card', action: createDrawAction(1) },
+          { label: 'Draw 3 Cards', action: createDrawAction(3) },
+          { label: 'Draw 7 Cards', action: createDrawAction(7) },
+          { label: 'Draw X Cards...', action: createDrawAction('X') },
+          { label: 'Scry 1 Card', action: createScryAction(1) },
+          { label: 'Scry 3 Cards', action: createScryAction(3) },
+          { label: 'Scry 7 Cards', action: createScryAction(7) },
+          { label: 'Scry X Cards...', action: createScryAction('X') },
+      ];
+  }, [handleDraw, handleScry]);
+
+
   const handleCardDragStart = useCallback((card: CardType, source: CardLocation) => {
     handleDragStart({ type: 'card', card, source });
   }, [handleDragStart]);
@@ -337,12 +441,12 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       handleDragStart({ type: 'library', source });
   }, [handleDragStart]);
 
-  // --- MODIFIED --- Added onCardHover to interactionProps
   const interactionProps = useMemo(() => ({
       imagesDirectoryHandle,
       onCardTap: handleCardTap,
       onCardFlip: handleCardFlip,
       onCardContextMenu: handleCardContextMenu,
+      onLibraryContextMenu: handleLibraryContextMenu, // --- NEW ---
       onCardDragStart: handleCardDragStart,
       onLibraryDragStart: handleLibraryDragStart,
       onZoneDrop: handleDrop,
@@ -350,7 +454,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onZoneDragLeave: handleDragLeave,
       dropTarget: dropTarget,
       onCardHover: onCardHover,
-  }), [imagesDirectoryHandle, handleCardTap, handleCardFlip, handleCardContextMenu, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover]);
+  }), [imagesDirectoryHandle, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
@@ -380,6 +484,21 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           {...interactionProps}
         />
       )}
+      {/* --- NEW --- Render context menu and scry modal */}
+      {libraryContextMenu && (
+          <ContextMenu
+              x={libraryContextMenu.x}
+              y={libraryContextMenu.y}
+              onClose={() => setLibraryContextMenu(null)}
+              options={buildLibraryContextMenuOptions(libraryContextMenu.playerId)}
+          />
+      )}
+      <ScryModal
+          isOpen={!!scryState}
+          cards={scryState?.cards || []}
+          imageDirectoryHandle={imagesDirectoryHandle}
+          onClose={handleCloseScry}
+      />
     </div>
   );
 });

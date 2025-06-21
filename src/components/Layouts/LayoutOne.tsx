@@ -11,6 +11,8 @@ interface LayoutOneProps {
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
+  // --- NEW --- Added library context menu handler prop
+  onLibraryContextMenu: (event: React.MouseEvent, playerId: string) => void;
   onCardDragStart: (card: CardType, source: CardLocation) => void;
   onLibraryDragStart: (source: CardLocation) => void;
   onZoneDrop: (destination: CardLocation) => void;

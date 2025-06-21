@@ -1,5 +1,5 @@
-// src/components/ContextMenu.tsx
-import React, { useEffect, useRef } from 'react';
+// src/components/ContextMenu/ContextMenu.tsx
+import React, { useEffect, useRef, useState } from 'react';
 import './ContextMenu.css';
 
 interface ContextMenuProps {
@@ -11,6 +11,8 @@ interface ContextMenuProps {
 
 const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, options, onClose }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  // State to hold the final, adjusted position of the menu.
+  const [position, setPosition] = useState({ top: y, left: x, opacity: 0 });
 
   // Effect to handle clicks outside the menu to close it
   useEffect(() => {
@@ -27,10 +29,46 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, options, onClose }) => 
     };
   }, [onClose]);
 
-  // Style to position the menu at the cursor's location
+  // --- MODIFIED ---
+  // This effect adjusts the menu's position to fit within the viewport after it renders.
+  useEffect(() => {
+    if (menuRef.current) {
+      const menuElement = menuRef.current;
+      const { innerWidth, innerHeight } = window;
+      const { offsetWidth, offsetHeight } = menuElement;
+
+      let newTop = y;
+      let newLeft = x;
+
+      // If the menu would go off the bottom of the screen, move it up above the cursor.
+      if (y + offsetHeight > innerHeight) {
+        newTop = y - offsetHeight;
+      }
+
+      // If the menu would go off the right of the screen, move it to the left of the cursor.
+      if (x + offsetWidth > innerWidth) {
+        newLeft = x - offsetWidth;
+      }
+      
+      // Ensure the menu doesn't go off the top or left edges of the screen.
+      if (newTop < 0) {
+        newTop = 5; // Add a small buffer
+      }
+      if (newLeft < 0) {
+        newLeft = 5; // Add a small buffer
+      }
+
+      // Set the final position and make it visible.
+      setPosition({ top: newTop, left: newLeft, opacity: 1 });
+    }
+  }, [x, y]); // Rerun this logic if the initial click coordinates change.
+
+  // Style to position the menu at the calculated location.
+  // It's initially invisible (opacity: 0) to prevent a flicker before its position is adjusted.
   const menuStyle = {
-    top: `${y}px`,
-    left: `${x}px`,
+    top: `${position.top}px`,
+    left: `${position.left}px`,
+    opacity: position.opacity,
   };
 
   return (
