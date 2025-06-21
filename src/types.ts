@@ -38,12 +38,15 @@ export interface Card {
   all_parts?: RelatedCard[];
   meld_result_card?: Card;
   is_custom?: boolean;
+  // --- MODIFIED --- Added instance-specific state fields for in-game tracking.
   instanceId?: string;
+  isTapped?: boolean;
+  isFlipped?: boolean;
   mana_cost?: string;
   oracle_text?: string;
 }
 
-// --- NEW --- Configuration for a single player in the game setup screen.
+// Configuration for a single player in the game setup screen.
 export interface PlayerConfig {
     id: string;
     name: string;
@@ -51,13 +54,13 @@ export interface PlayerConfig {
     color: string;
 }
 
-// --- NEW --- Settings for the entire game session.
+// Settings for the entire game session.
 export interface GameSettings {
     players: PlayerConfig[];
     layout: '1vAll' | 'split';
 }
 
-// --- MODIFIED --- PlayerState now includes more zones and links to the initial config.
+// PlayerState now includes more zones and links to the initial config.
 export interface PlayerState {
   id: string;
   name: string;
@@ -76,4 +79,11 @@ export interface CardIdentifier {
   name?: string;
   set?: string;
   collector_number?: string;
+}
+
+// --- NEW --- Represents the entire savable state of a game.
+export interface GameState {
+    playerStates: PlayerState[];
+    activeOpponentId: string | null;
+    gameSettings: GameSettings;
 }

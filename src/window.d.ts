@@ -5,6 +5,8 @@
 interface FileSystemHandle {
   kind: 'file' | 'directory';
   name: string;
+  queryPermission(options?: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
+  requestPermission(options?: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
 }
 
 // This is a simplified interface for the writable stream.
@@ -24,9 +26,21 @@ interface FileSystemDirectoryHandle extends FileSystemHandle {
   values(): AsyncIterable<FileSystemFileHandle | FileSystemDirectoryHandle>;
   getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<FileSystemDirectoryHandle>;
   getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
+  removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;
 }
 
-// This tells TypeScript that the global Window object has a method called showDirectoryPicker.
+interface FilePickerOptions {
+    types?: {
+        description: string;
+        accept: Record<string, string[]>;
+    }[];
+    multiple?: boolean;
+    suggestedName?: string;
+}
+
+// This tells TypeScript that the global Window object has these methods.
 interface Window {
   showDirectoryPicker(options?: any): Promise<FileSystemDirectoryHandle>;
+  showOpenFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
+  showSaveFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle>;
 }

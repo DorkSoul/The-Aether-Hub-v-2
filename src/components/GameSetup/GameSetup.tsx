@@ -1,15 +1,17 @@
 // src/components/GameSetup.tsx
 import React, { useState, useEffect } from 'react';
-import type { PlayerConfig, GameSettings } from '../../types';
+import type { PlayerConfig, GameSettings, GameState } from '../../types';
 import PlayerSetupRow from '../PlayerSetupRow/PlayerSetupRow';
+import { loadGameState } from '../../utils/gameUtils';
 import './GameSetup.css';
 
 interface GameSetupProps {
   decksDirectoryHandle: FileSystemDirectoryHandle | null;
   onStartGame: (settings: GameSettings) => void;
+  onLoadGame: (gameState: GameState) => void;
 }
 
-const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame }) => {
+const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame, onLoadGame }) => {
   const [players, setPlayers] = useState<PlayerConfig[]>([
     { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000' },
     { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff' },
@@ -17,7 +19,6 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
   const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
   const [layout, setLayout] = useState<GameSettings['layout']>('1vAll');
 
-  // Load the list of available .json deck files from the directory handle
   useEffect(() => {
     const loadDecks = async () => {
       if (!decksDirectoryHandle) return;
@@ -49,8 +50,14 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
   const handleUpdatePlayer = (id: string, field: keyof PlayerConfig, value: any) => {
     setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
+  
+  const handleLoadGame = async () => {
+      const gameState = await loadGameState();
+      if (gameState) {
+          onLoadGame(gameState);
+      }
+  };
 
-  // Check if all players have a name and a deck selected
   const isSetupComplete = players.every(p => p.name.trim() !== '' && p.deckFile !== null);
 
   const handleStart = () => {
@@ -70,6 +77,15 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
   
   return (
     <div className="game-setup">
+        <div className="game-setup-actions">
+            <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
+                Start New Game
+            </button>
+            <button onClick={handleLoadGame} className="start-game-btn">
+                Load Game
+            </button>
+        </div>
+
       <h2>New Game Setup</h2>
       
       <div className="setup-section">
@@ -116,10 +132,6 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
           </label>
         </div>
       </div>
-
-      <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
-        Start Game
-      </button>
     </div>
   );
 };

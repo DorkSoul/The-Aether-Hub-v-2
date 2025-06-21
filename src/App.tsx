@@ -1,12 +1,13 @@
 // src/App.tsx
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
-import GameBoard from './components/GameBoard/GameBoard';
-import { PlusIcon, MinusIcon } from './components/Icons/icons';
+import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
+import { PlusIcon, MinusIcon, SaveIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
-import type { GameSettings } from './types';
-import Tabs from './components/Tabs/Tabs'; // Import the Tabs component
+import { saveGameState } from './utils/gameUtils';
+import type { GameSettings, GameState } from './types';
+import Tabs from './components/Tabs/Tabs';
 import './App.css';
 
 type View = 'decks' | 'game-setup' | 'game';
@@ -21,6 +22,8 @@ function App() {
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
   const [activeOpponentId, setActiveOpponentId] = useState<string | null>(null);
+  const [loadedGameState, setLoadedGameState] = useState<GameState | null>(null);
+  const gameBoardRef = useRef<GameBoardHandle>(null);
 
   useEffect(() => {
     const loadSavedHandles = async () => {
@@ -66,14 +69,38 @@ function App() {
 
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings);
+    setLoadedGameState(null); // Ensure no old state is carried over
     if (settings.layout === '1vAll' && settings.players.length > 1) {
       setActiveOpponentId(settings.players[1].id);
     }
     setView('game');
   };
+
+  const handleLoadGame = (gameState: GameState) => {
+      setLoadedGameState(gameState);
+      setGameSettings(gameState.gameSettings);
+      setActiveOpponentId(gameState.activeOpponentId);
+      setView('game');
+  };
+  
+  const handleSaveGame = async () => {
+      if (gameBoardRef.current) {
+          const currentState = gameBoardRef.current.getGameState();
+          if (currentState) {
+              try {
+                  await saveGameState(currentState);
+                  alert('Game saved successfully!');
+              } catch (err) {
+                  console.error("Failed to save game:", err);
+                  alert(`Could not save game. Error: ${err instanceof Error ? err.message : 'Unknown'}`);
+              }
+          }
+      }
+  };
   
   const handleQuitGame = () => {
     setGameSettings(null);
+    setLoadedGameState(null);
     setActiveOpponentId(null);
     setView('game-setup');
   };
@@ -81,13 +108,16 @@ function App() {
   const renderView = () => {
     switch (view) {
       case 'game-setup':
-        return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} />;
+        return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} onLoadGame={handleLoadGame} />;
       case 'game':
         if (gameSettings) {
           return (
             <GameBoard 
+              ref={gameBoardRef}
+              key={loadedGameState ? 'loaded-game' : 'new-game'} // Force re-mount on new/load
               imagesDirectoryHandle={imagesDirectoryHandle} 
               settings={gameSettings}
+              initialState={loadedGameState}
               activeOpponentId={activeOpponentId}
               onOpponentChange={setActiveOpponentId} 
             />
@@ -133,8 +163,11 @@ function App() {
             disabled={view.startsWith('game')}>
               Game
             </button>
-            {view === 'game' && gameSettings && (
-              <button onClick={handleQuitGame}>Quit Game</button>
+            {view === 'game' && (
+              <>
+                <button onClick={handleSaveGame} title="Save Game"><SaveIcon /></button>
+                <button onClick={handleQuitGame}>Quit Game</button>
+              </>
             )}
           </nav>
           

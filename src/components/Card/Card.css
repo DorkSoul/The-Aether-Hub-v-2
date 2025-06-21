@@ -1,14 +1,15 @@
 /* src/components/Card.css */
 .card {
-  width: 80px;
-  height: 112px; /* Adjusted for better aspect ratio */
-  margin: 5px;
+  width: 100%; /* Make card fill its container */
+  height: 100%;
   border-radius: 5px;
-  overflow: hidden; /* Ensures the image respects the border-radius */
+  overflow: hidden; 
 }
+
 .card img {
   width: 100%;
   height: 100%;
+  display: block;
 }
 
 .card-placeholder {
@@ -30,6 +31,18 @@
   perspective: 1000px;
   margin: 5px;
   cursor: pointer;
+  width: 80px;
+  height: 112px;
+  /* --- NEW --- Added transition for tapping */
+  transition: transform 0.3s ease-in-out, margin 0.3s ease-in-out; 
+}
+
+/* --- NEW --- Style for a tapped card */
+.card-flipper.tapped {
+    transform: rotate(90deg);
+    /* Adjust margin to compensate for rotation and prevent overlap */
+    margin-left: 20px;
+    margin-right: 20px;
 }
 
 .card-flipper .card-inner {

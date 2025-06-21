@@ -1,15 +1,18 @@
-// src/components/LayoutTwo.tsx
+// src/components/Layouts/LayoutTwo.tsx
 import React from 'react';
-import type { PlayerState } from '../../types';
+import type { PlayerState, Card as CardType } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
 interface LayoutTwoProps {
   playerStates: PlayerState[];
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
+  onCardTap: (cardInstanceId: string) => void;
+  onCardFlip: (cardInstanceId: string) => void;
+  onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -31,6 +34,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             playerState={player}
             isFlipped={true}
             imagesDirectoryHandle={imagesDirectoryHandle}
+            {...interactionProps}
           />
         ))}
       </div>
@@ -41,6 +45,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             playerState={player}
             isFlipped={false}
             imagesDirectoryHandle={imagesDirectoryHandle}
+            {...interactionProps}
           />
         ))}
       </div>

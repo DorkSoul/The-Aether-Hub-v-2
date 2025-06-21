@@ -1,4 +1,4 @@
-// src/components/Card.tsx
+// src/components/Card/Card.tsx
 import React, { useState, useEffect } from 'react';
 import type { Card as CardType } from '../../types';
 import { getAndCacheCardImageUrl } from '../../utils/imageCaching';
@@ -7,10 +7,12 @@ import './Card.css';
 interface CardProps {
   card: CardType;
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
-  // Card size in pixels (width). Height will be calculated.
   size?: number;
-  // Handler for right-click events
-  onContextMenu?: (event: React.MouseEvent, card: CardType) => void;
+  onContextMenu?: (event: React.MouseEvent) => void;
+  isTapped?: boolean;
+  isFlipped?: boolean;
+  onFlip?: () => void;
+  onTap?: () => void;
 }
 
 interface SingleCardViewProps {
@@ -18,9 +20,6 @@ interface SingleCardViewProps {
   imageUrl: string | null;
 }
 
-/**
- * A simple component that displays a single card image or a loading placeholder.
- */
 const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
   if (!imageUrl) {
     return (
@@ -37,12 +36,8 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
   );
 };
 
-/**
- * The main Card component. It handles different layouts (flippable, single-sided)
- * and manages fetching and displaying the correct card faces.
- */
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap }) => {
+  const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,11 +45,15 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
   const flippableLayouts = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card', 'meld'];
   const isFlippable = flippableLayouts.includes(card.layout || '');
   
+  const isControlled = onFlip !== undefined || onTap !== undefined;
+  const isFlipped = isControlled ? (isFlippedProp || false) : isFlippedLocal;
+
   useEffect(() => {
     let isMounted = true;
     const loadedUrls: string[] = [];
 
     const loadImages = async () => {
+      if (!isMounted) return;
       setIsLoading(true);
       
       const frontUrl = await getAndCacheCardImageUrl(card, imageDirectoryHandle, 0);
@@ -83,47 +82,66 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
     };
   }, [card, imageDirectoryHandle, isFlippable]);
 
-  const handleFlip = () => {
-    if (isFlippable) {
-      setIsFlipped(!isFlipped);
+  const handlePrimaryAction = () => { // Typically left-click
+    if (isControlled) {
+      if (onTap) onTap();
+    } else {
+      if (isFlippable) setIsFlippedLocal(f => !f);
     }
+  };
+
+  const handleSecondaryAction = () => { // Typically Ctrl+Click
+      if (isFlippable) {
+        if (isControlled) {
+            if (onFlip) onFlip();
+        } else {
+            setIsFlippedLocal(f => !f);
+        }
+      }
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if (onContextMenu) {
       e.preventDefault();
-      onContextMenu(e, card);
+      e.stopPropagation();
+      onContextMenu(e);
     }
   };
   
-  // Style object for dynamic card sizing
-  const cardStyle = size ? {
-    width: `${size}px`,
-    height: `${size * 1.4}px`, // Maintain a standard card aspect ratio
-  } : {};
-
+  const cardStyle = size ? { width: `${size}px`, height: `${size * 1.4}px` } : {};
+  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''}`;
+  const title = isControlled
+      ? "Click to Tap, Ctrl+Click to Flip"
+      : isFlippable ? "Click to Flip" : card.name;
+      
+  const clickHandler = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (e.ctrlKey) {
+          handleSecondaryAction();
+      } else {
+          handlePrimaryAction();
+      }
+  };
+  
   if (isLoading) {
     return (
-      <div className="card-flipper" style={cardStyle} onContextMenu={handleContextMenu}>
+      <div className={flipperClasses} style={cardStyle} onContextMenu={handleContextMenu}>
         <SingleCardView name={card.name} imageUrl={null} />
       </div>
     );
   }
 
-  // --- MODIFIED ---
-  // The logic is now separated to avoid using a component-like variable inside the render function.
-  // This ensures the animation works correctly.
   if (isFlippable) {
     const frontName = card.card_faces?.[0]?.name || card.name;
     const backName = (card.layout === 'meld' ? card.meld_result_card?.name : card.card_faces?.[1]?.name) || 'Card Back';
 
     return (
       <div 
-        className="card-flipper" 
+        className={flipperClasses}
         style={cardStyle}
-        onClick={handleFlip} 
+        onClick={clickHandler} 
         onContextMenu={handleContextMenu}
-        title={`Click to flip to ${isFlipped ? frontName : backName}`}
+        title={title}
       >
         <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
@@ -137,9 +155,14 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
     );
   }
   
-  // For all other single-image cards (normal, split, adventure, etc.)
   return (
-    <div className="card-flipper" style={cardStyle} onContextMenu={handleContextMenu}>
+    <div 
+        className={flipperClasses} 
+        style={cardStyle} 
+        onClick={clickHandler} 
+        onContextMenu={handleContextMenu}
+        title={title}
+    >
         <SingleCardView name={card.name} imageUrl={frontImageUrl} />
     </div>
   );
