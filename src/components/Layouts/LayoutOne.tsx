@@ -19,9 +19,10 @@ interface LayoutOneProps {
   dropTarget: CardLocation | null;
   onCardHover: (card: CardType | null) => void;
   cardPreview: React.ReactNode;
+  stackPanel: React.ReactNode;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, cardPreview, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, cardPreview, stackPanel, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -41,6 +42,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             <p>No opponent to display.</p>
           </div>
         )}
+        {stackPanel}
       </div>
       <div className="bottom-section">
         <PlayerZone

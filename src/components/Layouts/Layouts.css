@@ -12,5 +12,5 @@
   min-height: 0; 
 }
 .top-section {
-  flex-direction: column;
+  flex-direction: row;
 }

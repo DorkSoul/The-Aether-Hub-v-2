@@ -18,9 +18,10 @@ interface LayoutTwoProps {
   dropTarget: CardLocation | null;
   onCardHover: (card: CardType | null) => void;
   cardPreview: React.ReactNode;
+  stackPanel: React.ReactNode;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -45,6 +46,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             {...interactionProps}
           />
         ))}
+        {stackPanel}
       </div>
       <div className="bottom-players">
         {bottomPlayers.map(player => (

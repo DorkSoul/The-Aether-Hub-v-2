@@ -14,6 +14,51 @@ import './App.css';
 
 type View = 'decks' | 'game-setup' | 'game';
 
+// --- NEW --- Stack Panel Component
+interface StackPanelProps {
+  isMinimized: boolean;
+  onToggleMinimize: () => void;
+  onPopOut: () => void;
+  isResizable: boolean;
+  width: number;
+  onResizeMouseDown: (event: React.MouseEvent) => void;
+}
+
+const StackPanel: React.FC<StackPanelProps> = ({ isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown }) => {
+  if (isMinimized) {
+    return (
+      <div className="stack-panel-container minimized">
+        <button onClick={onToggleMinimize} title="Show Stack">
+          <EyeIcon />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stack-panel-container" style={{ width: `${width}px` }}>
+        {isResizable && <div className="stack-resizer" onMouseDown={onResizeMouseDown}></div>}
+      <div className="stack-panel-header">
+        <h3>Stack</h3>
+        <div className="panel-buttons">
+            <button onClick={onPopOut} title="Pop-out Stack">
+                <PopOutIcon />
+            </button>
+            <button onClick={onToggleMinimize} title="Minimize Stack">
+                <MinimizeIcon />
+            </button>
+        </div>
+      </div>
+      <div className="stack-panel-content">
+        <div className="stack-placeholder">
+          <p>The stack is currently empty.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // --- NEW --- Card Preview Component defined inside App.tsx
 interface CardPreviewProps {
   card: CardType | null;
@@ -42,7 +87,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, i
         {isResizable && <div className="preview-resizer" onMouseDown={onResizeMouseDown}></div>}
       <div className="card-preview-header">
         <h3>Card Preview</h3>
-        <div className="preview-buttons">
+        <div className="panel-buttons">
             <button onClick={onPopOut} title="Pop-out Preview">
                 <PopOutIcon />
             </button>
@@ -86,6 +131,14 @@ function App() {
   const isResizing = useRef(false);
   const gameBoardRef = useRef<GameBoardHandle>(null);
 
+  // --- NEW --- State for the Stack panel
+  const [isStackMinimized, setIsStackMinimized] = useState(false);
+  const [stackPopout, setStackPopout] = useState<Window | null>(null);
+  const [stackPopoutContainer, setStackPopoutContainer] = useState<HTMLElement | null>(null);
+  const [stackWidth, setStackWidth] = useState(300);
+  const isResizingStack = useRef(false);
+
+
   const handleResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return;
     const newWidth = window.innerWidth - e.clientX;
@@ -115,6 +168,36 @@ function App() {
         window.removeEventListener('mouseup', handleResizeMouseUp);
     }
   }, [handleResizeMouseMove, handleResizeMouseUp]);
+
+  // --- MODIFIED --- Resize logic for Stack Panel is now for a right-aligned panel
+  const handleStackResizeMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizingStack.current) return;
+    const newWidth = window.innerWidth - e.clientX;
+    if (newWidth > 200 && newWidth < 800) {
+        setStackWidth(newWidth);
+    }
+  }, []);
+
+  const handleStackResizeMouseUp = useCallback(() => {
+    isResizingStack.current = false;
+    window.removeEventListener('mousemove', handleStackResizeMouseMove);
+    window.removeEventListener('mouseup', handleStackResizeMouseUp);
+  }, [handleStackResizeMouseMove]);
+
+  const handleStackResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingStack.current = true;
+    window.addEventListener('mousemove', handleStackResizeMouseMove);
+    window.addEventListener('mouseup', handleStackResizeMouseUp);
+  }, [handleStackResizeMouseMove, handleStackResizeMouseUp]);
+
+  useEffect(() => {
+    // Cleanup listeners if the component unmounts
+    return () => {
+        window.removeEventListener('mousemove', handleStackResizeMouseMove);
+        window.removeEventListener('mouseup', handleStackResizeMouseUp);
+    }
+  }, [handleStackResizeMouseMove, handleStackResizeMouseUp]);
 
 
   const handlePopOut = useCallback(() => {
@@ -150,6 +233,40 @@ function App() {
     }
   }, []);
 
+  // --- NEW --- Popout logic for Stack Panel
+  const handleStackPopOut = useCallback(() => {
+    const newWindow = window.open('', 'Stack', 'width=350,height=490,resizable');
+    if (newWindow) {
+        newWindow.document.title = "Stack";
+        const container = newWindow.document.createElement('div');
+        newWindow.document.body.appendChild(container);
+        newWindow.document.body.style.margin = '0';
+        newWindow.document.body.style.backgroundColor = '#282c34';
+        container.style.width = '100vw';
+        container.style.height = '100vh';
+
+        // Copy styles
+        Array.from(document.styleSheets).forEach(styleSheet => {
+            try {
+                const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
+                const style = newWindow.document.createElement('style');
+                style.appendChild(newWindow.document.createTextNode(cssRules));
+                newWindow.document.head.appendChild(style);
+            } catch (e) {
+                if (styleSheet.href) {
+                  const link = newWindow.document.createElement('link');
+                  link.rel = 'stylesheet';
+                  link.href = styleSheet.href;
+                  newWindow.document.head.appendChild(link);
+                }
+            }
+        });
+        
+        setStackPopout(newWindow);
+        setStackPopoutContainer(container);
+    }
+  }, []);
+
   useEffect(() => {
     if (!popout) return;
 
@@ -169,6 +286,27 @@ function App() {
         if (!popout.closed) popout.close();
     };
   }, [popout]);
+
+  // --- NEW --- useEffect for stack popout
+  useEffect(() => {
+    if (!stackPopout) return;
+
+    const intervalId = setInterval(() => {
+        if (stackPopout.closed) {
+            setStackPopout(null);
+            setStackPopoutContainer(null);
+        }
+    }, 500);
+
+    const handleBeforeUnload = () => stackPopout.close();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+        clearInterval(intervalId);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        if (!stackPopout.closed) stackPopout.close();
+    };
+  }, [stackPopout]);
 
   useEffect(() => {
     const loadSavedHandles = async () => {
@@ -278,6 +416,24 @@ function App() {
       />
   );
 
+  // --- NEW --- JSX for Stack Panel
+  const stackPanelContent = (
+    <div className="stack-placeholder">
+      <p>The stack is currently empty.</p>
+    </div>
+  );
+
+  const framedStackPanel = (
+      <StackPanel
+          isMinimized={isStackMinimized}
+          onToggleMinimize={() => setIsStackMinimized(p => !p)}
+          onPopOut={handleStackPopOut}
+          isResizable={true}
+          width={stackWidth}
+          onResizeMouseDown={handleStackResizeMouseDown}
+      />
+  );
+
   const renderView = () => {
     switch (view) {
       case 'game-setup':
@@ -295,6 +451,7 @@ function App() {
               onOpponentChange={setActiveOpponentId}
               onCardHover={handleCardHover}
               cardPreview={popout ? null : framedCardPreview}
+              stackPanel={stackPopout ? null : framedStackPanel}
             />
           );
         }
@@ -398,6 +555,13 @@ function App() {
             {cardPreviewContent}
         </div>,
         popoutContainer
+      )}
+      {/* --- NEW --- Portal for Stack popout */}
+      {stackPopoutContainer && createPortal(
+        <div className='stack-panel-content' style={{width: '100%', height: '100%', padding: '1rem', boxSizing: 'border-box' }}>
+            {stackPanelContent}
+        </div>,
+        stackPopoutContainer
       )}
     </div>
   );

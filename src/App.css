@@ -135,7 +135,7 @@
 
 
 .card-preview-container.minimized {
-  width: 50px;
+  width: 50px !important;
   padding: 1rem 0.5rem;
   justify-content: center;
   align-items: center;
@@ -152,11 +152,11 @@
   margin-bottom: 1rem;
 }
 
-.card-preview-header .preview-buttons {
+/* --- NEW --- Generic class for panel header buttons */
+.panel-buttons {
     display: flex;
     gap: 0.5rem;
 }
-
 
 .card-preview-header h3 {
   margin: 0;
@@ -190,6 +190,79 @@
   max-height: 100%;
   aspect-ratio: 63 / 88;
   margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #aaa;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* --- MODIFIED --- Styles for the Stack Panel are now for a right-aligned panel */
+.stack-panel-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background-color: #282c34;
+  border-left: 2px solid #555;
+  padding: 1rem;
+  overflow-y: auto;
+  transition: padding 0.3s ease;
+}
+
+.stack-resizer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 10;
+    background-color: rgba(100, 108, 255, 0);
+    transition: background-color 0.2s ease;
+}
+
+.stack-resizer:hover {
+    background-color: rgba(100, 108, 255, 0.4);
+}
+
+.stack-panel-container.minimized {
+  width: 50px !important;
+  padding: 1rem 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.stack-panel-container.minimized .stack-panel-header {
+  display: none;
+}
+
+.stack-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.stack-panel-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.stack-panel-content {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.stack-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
