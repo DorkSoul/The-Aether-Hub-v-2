@@ -52,6 +52,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           setLoadingMessage('Loading saved game...');
           const validatedStates = initialState.playerStates.map(pState => ({
               ...pState,
+              mana: pState.mana || { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
               hand: pState.hand.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
               library: pState.library.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
               graveyard: pState.graveyard.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
@@ -134,6 +135,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             name: playerConfig.name,
             color: playerConfig.color,
             life: 40,
+            mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
             hand: initialHand,
             library: library,
             graveyard: [],

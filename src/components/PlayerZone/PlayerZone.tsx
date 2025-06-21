@@ -1,9 +1,29 @@
 // src/components/PlayerZone/PlayerZone.tsx
 import React, { useCallback } from 'react';
-import type { PlayerState, Card as CardType, CardLocation } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import Card from '../Card/Card';
 import cardBackUrl from '../../assets/card_back.png';
+import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon } from '../Icons/icons';
 import './PlayerZone.css';
+
+// --- NEW --- Mana Counter Component
+const ManaCounter: React.FC<{ type: ManaType; count: number }> = ({ type, count }) => {
+  const Icon = {
+    white: WhiteManaIcon,
+    blue: BlueManaIcon,
+    black: BlackManaIcon,
+    red: RedManaIcon,
+    green: GreenManaIcon,
+    colorless: ColorlessManaIcon,
+  }[type];
+
+  return (
+    <div className="mana-counter" title={`${count} ${type} mana`}>
+      <Icon />
+      <span className="mana-count">{count}</span>
+    </div>
+  );
+};
 
 // --- NEW --- Props for the new renderer component
 interface GameCardRendererProps {
@@ -168,6 +188,15 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   return (
     <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
       <div className="player-header">
+        <div className="mana-pool">
+          {(Object.keys(playerState.mana) as ManaType[]).map(manaType => (
+            <ManaCounter
+              key={manaType}
+              type={manaType}
+              count={playerState.mana[manaType]}
+            />
+          ))}
+        </div>
         <h3>{playerState.name}: {playerState.life} Life</h3>
       </div>
       <div className="play-area">

@@ -60,12 +60,20 @@ export interface GameSettings {
     layout: '1vAll' | 'split';
 }
 
+// --- NEW --- Define Mana Types and Pool
+export type ManaType = 'white' | 'blue' | 'black' | 'red' | 'green' | 'colorless';
+
+export type ManaPool = {
+  [key in ManaType]: number;
+};
+
 // PlayerState now includes more zones and links to the initial config.
 export interface PlayerState {
   id: string;
   name: string;
   color: string;
   life: number;
+  mana: ManaPool; // --- NEW ---
   hand: Card[];
   library: Card[];
   graveyard: Card[];

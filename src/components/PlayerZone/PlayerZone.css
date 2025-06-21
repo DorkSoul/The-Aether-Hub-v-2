@@ -41,11 +41,47 @@
   flex-shrink: 0; /* Prevent the header from shrinking */
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 10px;
 }
 .player-header h3 {
   margin: 0;
   font-size: 1rem;
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- NEW --- Mana Pool Container */
+.mana-pool {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* --- NEW --- Individual Mana Counter */
+.mana-counter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background-color: rgba(0,0,0,0.5);
+  padding: 1px 4px;
+  border-radius: 10px;
+}
+
+.mana-counter svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mana-counter .mana-count {
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  min-width: 1ch;
+  text-align: center;
 }
 
 .play-area {
