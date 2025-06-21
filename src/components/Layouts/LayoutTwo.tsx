@@ -16,10 +16,11 @@ interface LayoutTwoProps {
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
-  onCardHover: (card: CardType | null) => void; // --- NEW ---
+  onCardHover: (card: CardType | null) => void;
+  cardPreview: React.ReactNode;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -55,6 +56,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             {...interactionProps}
           />
         ))}
+        {cardPreview}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 // src/App.tsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
-import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon } from './components/Icons/icons';
+import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
 import { saveGameState, loadGameState } from './utils/gameUtils';
 import type { GameSettings, GameState, Card as CardType } from './types';
@@ -19,9 +20,13 @@ interface CardPreviewProps {
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
   isMinimized: boolean;
   onToggleMinimize: () => void;
+  onPopOut: () => void;
+  isResizable: boolean;
+  width: number;
+  onResizeMouseDown: (event: React.MouseEvent) => void;
 }
 
-const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, isMinimized, onToggleMinimize }) => {
+const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown }) => {
   if (isMinimized) {
     return (
       <div className="card-preview-container minimized">
@@ -33,12 +38,18 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, i
   }
 
   return (
-    <div className="card-preview-container">
+    <div className="card-preview-container" style={{ width: `${width}px` }}>
+        {isResizable && <div className="preview-resizer" onMouseDown={onResizeMouseDown}></div>}
       <div className="card-preview-header">
         <h3>Card Preview</h3>
-        <button onClick={onToggleMinimize} title="Minimize Preview">
-          <MinimizeIcon />
-        </button>
+        <div className="preview-buttons">
+            <button onClick={onPopOut} title="Pop-out Preview">
+                <PopOutIcon />
+            </button>
+            <button onClick={onToggleMinimize} title="Minimize Preview">
+                <MinimizeIcon />
+            </button>
+        </div>
       </div>
       <div className="card-preview-content">
         {card ? (
@@ -69,7 +80,95 @@ function App() {
   const [loadedGameState, setLoadedGameState] = useState<GameState | null>(null);
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
   const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
+  const [popout, setPopout] = useState<Window | null>(null);
+  const [popoutContainer, setPopoutContainer] = useState<HTMLElement | null>(null);
+  const [previewWidth, setPreviewWidth] = useState(300);
+  const isResizing = useRef(false);
   const gameBoardRef = useRef<GameBoardHandle>(null);
+
+  const handleResizeMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing.current) return;
+    const newWidth = window.innerWidth - e.clientX;
+    // Add constraints to prevent the pane from becoming too small or too large
+    if (newWidth > 200 && newWidth < 800) {
+        setPreviewWidth(newWidth);
+    }
+  }, []);
+
+  const handleResizeMouseUp = useCallback(() => {
+    isResizing.current = false;
+    window.removeEventListener('mousemove', handleResizeMouseMove);
+    window.removeEventListener('mouseup', handleResizeMouseUp);
+  }, [handleResizeMouseMove]);
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    window.addEventListener('mousemove', handleResizeMouseMove);
+    window.addEventListener('mouseup', handleResizeMouseUp);
+  }, [handleResizeMouseMove, handleResizeMouseUp]);
+
+  useEffect(() => {
+    // Cleanup listeners if the component unmounts
+    return () => {
+        window.removeEventListener('mousemove', handleResizeMouseMove);
+        window.removeEventListener('mouseup', handleResizeMouseUp);
+    }
+  }, [handleResizeMouseMove, handleResizeMouseUp]);
+
+
+  const handlePopOut = useCallback(() => {
+    const newWindow = window.open('', 'CardPreview', 'width=350,height=490,resizable');
+    if (newWindow) {
+        newWindow.document.title = "Card Preview";
+        const container = newWindow.document.createElement('div');
+        newWindow.document.body.appendChild(container);
+        newWindow.document.body.style.margin = '0';
+        newWindow.document.body.style.backgroundColor = '#282c34';
+        container.style.width = '100vw';
+        container.style.height = '100vh';
+
+        // Copy styles from main window to pop-out
+        Array.from(document.styleSheets).forEach(styleSheet => {
+            try {
+                const cssRules = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
+                const style = newWindow.document.createElement('style');
+                style.appendChild(newWindow.document.createTextNode(cssRules));
+                newWindow.document.head.appendChild(style);
+            } catch (e) {
+                if (styleSheet.href) {
+                  const link = newWindow.document.createElement('link');
+                  link.rel = 'stylesheet';
+                  link.href = styleSheet.href;
+                  newWindow.document.head.appendChild(link);
+                }
+            }
+        });
+        
+        setPopout(newWindow);
+        setPopoutContainer(container);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!popout) return;
+
+    const intervalId = setInterval(() => {
+        if (popout.closed) {
+            setPopout(null);
+            setPopoutContainer(null);
+        }
+    }, 500);
+
+    const handleBeforeUnload = () => popout.close();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+        clearInterval(intervalId);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        if (!popout.closed) popout.close();
+    };
+  }, [popout]);
 
   useEffect(() => {
     const loadSavedHandles = async () => {
@@ -119,7 +218,7 @@ function App() {
 
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings);
-    setLoadedGameState(null); // Ensure no old state is carried over
+    setLoadedGameState(null);
     if (settings.layout === '1vAll' && settings.players.length > 1) {
       setActiveOpponentId(settings.players[1].id);
     }
@@ -155,6 +254,30 @@ function App() {
     setView('game-setup');
   };
 
+  const cardPreviewContent = previewCard ? (
+    <Card
+        card={previewCard}
+        imageDirectoryHandle={imagesDirectoryHandle}
+    />
+  ) : (
+    <div className="card-preview-placeholder">
+      <p>Hover over a card to see details</p>
+    </div>
+  );
+
+  const framedCardPreview = (
+      <CardPreview
+          card={previewCard}
+          imageDirectoryHandle={imagesDirectoryHandle}
+          isMinimized={isPreviewMinimized}
+          onToggleMinimize={() => setIsPreviewMinimized(p => !p)}
+          onPopOut={handlePopOut}
+          isResizable={true}
+          width={previewWidth}
+          onResizeMouseDown={handleResizeMouseDown}
+      />
+  );
+
   const renderView = () => {
     switch (view) {
       case 'game-setup':
@@ -164,13 +287,14 @@ function App() {
           return (
             <GameBoard 
               ref={gameBoardRef}
-              key={loadedGameState ? 'loaded-game' : 'new-game'} // Force re-mount on new/load
+              key={loadedGameState ? 'loaded-game' : 'new-game'}
               imagesDirectoryHandle={imagesDirectoryHandle} 
               settings={gameSettings}
               initialState={loadedGameState}
               activeOpponentId={activeOpponentId}
               onOpponentChange={setActiveOpponentId}
               onCardHover={handleCardHover}
+              cardPreview={popout ? null : framedCardPreview}
             />
           );
         }
@@ -267,13 +391,14 @@ function App() {
         <div className="main-content-area">
           {renderView()}
         </div>
-        <CardPreview
-            card={previewCard}
-            imageDirectoryHandle={imagesDirectoryHandle}
-            isMinimized={isPreviewMinimized}
-            onToggleMinimize={() => setIsPreviewMinimized(p => !p)}
-        />
       </main>
+
+      {popoutContainer && createPortal(
+        <div className='card-preview-content' style={{width: '100%', height: '100%', padding: '1rem', boxSizing: 'border-box' }}>
+            {cardPreviewContent}
+        </div>,
+        popoutContainer
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ interface GameBoardProps {
     activeOpponentId: string | null;
     onOpponentChange: (id: string | null) => void;
     onCardHover: (card: CardType | null) => void; // --- NEW ---
+    cardPreview: React.ReactNode;
 }
 
 export interface GameBoardHandle {
@@ -23,7 +24,7 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return [...deck].sort(() => Math.random() - 0.5);
 };
 
-const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover }, ref) => {
+const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, cardPreview }, ref) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -364,11 +365,13 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         <LayoutOne 
           playerStates={playerStates} 
           activeOpponentId={activeOpponentId}
+          cardPreview={cardPreview}
           {...interactionProps}
         />
       ) : (
         <LayoutTwo 
           playerStates={playerStates} 
+          cardPreview={cardPreview}
           {...interactionProps}
         />
       )}

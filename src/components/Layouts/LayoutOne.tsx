@@ -17,10 +17,11 @@ interface LayoutOneProps {
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
-  onCardHover: (card: CardType | null) => void; // --- NEW ---
+  onCardHover: (card: CardType | null) => void;
+  cardPreview: React.ReactNode;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, cardPreview, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -48,6 +49,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           imagesDirectoryHandle={imagesDirectoryHandle}
           {...interactionProps}
         />
+        {cardPreview}
       </div>
     </div>
   );

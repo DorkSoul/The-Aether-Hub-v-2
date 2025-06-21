@@ -102,18 +102,37 @@
   min-width: 0;
 }
 
-/* --- NEW --- Styles for the Card Preview Pane */
+/* --- MODIFIED --- Styles for the Card Preview Pane */
 .card-preview-container {
+  position: relative; /* For positioning the resizer */
   display: flex;
   flex-direction: column;
-  width: 300px;
+  /* width is now controlled by component state */
   flex-shrink: 0;
   background-color: #282c34;
   border-left: 2px solid #555;
   padding: 1rem;
   overflow-y: auto;
-  transition: width 0.3s ease, padding 0.3s ease;
+  transition: padding 0.3s ease; /* Animate padding but not width */
 }
+
+/* --- NEW --- Draggable handle for resizing the preview pane. */
+.preview-resizer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 10;
+    background-color: rgba(100, 108, 255, 0); /* Transparent by default */
+    transition: background-color 0.2s ease;
+}
+
+.preview-resizer:hover {
+    background-color: rgba(100, 108, 255, 0.4); /* Highlight on hover */
+}
+
 
 .card-preview-container.minimized {
   width: 50px;
@@ -132,6 +151,12 @@
   align-items: center;
   margin-bottom: 1rem;
 }
+
+.card-preview-header .preview-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
 
 .card-preview-header h3 {
   margin: 0;
