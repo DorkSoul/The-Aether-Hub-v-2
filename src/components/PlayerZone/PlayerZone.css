@@ -31,34 +31,48 @@
   flex-direction: column-reverse; 
 }
 
+/* --- MODIFIED --- Header is now a flex container that centers its main content. */
 .player-header {
-  text-align: center;
   background-color: rgba(0, 0, 0, 0.3);
-  /* --- MODIFIED --- Set a fixed height, padding, and box-sizing. */
   height: 24px;
   padding: 5px;
   box-sizing: border-box;
   flex-shrink: 0; /* Prevent the header from shrinking */
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
+  /* Center the name/life total. */
+  justify-content: center; 
+  /* Added position relative to anchor the absolute-positioned mana pool. */
+  position: relative; 
 }
 .player-header h3 {
   margin: 0;
   font-size: 1rem;
-  flex-shrink: 1;
+  /* This no longer needs to shrink. */
+  flex-shrink: 0; 
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* --- NEW --- Mana Pool Container */
+/* --- MODIFIED --- Mana Pool is now positioned absolutely within the header. */
 .mana-pool {
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  position: absolute;
+  /* Position on the far left, respecting padding. */
+  left: 5px; 
+  /* Vertically center the pool. */
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* --- NEW --- For flipped players, move the mana pool to the far right. */
+.player-zone.flipped .mana-pool {
+    left: auto;
+    right: 5px;
 }
 
 /* --- NEW --- Individual Mana Counter */
