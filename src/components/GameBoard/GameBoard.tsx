@@ -9,7 +9,6 @@ import './GameBoard.css';
 interface GameBoardProps {
     imagesDirectoryHandle: FileSystemDirectoryHandle | null;
     settings: GameSettings;
-    // --- MODIFIED --- Added props to manage opponent view from the parent.
     activeOpponentId: string | null;
     onOpponentChange: (id: string | null) => void;
 }
@@ -19,7 +18,6 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return deck.sort(() => Math.random() - 0.5);
 };
 
-// --- MODIFIED --- Updated component signature to accept new props.
 const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings, activeOpponentId, onOpponentChange }) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +52,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings, 
         const missingCardIds = Array.from(allCardIds).filter(id => !cardDataMap.has(id));
         if (missingCardIds.length > 0) {
           console.warn(`Could not find ${missingCardIds.length} cards in the local DB. Game may be incomplete.`);
-          // A more robust solution could re-fetch missing cards here.
         }
 
         // Step 5: Create initial PlayerState for each player.
@@ -119,16 +116,22 @@ const GameBoard: React.FC<GameBoardProps> = ({ imagesDirectoryHandle, settings, 
     return <div className="game-loading"><h2>Could not initialize players.</h2></div>;
   }
     
-  // --- MODIFIED --- Pass the activeOpponentId down to the LayoutOne component.
-  if (settings.layout === '1vAll') {
-    return <LayoutOne 
-                playerStates={playerStates} 
-                imagesDirectoryHandle={imagesDirectoryHandle} 
-                activeOpponentId={activeOpponentId}
-           />;
-  }
-  
-  return <LayoutTwo playerStates={playerStates} imagesDirectoryHandle={imagesDirectoryHandle} />;
+  return (
+    <div className="game-board">
+      {settings.layout === '1vAll' ? (
+        <LayoutOne 
+          playerStates={playerStates} 
+          imagesDirectoryHandle={imagesDirectoryHandle} 
+          activeOpponentId={activeOpponentId}
+        />
+      ) : (
+        <LayoutTwo 
+          playerStates={playerStates} 
+          imagesDirectoryHandle={imagesDirectoryHandle} 
+        />
+      )}
+    </div>
+  );
 };
 
 export default GameBoard;

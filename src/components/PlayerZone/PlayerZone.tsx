@@ -2,6 +2,7 @@
 import React from 'react';
 import type { PlayerState } from '../../types';
 import Card from '../Card/Card';
+import cardBackUrl from '../../assets/card_back.png'; // Import the card back image
 import './PlayerZone.css';
 
 interface PlayerZoneProps {
@@ -13,15 +14,11 @@ interface PlayerZoneProps {
 const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesDirectoryHandle }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
 
-  // --- MODIFIED ---
-  // Calculate the aspect ratio for the command zone dynamically.
-  // It defaults to the size of one card if there are 0 or 1 commanders.
   const numCommanders = playerState.commandZone.length;
   const commandZoneAspectRatio = `${63 * Math.max(1, numCommanders)} / 88`;
 
   // JSX for each side zone is defined here for clarity
   const commandZoneJsx = (
-      // The style attribute will override the aspect-ratio from the CSS class.
       <div className="zone command-zone" title="Command Zone" style={{ aspectRatio: commandZoneAspectRatio }}>
         <div className="cards-container">
             {playerState.commandZone.length > 0 ?
@@ -40,7 +37,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesD
       <div className="zone" title="Exile">
         <div className="card-outline">
             {playerState.exile.length > 0 ? (
-                <Card card={playerState.exile[playerState.exile.length - 1]} imageDirectoryHandle={imagesDirectoryHandle} />
+                <img src={cardBackUrl} alt="Card back" className="card-back-image" />
             ) : <span className="zone-label-full">Exile</span>}
             {playerState.exile.length > 0 && <span className="zone-count">{playerState.exile.length}</span>}
         </div>
@@ -51,7 +48,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesD
       <div className="zone" title="Graveyard">
         <div className="card-outline">
             {playerState.graveyard.length > 0 ? (
-                <Card card={playerState.graveyard[playerState.graveyard.length - 1]} imageDirectoryHandle={imagesDirectoryHandle} />
+                <img src={cardBackUrl} alt="Card back" className="card-back-image" />
             ) : <span className="zone-label-full">Graveyard</span>}
             {playerState.graveyard.length > 0 && <span className="zone-count">{playerState.graveyard.length}</span>}
         </div>
@@ -61,15 +58,13 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({ playerState, isFlipped, imagesD
   const libraryZoneJsx = (
       <div className="zone" title="Library">
         <div className="card-outline">
-            {playerState.library.length > 0 ? <div className="card-back-mockup"></div> : <span className="zone-label-full">Library</span>}
+            {playerState.library.length > 0 ? <img src={cardBackUrl} alt="Card back" className="card-back-image" /> : <span className="zone-label-full">Library</span>}
             {playerState.library.length > 0 && <span className="zone-count">{playerState.library.length}</span>}
         </div>
       </div>
   );
 
   // Conditionally set the order of zones based on the `isFlipped` prop.
-  // The default order is for the local player at the bottom of the screen.
-  // The reversed order is for the opponent(s) at the top.
   const zones = isFlipped 
     ? [libraryZoneJsx, graveyardZoneJsx, exileZoneJsx, commandZoneJsx] 
     : [commandZoneJsx, exileZoneJsx, graveyardZoneJsx, libraryZoneJsx];

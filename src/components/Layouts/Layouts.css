@@ -2,7 +2,7 @@
 .game-layout-1vAll, .game-layout-split {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  height: calc(100vh - 75px);
 }
 
 .top-section, .bottom-section,
