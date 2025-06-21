@@ -163,23 +163,33 @@
   font-size: 1.1rem;
 }
 
+/* --- MODIFIED --- Ensure the content area can shrink and doesn't overflow. */
 .card-preview-content {
   flex-grow: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0; /* Allows the flex item to shrink properly. */
+  overflow: hidden; /* Explicitly prevent children from overflowing. */
 }
 
+/* --- MODIFIED --- Make the card scale to fit the preview area without overflowing. */
 .card-preview-content .card-flipper {
-    width: 100%;
+    width: auto;
     height: auto;
+    max-width: 100%;
+    max-height: 100%;
     aspect-ratio: 63 / 88;
     margin: 0;
 }
 
 .card-preview-placeholder {
-  width: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   aspect-ratio: 63 / 88;
+  margin: 0;
   display: flex;
   justify-content: center;
   align-items: center;

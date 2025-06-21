@@ -341,7 +341,7 @@ function App() {
             </button>
             {view === 'game' && (
               <>
-                <button onClick={handleSaveGame} title="Save Game"><SaveIcon/> Save Game</button>
+                <button onClick={handleSaveGame} title="Save Game"> Save Game</button>
                 <button onClick={handleQuitGame}>Quit Game</button>
               </>
             )}
