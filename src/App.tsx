@@ -3,7 +3,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
-import { PlusIcon, MinusIcon, SaveIcon } from './components/Icons/icons';
+import { PlusIcon, MinusIcon } from './components/Icons/icons'; // --- MODIFIED
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
 import type { GameSettings, GameState } from './types';
@@ -165,7 +165,7 @@ function App() {
             </button>
             {view === 'game' && (
               <>
-                <button onClick={handleSaveGame} title="Save Game"><SaveIcon /></button>
+                <button onClick={handleSaveGame} title="Save Game">Save Game</button>
                 <button onClick={handleQuitGame}>Quit Game</button>
               </>
             )}
