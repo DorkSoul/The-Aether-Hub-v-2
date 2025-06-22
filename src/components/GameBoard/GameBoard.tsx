@@ -14,7 +14,8 @@ interface GameBoardProps {
     initialState?: GameState | null;
     activeOpponentId: string | null;
     onOpponentChange: (id: string | null) => void;
-    onCardHover: (card: CardType | null) => void; 
+    onCardHover: (card: CardType | null) => void;
+    previewCard: CardType | null;
     cardPreview: React.ReactNode;
     stackPanel: React.ReactNode; 
 }
@@ -27,7 +28,7 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return [...deck].sort(() => Math.random() - 0.5);
 };
 
-const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, cardPreview, stackPanel }, ref) => {
+const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel }, ref) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,6 +48,31 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           };
       }
   }));
+
+  // This effect synchronizes the preview panel with the game state.
+  useEffect(() => {
+    if (previewCard && playerStates) {
+        let currentCardInGameState: CardType | undefined;
+        // Find the latest version of the previewed card in our current game state.
+        for (const pState of playerStates) {
+            const zones = [pState.hand, pState.graveyard, pState.exile, pState.commandZone, ...pState.battlefield, pState.library];
+            for (const zone of zones) {
+                const found = zone.find(c => c.instanceId === previewCard.instanceId);
+                if (found) {
+                    currentCardInGameState = found;
+                    break;
+                }
+            }
+            if(currentCardInGameState) break;
+        }
+
+        // --- MODIFIED ---
+        // Only update the preview if the `isFlipped` status has changed.
+        if (currentCardInGameState && currentCardInGameState.isFlipped !== previewCard.isFlipped) {
+            onCardHover(currentCardInGameState);
+        }
+    }
+  }, [playerStates, previewCard, onCardHover]);
 
   useEffect(() => {
     const setupGame = async () => {

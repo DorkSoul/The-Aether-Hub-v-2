@@ -10,11 +10,11 @@ interface CardProps {
   size?: number;
   onContextMenu?: (event: React.MouseEvent) => void;
   isTapped?: boolean;
-  isFlipped?: boolean;
+  isFlipped?: boolean; // This prop dictates the flipped state when provided
   onFlip?: () => void;
   onTap?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
-  onCardHover?: (card: CardType | null) => void; // --- NEW ---
+  onCardHover?: (card: CardType | null) => void;
 }
 
 interface SingleCardViewProps {
@@ -46,9 +46,10 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
 
   const flippableLayouts = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card', 'meld'];
   const isFlippable = flippableLayouts.includes(card.layout || '');
-  
-  const isControlled = onFlip !== undefined || onTap !== undefined;
-  const isFlipped = isControlled ? (isFlippedProp || false) : isFlippedLocal;
+
+  const isFlipStateControlled = isFlippedProp !== undefined;
+
+  const isFlipped = isFlipStateControlled ? (isFlippedProp || false) : isFlippedLocal;
 
   useEffect(() => {
     let isMounted = true;
@@ -82,24 +83,23 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
       isMounted = false;
       loadedUrls.forEach(url => URL.revokeObjectURL(url));
     };
-  }, [card, imageDirectoryHandle, isFlippable]);
+    // --- MODIFIED ---
+    // The dependency array now uses stable properties of the card. This prevents
+    // the effect from re-running when only the card's state (like isTapped) changes.
+  }, [card.id, card.layout, imageDirectoryHandle]);
 
   const handlePrimaryAction = () => { // Typically left-click
-    if (isControlled) {
-      if (onTap) onTap();
-    } else {
-      if (isFlippable) setIsFlippedLocal(f => !f);
+    if (onTap) {
+      onTap();
+    } else if (!isFlipStateControlled && isFlippable) {
+      setIsFlippedLocal(f => !f);
     }
   };
 
   const handleSecondaryAction = () => { // Typically Ctrl+Click
-      if (isFlippable) {
-        if (isControlled) {
-            if (onFlip) onFlip();
-        } else {
-            setIsFlippedLocal(f => !f);
-        }
-      }
+    if (onFlip) {
+      onFlip();
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -112,12 +112,18 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
   
   const cardStyle = size ? { width: `${size}px`, height: `${size * 1.4}px` } : {};
   const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''}`;
-  const title = isControlled
-      ? "Click to Tap, Ctrl+Click to Flip, Drag to Move"
-      : isFlippable ? "Click to Flip" : card.name;
+  
+  let title = card.name;
+  if (onTap || onFlip) {
+      title = "Click to Tap, Ctrl+Click to Flip, Drag to Move";
+  } else if (isFlippable && !isFlipStateControlled) {
+      title = "Click to Flip";
+  }
       
   const clickHandler = (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (!onTap && !onFlip) return;
+
       if (e.ctrlKey) {
           handleSecondaryAction();
       } else {
@@ -125,7 +131,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
       }
   };
   
-  // --- MODIFIED --- Added mouse enter/leave handlers
   const baseDivProps = {
     className: flipperClasses,
     style: cardStyle,
@@ -134,7 +139,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
     draggable: !!onDragStart,
     onDragStart: onDragStart,
     onMouseEnter: () => onCardHover?.(card),
-    onMouseLeave: () => onCardHover?.(null),
   };
   
   if (isLoading) {
@@ -176,5 +180,4 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
   );
 };
 
-// --- MODIFIED --- Export a memoized version of the component to prevent unnecessary re-renders.
 export default React.memo(Card);

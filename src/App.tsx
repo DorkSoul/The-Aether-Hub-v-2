@@ -99,6 +99,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, i
           <Card
             card={card}
             imageDirectoryHandle={imageDirectoryHandle}
+            isFlipped={card.isFlipped}
           />
         ) : (
           <div className="card-preview-placeholder">
@@ -413,6 +414,7 @@ function App() {
     <Card
         card={previewCard}
         imageDirectoryHandle={imagesDirectoryHandle}
+        isFlipped={previewCard.isFlipped}
     />
   ) : (
     <div className="card-preview-placeholder">
@@ -466,6 +468,7 @@ function App() {
               activeOpponentId={activeOpponentId}
               onOpponentChange={setActiveOpponentId}
               onCardHover={handleCardHover}
+              previewCard={previewCard}
               cardPreview={popout ? null : framedCardPreview}
               stackPanel={stackPopout ? null : framedStackPanel}
             />
@@ -573,6 +576,7 @@ function App() {
         <div className="main-content-area">
           {renderView()}
         </div>
+        {view === 'decks' && !popout && framedCardPreview}
       </main>
 
       {popoutContainer && createPortal(
