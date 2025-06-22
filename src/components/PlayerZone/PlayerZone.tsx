@@ -3,10 +3,9 @@ import React, { useCallback } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import Card from '../Card/Card';
 import cardBackUrl from '../../assets/card_back.png';
-import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon } from '../Icons/icons';
+import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon, PlusIcon, MinusIcon } from '../Icons/icons';
 import './PlayerZone.css';
 
-// --- NEW --- Mana Counter Component
 const ManaCounter: React.FC<{ type: ManaType; count: number }> = ({ type, count }) => {
   const Icon = {
     white: WhiteManaIcon,
@@ -25,7 +24,6 @@ const ManaCounter: React.FC<{ type: ManaType; count: number }> = ({ type, count 
   );
 };
 
-// --- NEW --- Props for the new renderer component
 interface GameCardRendererProps {
   card: CardType;
   location: CardLocation;
@@ -33,15 +31,17 @@ interface GameCardRendererProps {
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
-  onCardDragStart: (card: CardType, source: CardLocation) => void;
+  onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
   onCardHover: (card: CardType | null) => void; 
+  style?: React.CSSProperties;
 }
 
-// A memoized component to render a single card.
-const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, ...rest }) => {
+const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
-    onCardDragStart(card, location);
+    const rect = event.currentTarget.getBoundingClientRect();
+    const offset = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    onCardDragStart(card, location, offset);
   }, [card, location, onCardDragStart]);
 
   return (
@@ -55,6 +55,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       onContextMenu={(e) => rest.onCardContextMenu(e, card)}
       onDragStart={handleDragStart}
       onCardHover={rest.onCardHover} 
+      style={style}
     />
   );
 });
@@ -63,14 +64,16 @@ interface PlayerZoneProps {
   playerState: PlayerState;
   isFlipped: boolean;
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
+  playAreaLayout: 'rows' | 'freeform';
+  freeformCardSizes: {[playerId: string]: number};
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
-  // --- NEW --- Added library context menu handler prop
   onLibraryContextMenu: (event: React.MouseEvent, playerId: string) => void;
-  onCardDragStart: (card: CardType, source: CardLocation) => void;
-  onLibraryDragStart: (source: CardLocation) => void;
-  onZoneDrop: (destination: CardLocation) => void;
+  onUpdateFreeformCardSize: (playerId: string, delta: number) => void;
+  onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
+  onLibraryDragStart: (source: CardLocation, offset: {x: number, y: number}) => void;
+  onZoneDrop: (destination: CardLocation, event: React.DragEvent) => void;
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
@@ -81,11 +84,13 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   playerState, 
   isFlipped, 
   imagesDirectoryHandle, 
+  playAreaLayout,
+  freeformCardSizes,
   onCardTap, 
   onCardFlip, 
   onCardContextMenu,
-  // --- MODIFIED --- Destructure new prop
   onLibraryContextMenu,
+  onUpdateFreeformCardSize,
   onCardDragStart,
   onLibraryDragStart,
   onZoneDrop,
@@ -99,6 +104,14 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
 
   const renderGameCard = (card: CardType, location: Omit<CardLocation, 'playerId'>) => {
     const source: CardLocation = { ...location, playerId };
+    
+    const isFreeformBattlefield = playAreaLayout === 'freeform' && location.zone === 'battlefield';
+    const size = isFreeformBattlefield ? freeformCardSizes[playerId] : undefined;
+    
+    const cardStyle = (size && card.x !== undefined && card.y !== undefined)
+        ? { position: 'absolute' as const, left: `${card.x}px`, top: `${card.y}px`, width: `${size}px`, height: `${size * 1.4}px` }
+        : {};
+
     return (
       <GameCardRenderer
         key={`${location.zone}-${card.instanceId}`}
@@ -110,6 +123,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onCardContextMenu={onCardContextMenu}
         onCardDragStart={onCardDragStart}
         onCardHover={onCardHover} 
+        style={cardStyle}
       />
     );
   };
@@ -123,7 +137,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       onDragLeave: onZoneDragLeave,
       onDrop: (e: React.DragEvent) => {
         e.stopPropagation();
-        onZoneDrop(destination)
+        onZoneDrop(destination, e)
       },
     };
   };
@@ -173,9 +187,10 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         draggable={playerState.library.length > 0}
         onDragStart={(e) => {
           e.stopPropagation();
-          onLibraryDragStart({ playerId, zone: 'library' });
+          const rect = e.currentTarget.getBoundingClientRect();
+          const offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          onLibraryDragStart({ playerId, zone: 'library' }, offset);
         }}
-        // --- MODIFIED --- Added context menu handler to the library zone
         onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -208,31 +223,53 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
           ))}
         </div>
         <h3>{playerState.name}: {playerState.life} Life</h3>
+        {playAreaLayout === 'freeform' && (
+          <div className="freeform-controls">
+            <button onClick={() => onUpdateFreeformCardSize(playerId, -10)} title="Decrease Card Size"><MinusIcon /></button>
+            <button onClick={() => onUpdateFreeformCardSize(playerId, 10)} title="Increase Card Size"><PlusIcon /></button>
+          </div>
+        )}
       </div>
-      <div className="play-area">
-        {playerState.battlefield.map((row, index) => {
-          const destination: CardLocation = { playerId, zone: 'battlefield', row: index };
-          const isTarget = dropTarget?.playerId === playerId && dropTarget.zone === 'battlefield' && dropTarget.row === index;
-          return (
-            <div key={index} className="game-row">
-                {zones[index]}
-                <div 
-                  className={`battlefield-row ${isTarget ? 'drop-target' : ''}`}
-                  onDragOver={(e) => onZoneDragOver(e, destination)}
-                  onDragLeave={onZoneDragLeave}
-                  onDrop={(e) => { e.stopPropagation(); onZoneDrop(destination); }}
-                >
-                    {row.map((card) => renderGameCard(card, { zone: 'battlefield', row: index }))}
-                </div>
+      <div className={`play-area ${playAreaLayout}`}>
+        {playAreaLayout === 'rows' ? (
+          playerState.battlefield.map((row, index) => {
+            const destination: CardLocation = { playerId, zone: 'battlefield', row: index };
+            const isTarget = dropTarget?.playerId === playerId && dropTarget.zone === 'battlefield' && dropTarget.row === index;
+            return (
+              <div key={index} className="game-row">
+                  {zones[index]}
+                  <div 
+                    className={`battlefield-row ${isTarget ? 'drop-target' : ''}`}
+                    onDragOver={(e) => onZoneDragOver(e, destination)}
+                    onDragLeave={onZoneDragLeave}
+                    onDrop={(e) => { e.stopPropagation(); onZoneDrop(destination, e); }}
+                  >
+                      {row.map((card) => renderGameCard(card, { zone: 'battlefield', row: index }))}
+                  </div>
+              </div>
+            )
+          })
+        ) : (
+          <>
+            <div className="side-zones-container">
+                {zones.map((zone, index) => <div key={index} className="side-zone-wrapper">{zone}</div>)}
             </div>
-          )
-        })}
+            <div 
+              className={`battlefield-freeform ${dropTarget?.playerId === playerId && dropTarget.zone === 'battlefield' ? 'drop-target' : ''}`}
+              onDragOver={(e) => onZoneDragOver(e, { playerId, zone: 'battlefield', row: 0 })}
+              onDragLeave={onZoneDragLeave}
+              onDrop={(e) => { e.stopPropagation(); onZoneDrop({ playerId, zone: 'battlefield', row: 0 }, e); }}
+            >
+              {playerState.battlefield.flat().map((card) => renderGameCard(card, { zone: 'battlefield', row: 0 }))}
+            </div>
+          </>
+        )}
       </div>
       <div 
         className={`hand ${dropTarget?.playerId === playerId && dropTarget?.zone === 'hand' ? 'drop-target' : ''}`}
         onDragOver={(e) => onZoneDragOver(e, { playerId, zone: 'hand' })}
         onDragLeave={onZoneDragLeave}
-        onDrop={(e) => { e.stopPropagation(); onZoneDrop({ playerId, zone: 'hand' }); }}
+        onDrop={(e) => { e.stopPropagation(); onZoneDrop({ playerId, zone: 'hand' }, e); }}
       >
         {playerState.hand.map((card) => renderGameCard(card, { zone: 'hand' }))}
       </div>

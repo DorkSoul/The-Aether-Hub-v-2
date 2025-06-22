@@ -37,6 +37,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [dropTarget, setDropTarget] = useState<CardLocation | null>(null);
   const [libraryContextMenu, setLibraryContextMenu] = useState<{ x: number, y: number, playerId: string } | null>(null);
   const [scryState, setScryState] = useState<{ playerId: string; cards: CardType[] } | null>(null);
+  const [freeformCardSizes, setFreeformCardSizes] = useState<{[playerId: string]: number}>({});
 
   useImperativeHandle(ref, () => ({
       getGameState: () => {
@@ -49,11 +50,9 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       }
   }));
 
-  // This effect synchronizes the preview panel with the game state.
   useEffect(() => {
     if (previewCard && playerStates) {
         let currentCardInGameState: CardType | undefined;
-        // Find the latest version of the previewed card in our current game state.
         for (const pState of playerStates) {
             const zones = [pState.hand, pState.graveyard, pState.exile, pState.commandZone, ...pState.battlefield, pState.library];
             for (const zone of zones) {
@@ -66,8 +65,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             if(currentCardInGameState) break;
         }
 
-        // --- MODIFIED ---
-        // Only update the preview if the `isFlipped` status has changed.
         if (currentCardInGameState && currentCardInGameState.isFlipped !== previewCard.isFlipped) {
             onCardHover(currentCardInGameState);
         }
@@ -92,6 +89,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
               battlefield: pState.battlefield.map(row => row.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()}))),
           }));
           setPlayerStates(validatedStates);
+          const initialSizes = validatedStates.reduce((acc, p) => ({ ...acc, [p.id]: 140 }), {});
+          setFreeformCardSizes(initialSizes);
           setIsLoading(false);
           return;
       }
@@ -177,6 +176,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         });
 
         setPlayerStates(initialPlayerStates);
+        const initialSizes = initialPlayerStates.reduce((acc, p) => ({ ...acc, [p.id]: 140 }), {});
+        setFreeformCardSizes(initialSizes);
 
       } catch (err) {
         console.error("Failed to initialize game:", err);
@@ -198,132 +199,146 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       if (!draggedItem) return;
       event.dataTransfer.dropEffect = "move";
       
-      if (draggedItem.type === 'card' && draggedItem.source.zone === destination.zone && draggedItem.source.playerId === destination.playerId && draggedItem.source.row === destination.row) {
+      const isSameZone = draggedItem.type === 'card' && 
+                       draggedItem.source.playerId === destination.playerId &&
+                       draggedItem.source.zone === destination.zone &&
+                       draggedItem.source.row === destination.row;
+
+      if (isSameZone && settings.playAreaLayout !== 'freeform') {
           if (dropTarget) setDropTarget(null);
           return;
       }
+
       if (dropTarget?.zone !== destination.zone || dropTarget?.playerId !== destination.playerId || dropTarget?.row !== destination.row) {
           setDropTarget(destination);
       }
-  }, [draggedItem, dropTarget]);
+  }, [draggedItem, dropTarget, settings.playAreaLayout]);
 
   const handleDragLeave = useCallback((event: React.DragEvent) => {
       if (event.currentTarget.contains(event.relatedTarget as Node)) return;
       setDropTarget(null);
   }, []);
 
-  const handleDrop = useCallback((destination: CardLocation) => {
-      if (!draggedItem) return;
+  const handleDrop = useCallback((destination: CardLocation, event: React.DragEvent) => {
+    if (!draggedItem) return;
 
-      setPlayerStates(currentStates => {
-          if (!currentStates) return null;
-  
-          const { source } = draggedItem;
-  
-          if (draggedItem.type === 'card' &&
-              source.playerId === destination.playerId &&
-              source.zone === destination.zone &&
-              source.row === destination.row) {
-              return currentStates;
-          }
-  
-          let cardToMove: CardType | undefined;
-          let nextStates = [...currentStates];
-  
-          const sourcePlayerIndex = nextStates.findIndex(p => p.id === source.playerId);
-          if (sourcePlayerIndex === -1) return currentStates;
-  
-          const originalSourcePlayer = nextStates[sourcePlayerIndex];
-          const nextSourcePlayer = { ...originalSourcePlayer };
-  
-          if (draggedItem.type === 'card') {
-              const cardId = draggedItem.card.instanceId;
-              let foundAndRemoved = false;
-              const removeCard = (cards: CardType[]) => {
-                  const index = cards.findIndex(c => c.instanceId === cardId);
-                  if (index > -1) {
-                      const newCards = [...cards];
-                      [cardToMove] = newCards.splice(index, 1);
-                      foundAndRemoved = true;
-                      return newCards;
-                  }
-                  return cards;
-              };
-  
-              switch (source.zone) {
-                  case 'hand': nextSourcePlayer.hand = removeCard(originalSourcePlayer.hand); break;
-                  case 'graveyard': nextSourcePlayer.graveyard = removeCard(originalSourcePlayer.graveyard); break;
-                  case 'exile': nextSourcePlayer.exile = removeCard(originalSourcePlayer.exile); break;
-                  case 'commandZone': nextSourcePlayer.commandZone = removeCard(originalSourcePlayer.commandZone); break;
-                  case 'battlefield':
-                      if (typeof source.row === 'number') {
-                          const newBattlefield = [...originalSourcePlayer.battlefield];
-                          newBattlefield[source.row] = removeCard(originalSourcePlayer.battlefield[source.row]);
-                          nextSourcePlayer.battlefield = newBattlefield;
-                      }
-                      break;
-              }
-  
-              if (!foundAndRemoved && cardId) {
-                 console.error("Dragged card not found:", cardId);
-                 return currentStates;
-              }
-          } else { 
-              if (originalSourcePlayer.library.length > 0) {
-                  const newLibrary = [...originalSourcePlayer.library];
-                  cardToMove = newLibrary.shift();
-                  nextSourcePlayer.library = newLibrary;
-              }
-          }
-  
-          if (!cardToMove) return currentStates;
-          
-          nextStates[sourcePlayerIndex] = nextSourcePlayer;
-  
-          const destPlayerIndex = nextStates.findIndex(p => p.id === destination.playerId);
-          if (destPlayerIndex === -1) return currentStates;
-  
-          const originalDestPlayer = nextStates[destPlayerIndex];
-          const nextDestPlayer = sourcePlayerIndex === destPlayerIndex 
-              ? nextSourcePlayer 
-              : { ...originalDestPlayer };
-  
-          const isZoneChange = source.playerId !== destination.playerId || source.zone !== destination.zone;
-          if (isZoneChange) {
+    let dropCoords: { x: number; y: number } | null = null;
+    if (destination.zone === 'battlefield' && settings.playAreaLayout === 'freeform' && event.currentTarget) {
+        const containerRect = event.currentTarget.getBoundingClientRect();
+        dropCoords = {
+            x: event.clientX - containerRect.left - draggedItem.offset.x,
+            y: event.clientY - containerRect.top - draggedItem.offset.y,
+        };
+    }
+
+    setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+
+        const { source } = draggedItem;
+        let cardToMove: CardType | undefined;
+        let nextStates = [...currentStates];
+
+        const sourcePlayerIndex = nextStates.findIndex(p => p.id === source.playerId);
+        if (sourcePlayerIndex === -1) return currentStates;
+
+        const originalSourcePlayer = nextStates[sourcePlayerIndex];
+        let nextSourcePlayer = { ...originalSourcePlayer };
+
+        if (draggedItem.type === 'card') {
+            const cardId = draggedItem.card.instanceId;
+            let foundAndRemoved = false;
+            const removeCard = (cards: CardType[]) => {
+                const index = cards.findIndex(c => c.instanceId === cardId);
+                if (index > -1) {
+                    const newCards = [...cards];
+                    [cardToMove] = newCards.splice(index, 1);
+                    foundAndRemoved = true;
+                    return newCards;
+                }
+                return cards;
+            };
+
+            switch (source.zone) {
+                case 'hand': nextSourcePlayer.hand = removeCard(nextSourcePlayer.hand); break;
+                case 'graveyard': nextSourcePlayer.graveyard = removeCard(nextSourcePlayer.graveyard); break;
+                case 'exile': nextSourcePlayer.exile = removeCard(nextSourcePlayer.exile); break;
+                case 'commandZone': nextSourcePlayer.commandZone = removeCard(nextSourcePlayer.commandZone); break;
+                case 'battlefield':
+                    if (typeof source.row === 'number') {
+                        const newBattlefield = nextSourcePlayer.battlefield.map(r => [...r]);
+                        newBattlefield[source.row] = removeCard(newBattlefield[source.row]);
+                        nextSourcePlayer.battlefield = newBattlefield;
+                    }
+                    break;
+            }
+
+            if (!foundAndRemoved && cardId) {
+                console.error("Dragged card not found:", cardId);
+                return currentStates;
+            }
+        } else {
+            if (nextSourcePlayer.library.length > 0) {
+                const newLibrary = [...nextSourcePlayer.library];
+                cardToMove = newLibrary.shift();
+                nextSourcePlayer.library = newLibrary;
+            }
+        }
+
+        if (!cardToMove) return currentStates;
+
+        if (sourcePlayerIndex !== -1) {
+            nextStates[sourcePlayerIndex] = nextSourcePlayer;
+        }
+
+        const destPlayerIndex = sourcePlayerIndex === -1 ? -1 : nextStates.findIndex(p => p.id === destination.playerId);
+        if (destPlayerIndex === -1) return currentStates;
+
+        const originalDestPlayer = nextStates[destPlayerIndex];
+        let nextDestPlayer = { ...originalDestPlayer };
+
+        const isZoneChange = source.playerId !== destination.playerId || source.zone !== destination.zone;
+        if (isZoneChange) {
             cardToMove.isTapped = false;
             cardToMove.isFlipped = false;
-          }
-  
-          const addCard = (cards: CardType[], card: CardType, atBeginning = false) => {
-              const newCards = [...cards];
-              if (atBeginning) newCards.unshift(card);
-              else newCards.push(card);
-              return newCards;
-          };
-          
-          switch (destination.zone) {
-              case 'hand': nextDestPlayer.hand = addCard(originalDestPlayer.hand, cardToMove); break;
-              case 'graveyard': nextDestPlayer.graveyard = addCard(originalDestPlayer.graveyard, cardToMove); break;
-              case 'exile': nextDestPlayer.exile = addCard(originalDestPlayer.exile, cardToMove); break;
-              case 'commandZone': nextDestPlayer.commandZone = addCard(originalDestPlayer.commandZone, cardToMove); break;
-              case 'library': nextDestPlayer.library = addCard(originalDestPlayer.library, cardToMove, true); break;
-              case 'battlefield':
-                  if (typeof destination.row === 'number') {
-                      const newBattlefield = [...originalDestPlayer.battlefield];
-                      newBattlefield[destination.row] = addCard(originalDestPlayer.battlefield[destination.row], cardToMove);
-                      nextDestPlayer.battlefield = newBattlefield;
-                  }
-                  break;
-          }
-          
-          nextStates[destPlayerIndex] = nextDestPlayer;
-  
-          return nextStates;
-      });
-  
-      setDraggedItem(null);
-      setDropTarget(null);
-  }, [draggedItem]);
+        }
+
+        if (dropCoords) {
+            cardToMove.x = dropCoords.x;
+            cardToMove.y = dropCoords.y;
+        } else {
+            cardToMove.x = undefined;
+            cardToMove.y = undefined;
+        }
+
+        const addCard = (cards: CardType[], card: CardType, atBeginning = false) => {
+            const newCards = [...cards];
+            if (atBeginning) newCards.unshift(card);
+            else newCards.push(card);
+            return newCards;
+        };
+
+        switch (destination.zone) {
+            case 'hand': nextDestPlayer.hand = addCard(nextDestPlayer.hand, cardToMove); break;
+            case 'graveyard': nextDestPlayer.graveyard = addCard(nextDestPlayer.graveyard, cardToMove); break;
+            case 'exile': nextDestPlayer.exile = addCard(nextDestPlayer.exile, cardToMove); break;
+            case 'commandZone': nextDestPlayer.commandZone = addCard(nextDestPlayer.commandZone, cardToMove); break;
+            case 'library': nextDestPlayer.library = addCard(nextDestPlayer.library, cardToMove, true); break;
+            case 'battlefield':
+                if (typeof destination.row === 'number') {
+                    const newBattlefield = nextDestPlayer.battlefield.map(r => [...r]);
+                    newBattlefield[destination.row] = addCard(newBattlefield[destination.row], cardToMove);
+                    nextDestPlayer.battlefield = newBattlefield;
+                }
+                break;
+        }
+
+        nextStates[destPlayerIndex] = nextDestPlayer;
+        return nextStates;
+    });
+
+    setDraggedItem(null);
+    setDropTarget(null);
+}, [draggedItem, settings.playAreaLayout]);
   
   const updateCardState = useCallback((cardInstanceId: string, update: (card: CardType) => CardType) => {
       setPlayerStates(currentStates => {
@@ -356,7 +371,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       console.log("Context menu for:", card.name, card.instanceId);
   }, []);
 
-  // --- NEW --- Handlers for library actions
   const handleDraw = useCallback((playerId: string, count: number) => {
     setPlayerStates(currentStates => {
         if (!currentStates) return null;
@@ -410,7 +424,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         if (playerIndex === -1) return currentStates;
 
         const player = currentStates[playerIndex];
-        // Reverse top cards so the last one chosen for top ends up on top.
         const newLibrary = [...toTop.reverse(), ...player.library, ...toBottom];
         
         const newPlayerState = { ...player, library: newLibrary };
@@ -458,21 +471,30 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       ];
   }, [handleDraw, handleScry]);
 
+  const handleUpdateFreeformCardSize = useCallback((playerId: string, delta: number) => {
+      setFreeformCardSizes(prev => ({
+          ...prev,
+          [playerId]: Math.max(60, Math.min(300, (prev[playerId] || 140) + delta))
+      }));
+  }, []);
 
-  const handleCardDragStart = useCallback((card: CardType, source: CardLocation) => {
-    handleDragStart({ type: 'card', card, source });
+  const handleCardDragStart = useCallback((card: CardType, source: CardLocation, offset: {x: number, y: number}) => {
+    handleDragStart({ type: 'card', card, source, offset });
   }, [handleDragStart]);
 
-  const handleLibraryDragStart = useCallback((source: CardLocation) => {
-      handleDragStart({ type: 'library', source });
+  const handleLibraryDragStart = useCallback((source: CardLocation, offset: {x: number, y: number}) => {
+      handleDragStart({ type: 'library', source, offset });
   }, [handleDragStart]);
 
   const interactionProps = useMemo(() => ({
       imagesDirectoryHandle,
+      playAreaLayout: settings.playAreaLayout,
+      freeformCardSizes,
       onCardTap: handleCardTap,
       onCardFlip: handleCardFlip,
       onCardContextMenu: handleCardContextMenu,
-      onLibraryContextMenu: handleLibraryContextMenu, // --- NEW ---
+      onLibraryContextMenu: handleLibraryContextMenu,
+      onUpdateFreeformCardSize: handleUpdateFreeformCardSize,
       onCardDragStart: handleCardDragStart,
       onLibraryDragStart: handleLibraryDragStart,
       onZoneDrop: handleDrop,
@@ -480,7 +502,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onZoneDragLeave: handleDragLeave,
       dropTarget: dropTarget,
       onCardHover: onCardHover,
-  }), [imagesDirectoryHandle, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover]);
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
@@ -510,7 +532,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           {...interactionProps}
         />
       )}
-      {/* --- NEW --- Render context menu and scry modal */}
       {libraryContextMenu && (
           <ContextMenu
               x={libraryContextMenu.x}

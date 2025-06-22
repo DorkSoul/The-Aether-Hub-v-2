@@ -58,7 +58,11 @@ const ScryModal: React.FC<ScryModalProps> = ({ isOpen, cards, imageDirectoryHand
                 <div className="scry-cards-container">
                     {remainingCards.map(card => (
                         <div key={card.instanceId} className="scry-card-wrapper">
-                            <Card card={card} imageDirectoryHandle={imageDirectoryHandle} size={200} />
+                            <Card 
+                                card={card} 
+                                imageDirectoryHandle={imageDirectoryHandle} 
+                                style={{ width: '200px', height: `${200 * 1.4}px` }}
+                            />
                             <div className="scry-buttons">
                                 <button onClick={() => handleDecision(card, 'top')}>Top of Deck</button>
                                 <button onClick={() => handleDecision(card, 'bottom')}>Bottom of Deck</button>

@@ -382,6 +382,9 @@ function App() {
   };
 
   const handleLoadGame = (gameState: GameState) => {
+      if (!gameState.gameSettings.playAreaLayout) {
+        gameState.gameSettings.playAreaLayout = 'rows';
+      }
       setLoadedGameState(gameState);
       setGameSettings(gameState.gameSettings);
       setActiveOpponentId(gameState.activeOpponentId);

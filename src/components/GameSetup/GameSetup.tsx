@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import type { PlayerConfig, GameSettings, GameState } from '../../types';
 import PlayerSetupRow from '../PlayerSetupRow/PlayerSetupRow';
 import { loadGameState } from '../../utils/gameUtils';
-// --- MODIFIED --- Import new settings functions
-import { getLayoutPreference, saveLayoutPreference } from '../../utils/settings';
 import './GameSetup.css';
 
 interface GameSetupProps {
@@ -19,13 +17,8 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
     { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff' },
   ]);
   const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
-  // --- MODIFIED --- Load the layout preference from localStorage on initial state.
-  const [layout, setLayout] = useState<GameSettings['layout']>(() => getLayoutPreference('1vAll'));
-
-  // --- NEW --- Effect to save the layout preference whenever it changes.
-  useEffect(() => {
-    saveLayoutPreference(layout);
-  }, [layout]);
+  const [layout, setLayout] = useState<GameSettings['layout']>('1vAll');
+  const [playAreaLayout, setPlayAreaLayout] = useState<GameSettings['playAreaLayout']>('rows');
 
   useEffect(() => {
     const loadDecks = async () => {
@@ -40,14 +33,10 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
     };
     loadDecks();
   }, [decksDirectoryHandle]);
-  
-  // --- MODIFIED --- This function now ensures the new player is unique.
+
   const handleAddPlayer = () => {
     if (players.length < 8) {
-      // Find the highest existing numeric player ID to ensure the new ID is unique
-      const maxId = players.reduce((max, p) => Math.max(max, parseInt(p.id, 10) || 0), 0);
-      const newPlayerId = (maxId + 1).toString();
-      
+      const newPlayerId = (players.length + 1).toString();
       const randomColor = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
       setPlayers([...players, { id: newPlayerId, name: `Player ${newPlayerId}`, deckFile: null, color: randomColor }]);
     }
@@ -74,7 +63,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
 
   const handleStart = () => {
     if (isSetupComplete) {
-      onStartGame({ players, layout });
+      onStartGame({ players, layout, playAreaLayout });
     }
   };
 
@@ -120,7 +109,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
       </div>
 
       <div className="setup-section">
-        <h3>Layout</h3>
+        <h3>Game Layout</h3>
         <div className="layout-options">
           <label>
             <input
@@ -141,6 +130,32 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
               onChange={() => setLayout('split')}
             />
             Split Screen
+          </label>
+        </div>
+      </div>
+      
+      <div className="setup-section">
+        <h3>Play Area</h3>
+        <div className="layout-options">
+          <label>
+            <input
+              type="radio"
+              name="playAreaLayout"
+              value="rows"
+              checked={playAreaLayout === 'rows'}
+              onChange={() => setPlayAreaLayout('rows')}
+            />
+            4 Rows
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="playAreaLayout"
+              value="freeform"
+              checked={playAreaLayout === 'freeform'}
+              onChange={() => setPlayAreaLayout('freeform')}
+            />
+            Freeform
           </label>
         </div>
       </div>

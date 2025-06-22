@@ -44,6 +44,9 @@ export interface Card {
   isFlipped?: boolean;
   mana_cost?: string;
   oracle_text?: string;
+  // --- NEW --- Coordinates for freeform layout
+  x?: number;
+  y?: number;
 }
 
 // Configuration for a single player in the game setup screen.
@@ -58,6 +61,7 @@ export interface PlayerConfig {
 export interface GameSettings {
     players: PlayerConfig[];
     layout: '1vAll' | 'split';
+    playAreaLayout: 'rows' | 'freeform';
 }
 
 // --- NEW --- Define Mana Types and Pool
@@ -101,12 +105,14 @@ export interface DraggedCard {
     type: 'card';
     card: Card;
     source: CardLocation;
+    offset: { x: number; y: number; }; // Cursor offset within the card
 }
 
 // --- NEW --- Represents the top card of a library being moved, without revealing its identity.
 export interface DraggedLibraryCard {
     type: 'library';
     source: CardLocation;
+    offset: { x: number; y: number; }; // Cursor offset
 }
 
 // --- NEW --- A union type for any item that can be dragged on the game board.

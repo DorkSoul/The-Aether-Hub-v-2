@@ -8,14 +8,16 @@ interface LayoutOneProps {
   playerStates: PlayerState[];
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
   activeOpponentId: string | null;
+  playAreaLayout: 'rows' | 'freeform';
+  freeformCardSizes: {[playerId: string]: number};
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
-  // --- NEW --- Added library context menu handler prop
   onLibraryContextMenu: (event: React.MouseEvent, playerId: string) => void;
-  onCardDragStart: (card: CardType, source: CardLocation) => void;
-  onLibraryDragStart: (source: CardLocation) => void;
-  onZoneDrop: (destination: CardLocation) => void;
+  onUpdateFreeformCardSize: (playerId: string, delta: number) => void;
+  onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
+  onLibraryDragStart: (source: CardLocation, offset: {x: number, y: number}) => void;
+  onZoneDrop: (destination: CardLocation, event: React.DragEvent) => void;
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;

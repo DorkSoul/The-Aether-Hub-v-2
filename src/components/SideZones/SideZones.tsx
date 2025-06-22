@@ -22,7 +22,12 @@ const SideZones: React.FC<SideZonesProps> = ({ playerState, isFlipped, imagesDir
         <div className="cards-container">
             {playerState.commandZone.length > 0 ?
                 playerState.commandZone.map((card, index) => (
-                    <Card key={card.instanceId || index} card={card} imageDirectoryHandle={imagesDirectoryHandle} size={80} />
+                    <Card 
+                        key={card.instanceId || index} 
+                        card={card} 
+                        imageDirectoryHandle={imagesDirectoryHandle} 
+                        style={{ width: '80px', height: `${80 * 1.4}px` }} 
+                    />
                 )) :
                 <div className="card-outline">
                     <span className="zone-label-full">Command</span>
@@ -35,7 +40,11 @@ const SideZones: React.FC<SideZonesProps> = ({ playerState, isFlipped, imagesDir
       <div className="zone" title="Exile">
         <div className="card-outline">
             {playerState.exile.length > 0 ? (
-                <Card card={playerState.exile[playerState.exile.length - 1]} imageDirectoryHandle={imagesDirectoryHandle} size={80} />
+                <Card 
+                    card={playerState.exile[playerState.exile.length - 1]} 
+                    imageDirectoryHandle={imagesDirectoryHandle} 
+                    style={{ width: '80px', height: `${80 * 1.4}px` }} 
+                />
             ) : <span className="zone-label-full">Exile</span>}
             {playerState.exile.length > 0 && <span className="zone-count">{playerState.exile.length}</span>}
         </div>
@@ -45,7 +54,11 @@ const SideZones: React.FC<SideZonesProps> = ({ playerState, isFlipped, imagesDir
       <div className="zone" title="Graveyard">
         <div className="card-outline">
             {playerState.graveyard.length > 0 ? (
-                <Card card={playerState.graveyard[playerState.graveyard.length - 1]} imageDirectoryHandle={imagesDirectoryHandle} size={80} />
+                <Card 
+                    card={playerState.graveyard[playerState.graveyard.length - 1]} 
+                    imageDirectoryHandle={imagesDirectoryHandle} 
+                    style={{ width: '80px', height: `${80 * 1.4}px` }} 
+                />
             ) : <span className="zone-label-full">Graveyard</span>}
             {playerState.graveyard.length > 0 && <span className="zone-count">{playerState.graveyard.length}</span>}
         </div>

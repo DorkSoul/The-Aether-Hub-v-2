@@ -206,14 +206,12 @@ const Decks: React.FC<DecksProps> = ({
       setLoadingMessage('Saving deck file...');
       const cardsWithInstanceIds = fullDeckCards.map(card => ({ ...card, instanceId: crypto.randomUUID() }));
       
-      // --- MODIFIED --- Auto-detect commanders on import
       const importedCommanders = cardsWithInstanceIds.filter(card => {
           const typeLine = card.card_faces ? card.card_faces[0].type_line : card.type_line;
           return (typeLine.includes('Legendary') && typeLine.includes('Creature')) || typeLine.includes('Planeswalker');
       });
       const importedCommanderIds = importedCommanders.map(c => c.instanceId!);
-      const mainDeckCards = cardsWithInstanceIds.filter(c => !importedCommanderIds.includes(c.instanceId!));
-      // --- END MODIFICATION ---
+      const mainDeckCards = cardsWithInstanceIds.filter(c => !c.instanceId || !importedCommanderIds.includes(c.instanceId!));
 
       const deckDataToSave = { name: deckName, cards: cardsWithInstanceIds, commanders: importedCommanderIds };
       const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
@@ -657,9 +655,9 @@ const Decks: React.FC<DecksProps> = ({
                                       key={card.instanceId || `${card.id}-${index}`}
                                       card={card}
                                       imageDirectoryHandle={imagesDirectoryHandle}
-                                      size={cardSize}
+                                      style={{ width: `${cardSize}px`, height: `${cardSize * 1.4}px` }}
                                       onContextMenu={(e) => handleCardRightClick(e, card, index, true)}
-                                      onCardHover={onCardHover} // --- NEW ---
+                                      onCardHover={onCardHover}
                                   />
                               ))}
                           </div>
@@ -689,9 +687,9 @@ const Decks: React.FC<DecksProps> = ({
                                               key={card.instanceId || `${card.id}-${currentIndex}`}
                                               card={card}
                                               imageDirectoryHandle={imagesDirectoryHandle}
-                                              size={cardSize}
+                                              style={{ width: `${cardSize}px`, height: `${cardSize * 1.4}px` }}
                                               onContextMenu={(e) => handleCardRightClick(e, card, currentIndex, false)}
-                                              onCardHover={onCardHover} // --- NEW ---
+                                              onCardHover={onCardHover}
                                           />
                                       );
                                   })}

@@ -1,11 +1,9 @@
 /* src/components/PlayerZone/PlayerZone.css */
 .player-zone {
-  /* --- MODIFIED --- Ensure player zones are equally sized and can shrink. */
   flex: 1 1 0;
-  min-width: 0; /* Allows the flex item to shrink below its content size. */
-  
+  min-width: 0;
   display: flex;
-  flex-direction: column; /* Default direction: header, play-area, hand */
+  flex-direction: column;
   border: 2px solid var(--player-color, #555);
   background-color: rgba(0, 0, 0, 0.2);
   padding: 5px;
@@ -15,67 +13,53 @@
 }
 
 .player-zone.flipped {
-  flex-direction: column-reverse; /* Flipped direction: hand, play-area, header */
+  flex-direction: column-reverse;
 }
 
 .player-zone.flipped .game-row {
   flex-direction: row-reverse;
 }
 
-/* --- NEW --- Aligns cards to the right within the battlefield for flipped (top) players. */
 .player-zone.flipped .battlefield-row {
   justify-content: flex-end;
 }
 
-.player-zone.flipped .battlefield {
-  flex-direction: column-reverse; 
-}
-
-/* --- MODIFIED --- Header is now a flex container that centers its main content. */
 .player-header {
   background-color: rgba(0, 0, 0, 0.3);
   height: 24px;
   padding: 5px;
   box-sizing: border-box;
-  flex-shrink: 0; /* Prevent the header from shrinking */
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  /* Center the name/life total. */
   justify-content: center; 
-  /* Added position relative to anchor the absolute-positioned mana pool. */
   position: relative; 
 }
 .player-header h3 {
   margin: 0;
   font-size: 1rem;
-  /* This no longer needs to shrink. */
   flex-shrink: 0; 
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* --- MODIFIED --- Mana Pool is now positioned absolutely within the header. */
 .mana-pool {
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
   position: absolute;
-  /* Position on the far left, respecting padding. */
   left: 5px; 
-  /* Vertically center the pool. */
   top: 50%;
   transform: translateY(-50%);
 }
 
-/* --- NEW --- For flipped players, move the mana pool to the far right. */
 .player-zone.flipped .mana-pool {
     left: auto;
     right: 5px;
 }
 
-/* --- NEW --- Individual Mana Counter */
 .mana-counter {
   display: flex;
   align-items: center;
@@ -98,8 +82,33 @@
   text-align: center;
 }
 
+.freeform-controls {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 4px;
+}
+.player-zone.flipped .freeform-controls {
+    right: auto;
+    left: 5px;
+}
+
+.freeform-controls button {
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.freeform-controls button svg {
+    width: 12px;
+    height: 12px;
+}
+
 .play-area {
-  /* --- MODIFIED --- Takes up 4/5 of available space */
   flex: 4;
   display: flex;
   flex-direction: column;
@@ -123,9 +132,7 @@
     justify-content: center;
     padding: 2px;
     position: relative;
-    /* Zones are not flexible and have a width based on their content */
     flex: 0 0 auto;
-    /* This sets the default aspect ratio for all zones, including the command zone. */
     aspect-ratio: 63 / 88;
 }
 
@@ -134,10 +141,9 @@
     color: #888;
     text-transform: uppercase;
     text-align: center;
-    /* Clamp font size to be responsive but not too big or small */
     font-size: clamp(10px, 1.2vw, 14px);
     line-height: 1.1;
-    word-break: break-word; /* Break long words if necessary */
+    word-break: break-word;
 }
 
 .card-outline {
@@ -158,14 +164,13 @@
 
 .command-zone .cards-container {
     display: flex;
-    gap: 2px; /* A smaller gap to fit cards better */
+    gap: 2px;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
 }
 
-/* Battlefield row fills remaining space */
 .battlefield-row {
     flex: 1 1 auto;
     background-color: rgba(255, 255, 255, 0.05);
@@ -178,7 +183,6 @@
     min-height: 0;
 }
 
-/* Default card scaling for most zones */
 .zone .card-flipper,
 .zone .card,
 .battlefield-row .card-flipper,
@@ -186,16 +190,14 @@
     height: 100%;
     width: auto;
     margin: 0;
-    aspect-ratio: 63 / 88; /* Standard MTG card aspect ratio */
+    aspect-ratio: 63 / 88;
 }
 
-/* This rule overrides the default sizing for cards in the command zone.
-   It allows them to be flexible and scale down to fit the container. */
 .command-zone .card-flipper {
     flex: 1 1 0;
-    width: 0; /* Allows flex items to shrink below their content size */
-    height: auto; /* Height will be determined by the flexible width and aspect-ratio */
-    max-height: 100%; /* Prevents a single card from becoming taller than the row */
+    width: 0;
+    height: auto;
+    max-height: 100%;
 }
 
 .zone-count {
@@ -213,7 +215,6 @@
   font-weight: bold;
 }
 
-/* --- NEW --- Style for the card back image */
 .card-back-image {
     width: 100%;
     height: 100%;
@@ -221,9 +222,7 @@
     aspect-ratio: 63 / 88;
 }
 
-/* --- MODIFIED --- Hand container styles updated */
 .hand {
-  /* --- MODIFIED --- Takes up 1/5 of available space */
   flex: 1;
   min-height: 0;
   background-color: rgba(0, 0, 0, 0.3);
@@ -236,19 +235,48 @@
   overflow: hidden;
 }
 
-/* --- MODIFIED --- Card Flipper in hand can now shrink */
 .hand .card-flipper {
     height: calc(100% - 10px); 
     width: auto; 
     margin: 0;
-    flex-shrink: 1; /* Allow cards to shrink */
-    min-width: 20px; /* Prevent cards from disappearing completely */
-    aspect-ratio: 63 / 88; /* Maintain aspect ratio while shrinking */
+    flex-shrink: 1;
+    min-width: 20px;
+    aspect-ratio: 63 / 88;
 }
 
-/* --- MODIFIED --- Ensure card component fills the shrinking flipper */
 .hand .card-flipper .card {
     margin: 0;
     width: 100%;
     height: 100%;
+}
+
+/* --- Styles for Freeform Layout --- */
+.play-area.freeform {
+    flex-direction: row;
+}
+
+.play-area.freeform .side-zones-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 0 0 auto; /* Let it size to its content */
+}
+
+.play-area.freeform .side-zone-wrapper {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.play-area.freeform .battlefield-freeform {
+    flex: 1 1 auto;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    position: relative; /* Crucial for absolute positioning of cards */
+    overflow: hidden; /* Prevent scrollbars */
+}
+
+.battlefield-freeform .card-flipper {
+    position: absolute;
+    margin: 0;
 }

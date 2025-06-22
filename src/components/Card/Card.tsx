@@ -7,7 +7,6 @@ import './Card.css';
 interface CardProps {
   card: CardType;
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
-  size?: number;
   onContextMenu?: (event: React.MouseEvent) => void;
   isTapped?: boolean;
   isFlipped?: boolean; // This prop dictates the flipped state when provided
@@ -15,6 +14,7 @@ interface CardProps {
   onTap?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onCardHover?: (card: CardType | null) => void;
+  style?: React.CSSProperties;
 }
 
 interface SingleCardViewProps {
@@ -38,7 +38,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
   );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onCardHover }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onCardHover, style }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
@@ -83,9 +83,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
       isMounted = false;
       loadedUrls.forEach(url => URL.revokeObjectURL(url));
     };
-    // --- MODIFIED ---
-    // The dependency array now uses stable properties of the card. This prevents
-    // the effect from re-running when only the card's state (like isTapped) changes.
   }, [card.id, card.layout, imageDirectoryHandle]);
 
   const handlePrimaryAction = () => { // Typically left-click
@@ -110,7 +107,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
     }
   };
   
-  const cardStyle = size ? { width: `${size}px`, height: `${size * 1.4}px` } : {};
   const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''}`;
   
   let title = card.name;
@@ -133,7 +129,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, size, onContext
   
   const baseDivProps = {
     className: flipperClasses,
-    style: cardStyle,
+    style: style,
     onContextMenu: handleContextMenu,
     title: title,
     draggable: !!onDragStart,
