@@ -1,9 +1,11 @@
 // src/utils/settings.ts
 import { saveSettingToDB, getSettingFromDB } from './db';
+import type { GameSettings } from '../types'; // --- NEW --- Import GameSettings type
 
 const DECK_HANDLE_KEY = 'decksDirectoryHandle';
 const IMAGE_HANDLE_KEY = 'imagesDirectoryHandle';
 const CARD_SIZE_KEY = 'cardSize';
+const LAYOUT_KEY = 'gameLayout'; // --- NEW ---
 
 /**
  * Saves a FileSystemDirectoryHandle to IndexedDB.
@@ -51,4 +53,28 @@ export function saveCardSize(size: number): void {
 export function getCardSize(defaultValue: number): number {
     const savedValue = localStorage.getItem(CARD_SIZE_KEY);
     return savedValue ? parseInt(savedValue, 10) : defaultValue;
+}
+
+
+/**
+ * --- NEW ---
+ * Saves the user's preferred game layout to LocalStorage.
+ * @param layout The layout type to save.
+ */
+export function saveLayoutPreference(layout: GameSettings['layout']): void {
+    localStorage.setItem(LAYOUT_KEY, layout);
+}
+
+/**
+ * --- NEW ---
+ * Retrieves the user's preferred game layout from LocalStorage.
+ * @param defaultValue The default layout to return if none is saved.
+ * @returns The saved layout or the default value.
+ */
+export function getLayoutPreference(defaultValue: GameSettings['layout']): GameSettings['layout'] {
+    const savedValue = localStorage.getItem(LAYOUT_KEY);
+    if (savedValue === '1vAll' || savedValue === 'split') {
+        return savedValue;
+    }
+    return defaultValue;
 }
