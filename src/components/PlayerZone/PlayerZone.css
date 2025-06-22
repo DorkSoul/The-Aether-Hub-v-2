@@ -260,6 +260,7 @@
     flex-direction: column;
     gap: 5px;
     flex: 0 0 auto; /* Let it size to its content */
+    aspect-ratio: 15.5 / 88;
 }
 
 .play-area.freeform .side-zone-wrapper {
