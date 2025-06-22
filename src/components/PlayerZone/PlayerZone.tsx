@@ -39,10 +39,30 @@ interface GameCardRendererProps {
 const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
-    const rect = event.currentTarget.getBoundingClientRect();
+    
+    const nodeToDrag = event.currentTarget;
+    const clone = nodeToDrag.cloneNode(true) as HTMLElement;
+
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    document.body.appendChild(clone);
+
+    event.dataTransfer.setDragImage(clone, event.nativeEvent.offsetX, event.nativeEvent.offsetY);
+    
+    (nodeToDrag as HTMLElement).style.opacity = '0';
+
+    requestAnimationFrame(() => {
+        document.body.removeChild(clone);
+    });
+
+    const rect = nodeToDrag.getBoundingClientRect();
     const offset = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     onCardDragStart(card, location, offset);
   }, [card, location, onCardDragStart]);
+
+  const handleDragEnd = useCallback((event: React.DragEvent) => {
+    (event.currentTarget as HTMLElement).style.opacity = '1';
+  }, []);
 
   return (
     <Card
@@ -54,6 +74,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       onFlip={() => rest.onCardFlip(card.instanceId!)}
       onContextMenu={(e) => rest.onCardContextMenu(e, card)}
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onCardHover={rest.onCardHover} 
       style={style}
     />
@@ -187,9 +208,24 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         draggable={playerState.library.length > 0}
         onDragStart={(e) => {
           e.stopPropagation();
+          const nodeToDrag = e.currentTarget;
+          const clone = nodeToDrag.cloneNode(true) as HTMLElement;
+          clone.style.position = 'absolute';
+          clone.style.left = '-9999px';
+          document.body.appendChild(clone);
+          e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+          
+          (nodeToDrag as HTMLElement).style.opacity = '0';
+
+          requestAnimationFrame(() => {
+              document.body.removeChild(clone);
+          });
           const rect = e.currentTarget.getBoundingClientRect();
           const offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
           onLibraryDragStart({ playerId, zone: 'library' }, offset);
+        }}
+        onDragEnd={(e) => {
+            (e.currentTarget as HTMLElement).style.opacity = '1';
         }}
         onContextMenu={(e) => {
             e.preventDefault();

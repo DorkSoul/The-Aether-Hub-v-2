@@ -13,6 +13,7 @@ interface CardProps {
   onFlip?: () => void;
   onTap?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
+  onDragEnd?: (event: React.DragEvent) => void;
   onCardHover?: (card: CardType | null) => void;
   style?: React.CSSProperties;
 }
@@ -38,7 +39,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
   );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onCardHover, style }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
@@ -137,6 +138,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     title: title,
     draggable: !!onDragStart,
     onDragStart: onDragStart,
+    onDragEnd: onDragEnd,
     onMouseEnter: () => onCardHover?.(card),
   };
   
