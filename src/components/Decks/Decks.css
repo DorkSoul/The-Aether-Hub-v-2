@@ -115,10 +115,10 @@
 }
 
 .deck-view-cards {
-    /* MODIFIED: Changed from wrapping grid to a non-wrapping, scrollable row. */
-    justify-content: flex-start;
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    /* MODIFIED: This now allows cards to wrap and centers them, instead of forcing a single scrolling row. */
+    justify-content: center;
+    flex-wrap: wrap;
+    overflow-x: hidden; /* Ensure no horizontal scrollbar appears */
     padding-bottom: 15px;
     align-items: center;
 }

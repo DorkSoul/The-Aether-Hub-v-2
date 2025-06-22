@@ -579,7 +579,6 @@ function App() {
         <div className="main-content-area">
           {renderView()}
         </div>
-        {view === 'decks' && !popout && framedCardPreview}
       </main>
 
       {popoutContainer && createPortal(

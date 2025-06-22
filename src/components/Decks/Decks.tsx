@@ -206,12 +206,10 @@ const Decks: React.FC<DecksProps> = ({
       setLoadingMessage('Saving deck file...');
       const cardsWithInstanceIds = fullDeckCards.map(card => ({ ...card, instanceId: crypto.randomUUID() }));
       
-      const importedCommanders = cardsWithInstanceIds.filter(card => {
-          const typeLine = card.card_faces ? card.card_faces[0].type_line : card.type_line;
-          return (typeLine.includes('Legendary') && typeLine.includes('Creature')) || typeLine.includes('Planeswalker');
-      });
-      const importedCommanderIds = importedCommanders.map(c => c.instanceId!);
-      const mainDeckCards = cardsWithInstanceIds.filter(c => !c.instanceId || !importedCommanderIds.includes(c.instanceId!));
+      // --- MODIFIED --- Do not automatically assign commanders. All cards go to the main deck.
+      const importedCommanders: CardType[] = [];
+      const importedCommanderIds: string[] = [];
+      const mainDeckCards = cardsWithInstanceIds;
 
       const deckDataToSave = { name: deckName, cards: cardsWithInstanceIds, commanders: importedCommanderIds };
       const deckJsonString = JSON.stringify(deckDataToSave, null, 2);

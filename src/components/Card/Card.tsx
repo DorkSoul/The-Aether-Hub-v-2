@@ -118,7 +118,10 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
       
   const clickHandler = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!onTap && !onFlip) return;
+      
+      // --- MODIFIED --- This now correctly allows clicks for uncontrolled flippable cards.
+      const canBeInteractedWith = !!onTap || !!onFlip || (isFlippable && !isFlipStateControlled);
+      if (!canBeInteractedWith) return;
 
       if (e.ctrlKey) {
           handleSecondaryAction();
