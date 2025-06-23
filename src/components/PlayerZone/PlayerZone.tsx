@@ -152,41 +152,69 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
 
     const cardAspectRatio = 63 / 88;
     const cardGap = 5;
-    const containerWidth = handWidth - 10; // Account for padding
+    const containerPadding = 10;
+    const containerWidth = handWidth;
+    
+    let numRows = 1;
+    let finalCardHeight = 0;
 
-    // Determine a minimum card width to decide when to wrap.
-    const idealCardHeight = handHeight - 20;
-    const minCardWidth = Math.max(60, idealCardHeight * cardAspectRatio * 0.5);
+    const singleRowShrunkWidth = (containerWidth - (handCards.length - 1) * cardGap) / handCards.length;
+    const singleRowShrunkHeight = singleRowShrunkWidth / cardAspectRatio;
 
-    // Calculate the maximum number of cards that can fit in a row before wrapping.
-    const maxCardsPerRow = Math.floor((containerWidth + cardGap) / (minCardWidth + cardGap));
+    if (singleRowShrunkHeight >= handHeight / 1.9 || handCards.length === 1) {
+        numRows = 1;
+        const idealFullHeight = handHeight - containerPadding;
+        finalCardHeight = Math.min(singleRowShrunkHeight, idealFullHeight);
+    } else {
+        let calculatedNumRows = 2;
+        for (let n = 2; n <= handCards.length; n++) {
+            const rowHeight = handHeight / n;
+            const cardHeightInRow = rowHeight - (containerPadding / n);
 
-    if (handCards.length <= maxCardsPerRow || maxCardsPerRow <= 0) {
-      // If all cards fit in one row, we don't need to set a fixed width.
-      // Flexbox will handle the sizing.
-      return { cardRows: [handCards], handCardStyle: {} };
+            if (cardHeightInRow <= 0) {
+                calculatedNumRows = n;
+                break;
+            }
+
+            const cardWidthInRow = cardHeightInRow * cardAspectRatio;
+            const cardsThatFitPerRow = Math.floor((containerWidth + cardGap) / (cardWidthInRow + cardGap));
+
+            if (cardsThatFitPerRow <= 0) {
+                calculatedNumRows = n;
+                break;
+            }
+            
+            const neededRows = Math.ceil(handCards.length / cardsThatFitPerRow);
+            
+            if (neededRows <= n) {
+                calculatedNumRows = n;
+                break;
+            }
+        }
+        
+        numRows = calculatedNumRows;
+        const finalRowHeight = handHeight / numRows;
+        finalCardHeight = finalRowHeight - (containerPadding / numRows);
     }
-    
-    // If more cards than max, we need multiple rows.
-    const rows: CardType[][] = [];
-    const cardsToDistribute = [...handCards];
-    // This logic fills the first row completely before moving to the next, as requested.
-    while (cardsToDistribute.length > 0) {
-      const cardsForRow = cardsToDistribute.splice(0, maxCardsPerRow);
-      rows.push(cardsForRow);
-    }
-    
-    // To keep card sizes uniform across rows, we calculate a fixed width based
-    // on the row that has the most cards (which will be `maxCardsPerRow`).
-    const cardWidth = (containerWidth - (maxCardsPerRow - 1) * cardGap) / maxCardsPerRow;
-    
+
     const style = {
-      width: `${cardWidth}px`,
-      flexShrink: 0, // Prevent cards from shrinking further than the calculated width
+        height: `${finalCardHeight}px`,
     };
 
+    const cardsToDistribute = [...handCards];
+    const rows: CardType[][] = [];
+    if (numRows > 0) {
+        const cardsPerRow = Math.ceil(cardsToDistribute.length / numRows);
+        for (let i = 0; i < numRows; i++) {
+            if (cardsToDistribute.length > 0) {
+                rows.push(cardsToDistribute.splice(0, cardsPerRow));
+            }
+        }
+    }
+    
     return { cardRows: rows, handCardStyle: style };
-  }, [handWidth, playerState.hand, handHeight]);
+
+  }, [handWidth, playerState.hand, handHeight]); // --- The handHeight prop is a dependency here.
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -395,6 +423,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       <div 
         ref={handRef}
         className={`hand ${dropTarget?.playerId === playerId && dropTarget?.zone === 'hand' ? 'drop-target' : ''}`}
+        style={{ height: `${handHeight}px` }}
         onDragOver={(e) => onZoneDragOver(e, { playerId, zone: 'hand' })}
         onDragLeave={onZoneDragLeave}
         onDrop={(e) => { e.stopPropagation(); onZoneDrop({ playerId, zone: 'hand' }, e); }}

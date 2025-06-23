@@ -223,21 +223,21 @@
 }
 
 .hand {
-  flex: 0 0 auto; /* Let flex-basis control the size */
+  flex: 0 0 auto;
   min-height: 0;
   background-color: rgba(0, 0, 0, 0.3);
   border-radius: 5px;
   padding: 5px;
   display: flex;
-  flex-direction: column; /* Lays out hand-rows vertically */
+  flex-direction: column;
   justify-content: center;
   gap: 5px;
   overflow: hidden;
-  position: relative; /* For the resizer */
+  position: relative;
 }
 
 .hand-row {
-    flex: 1; /* Each row takes equal vertical space */
+    flex: 1;
     min-height: 0;
     display: flex;
     justify-content: center;
@@ -261,11 +261,10 @@
 }
 
 .hand .card-flipper {
-    height: 100%;
+    /* height is now set by inline style from the component */
     width: auto; 
     margin: 0;
-    flex-shrink: 1;
-    min-width: 20px;
+    flex-shrink: 1; /* Allow shrinking in the "ideal size" case */
     aspect-ratio: 63 / 88;
 }
 
