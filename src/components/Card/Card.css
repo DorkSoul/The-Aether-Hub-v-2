@@ -74,13 +74,22 @@
   margin: 0;
 }
 
-/* --- REVISED --- Flowing gold border animation */
-@keyframes gold-flow {
+/* --- REVISED --- Border trace animation for a "snake" effect */
+@keyframes border-trace {
   0% {
-    background-position: -200% center;
+    background-size: 0% 3px, 3px 0%, 0% 3px, 3px 0%;
+  }
+  25% {
+    background-size: 100% 3px, 3px 0%, 0% 3px, 3px 0%;
+  }
+  50% {
+    background-size: 100% 3px, 3px 100%, 0% 3px, 3px 0%;
+  }
+  75% {
+    background-size: 100% 3px, 3px 100%, 100% 3px, 3px 0%;
   }
   100% {
-    background-position: 200% center;
+    background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%;
   }
 }
 
@@ -89,7 +98,9 @@
   overflow: visible; /* Allow pseudo-element to be visible outside the bounding box */
 }
 
-.card-flipper.highlight-attention::before {
+/* Common styles for the drawing and erasing pseudo-elements */
+.card-flipper.highlight-attention::before,
+.card-flipper.highlight-attention::after {
   content: '';
   position: absolute;
   top: -4px;
@@ -97,18 +108,10 @@
   right: -4px;
   bottom: -4px;
   border-radius: 14px;
-  padding: 3px; /* Controls the thickness of the border */
-  background: linear-gradient(
-    90deg,
-    rgba(240,230,140,0) 0%,
-    rgba(255,215,0,1) 25%,
-    rgba(240,230,140,1) 50%,
-    rgba(255,215,0,1) 75%,
-    rgba(240,230,140,0) 100%
-  );
-  background-size: 50% auto;
+  padding: 3px;
   background-repeat: no-repeat;
-  animation: gold-flow 1s linear 3; /* Animate for 1s per loop, 3 times */
+  
+  /* Use a mask to create the border shape */
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -117,5 +120,32 @@
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: destination-out;
   mask-composite: exclude;
-  z-index: -1; /* Place the border behind the card content */
+  z-index: -1;
+}
+
+/* The drawing (gold) layer */
+.card-flipper.highlight-attention::before {
+  background-image:
+    linear-gradient(to right, gold, gold),
+    linear-gradient(to bottom, gold, gold),
+    linear-gradient(to left, gold, gold),
+    linear-gradient(to top, gold, gold);
+  background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  background-size: 0 3px, 3px 0, 0 3px, 3px 0;
+  animation: border-trace 1.5s linear 3;
+}
+
+/* The erasing (background color) layer that follows the drawing layer */
+.card-flipper.highlight-attention::after {
+  /* This color should match the general background of the app */
+  background-image:
+    linear-gradient(to right, #282c34, #282c34),
+    linear-gradient(to bottom, #282c34, #282c34),
+    linear-gradient(to left, #282c34, #282c34),
+    linear-gradient(to top, #282c34, #282c34);
+  background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  background-size: 0 3px, 3px 0, 0 3px, 3px 0;
+  animation: border-trace 1.5s linear 3;
+  /* This delay creates the "snake" length. The erasing trail follows the drawing one. */
+  animation-delay: 0.2s; 
 }
