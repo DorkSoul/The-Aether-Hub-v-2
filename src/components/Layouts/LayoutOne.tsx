@@ -26,6 +26,7 @@ interface LayoutOneProps {
   onCardHover: (card: CardType | null) => void;
   cardPreview: React.ReactNode;
   stackPanel: React.ReactNode;
+  cardSize: number;
 }
 
 const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, ...interactionProps }) => {

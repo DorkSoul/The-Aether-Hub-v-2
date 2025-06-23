@@ -229,11 +229,20 @@
   border-radius: 5px;
   padding: 5px;
   display: flex;
+  flex-direction: column; /* Lays out hand-rows vertically */
   justify-content: center;
-  align-items: center;
   gap: 5px;
   overflow: hidden;
   position: relative; /* For the resizer */
+}
+
+.hand-row {
+    flex: 1; /* Each row takes equal vertical space */
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
 }
 
 .hand-resizer {
@@ -252,7 +261,7 @@
 }
 
 .hand .card-flipper {
-    height: calc(100% - 10px); 
+    height: 100%;
     width: auto; 
     margin: 0;
     flex-shrink: 1;

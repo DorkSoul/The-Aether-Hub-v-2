@@ -1,5 +1,5 @@
 // src/components/PlayerZone/PlayerZone.tsx
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import Card from '../Card/Card';
 import cardBackUrl from '../../assets/card_back.png';
@@ -101,6 +101,7 @@ interface PlayerZoneProps {
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
   onCardHover: (card: CardType | null) => void; 
+  cardSize: number;
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -122,12 +123,58 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   onZoneDragOver,
   onZoneDragLeave,
   dropTarget,
-  onCardHover, 
+  onCardHover,
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
   const isResizing = useRef(false);
   const lastY = useRef(0);
+  const handRef = useRef<HTMLDivElement>(null);
+  const [handWidth, setHandWidth] = useState(0);
+
+  useEffect(() => {
+    if (handRef.current) {
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                setHandWidth(entry.contentRect.width);
+            }
+        });
+        resizeObserver.observe(handRef.current);
+        return () => resizeObserver.disconnect();
+    }
+  }, []);
+  
+  const cardRows = useMemo(() => {
+    const handCards = playerState.hand;
+    if (!handWidth || handCards.length === 0 || handHeight <= 20) {
+        return [handCards];
+    }
+
+    const cardAspectRatio = 63 / 88;
+    const cardGap = 5;
+    const containerWidth = handWidth - 10; // Account for padding
+
+    // Determine min width based on hand height. Taller hand should have bigger "minimum" cards.
+    const idealCardHeight = handHeight - 20; // Rough height of a card in a single row
+    // We'll wrap if cards need to shrink to less than 50% of their ideal width for the current hand height.
+    const minCardWidth = Math.max(60, idealCardHeight * cardAspectRatio * 0.5);
+
+    const maxCardsPerRow = Math.floor((containerWidth + cardGap) / (minCardWidth + cardGap));
+
+    if (handCards.length <= maxCardsPerRow || maxCardsPerRow <= 0) {
+        return [handCards];
+    }
+    
+    // Fill rows completely, with the remainder going in the last row.
+    const rows: CardType[][] = [];
+    const cardsToDistribute = [...handCards];
+    while (cardsToDistribute.length > 0) {
+        const cardsForRow = cardsToDistribute.splice(0, maxCardsPerRow);
+        rows.push(cardsForRow);
+    }
+    
+    return rows;
+  }, [handWidth, playerState.hand, handHeight]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -140,8 +187,6 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       if (!isResizing.current) return;
       const deltaY = event.clientY - lastY.current;
       lastY.current = event.clientY;
-      // For flipped (top) players, dragging down increases height.
-      // For normal (bottom) players, dragging up increases height.
       onHandResize(isFlipped ? deltaY : -deltaY);
     };
 
@@ -336,6 +381,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         )}
       </div>
       <div 
+        ref={handRef}
         className={`hand ${dropTarget?.playerId === playerId && dropTarget?.zone === 'hand' ? 'drop-target' : ''}`}
         style={{ flexBasis: `${handHeight}px` }}
         onDragOver={(e) => onZoneDragOver(e, { playerId, zone: 'hand' })}
@@ -343,7 +389,26 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onDrop={(e) => { e.stopPropagation(); onZoneDrop({ playerId, zone: 'hand' }, e); }}
       >
         <div className="hand-resizer" onMouseDown={handleMouseDown}></div>
-        {playerState.hand.map((card) => renderGameCard(card, { zone: 'hand' }))}
+        {cardRows.map((row, rowIndex) => (
+            <div key={rowIndex} className="hand-row">
+                {row.map((card) => {
+                  const source: CardLocation = { playerId, zone: 'hand' };
+                  return (
+                    <GameCardRenderer
+                      key={`hand-${card.instanceId}`}
+                      card={card}
+                      location={source}
+                      imageDirectoryHandle={imagesDirectoryHandle}
+                      onCardTap={onCardTap}
+                      onCardFlip={onCardFlip}
+                      onCardContextMenu={onCardContextMenu}
+                      onCardDragStart={onCardDragStart}
+                      onCardHover={onCardHover}
+                    />
+                  );
+                })}
+            </div>
+        ))}
       </div>
     </div>
   );

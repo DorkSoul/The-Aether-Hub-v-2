@@ -25,6 +25,7 @@ interface LayoutTwoProps {
   onCardHover: (card: CardType | null) => void;
   cardPreview: React.ReactNode;
   stackPanel: React.ReactNode;
+  cardSize: number;
 }
 
 const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, ...interactionProps }) => {

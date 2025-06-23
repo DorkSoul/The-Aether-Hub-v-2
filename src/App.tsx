@@ -136,11 +136,9 @@ function App() {
   const [stackWidth, setStackWidth] = useState(300);
   const isResizingStack = useRef(false);
   
-  // --- NEW --- State for fullscreen mode and notification
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
   const [showFullscreenNotification, setShowFullscreenNotification] = useState(false);
 
-  // --- NEW --- Effect to listen for fullscreen changes (e.g., user pressing ESC)
   useEffect(() => {
     const onFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -149,7 +147,6 @@ function App() {
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
 
-  // --- NEW --- Function to toggle fullscreen and show notification
   const handleToggleFullscreen = () => {
     if (!isFullscreen) {
       document.documentElement.requestFullscreen();
@@ -474,6 +471,7 @@ function App() {
               previewCard={previewCard}
               cardPreview={popout ? null : framedCardPreview}
               stackPanel={stackPopout ? null : framedStackPanel}
+              cardSize={cardSize}
             />
           );
         }
@@ -502,7 +500,6 @@ function App() {
 
   return (
     <div className="App">
-       {/* --- NEW --- Fullscreen Notification */}
        <div className={`fullscreen-notification ${showFullscreenNotification ? 'visible' : ''}`}>
         <p>Press ESC to exit fullscreen</p>
       </div>
@@ -564,7 +561,6 @@ function App() {
                 </button>
               </>
             )}
-             {/* --- NEW --- Fullscreen Button */}
             <button onClick={handleToggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
               {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
             </button>
