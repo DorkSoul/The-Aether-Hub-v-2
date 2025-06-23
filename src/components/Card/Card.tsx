@@ -9,7 +9,8 @@ interface CardProps {
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
   onContextMenu?: (event: React.MouseEvent) => void;
   isTapped?: boolean;
-  isFlipped?: boolean; // This prop dictates the flipped state when provided
+  isFlipped?: boolean; 
+  isHighlighted?: boolean;
   onFlip?: () => void;
   onTap?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
@@ -39,12 +40,12 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl }) => {
   );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style, isHighlighted = false }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isHighlighted, setIsHighlighted] = useState(false);
+  const [isPinged, setIsPinged] = useState(false);
 
   const flippableLayouts = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card', 'meld'];
   const isFlippable = flippableLayouts.includes(card.layout || '');
@@ -113,14 +114,14 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     if (e.button === 1) { // Middle mouse button
         e.preventDefault();
         e.stopPropagation();
-        setIsHighlighted(true);
+        setIsPinged(true);
         setTimeout(() => {
-            setIsHighlighted(false);
-        }, 3000); // Highlight for 3 seconds
+            setIsPinged(false);
+        }, 1800); // Highlight for 3 animation cycles
     }
   };
   
-  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isHighlighted ? 'highlight-attention' : ''}`;
+  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isHighlighted || isPinged ? 'highlight-attention' : ''}`;
   
   let title = card.name;
   if (onTap || onFlip) {

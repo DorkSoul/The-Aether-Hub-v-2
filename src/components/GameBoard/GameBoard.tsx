@@ -3,6 +3,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef, useCallbac
 import type { PlayerState, GameSettings, Card as CardType, GameState, DraggedItem, CardLocation } from '../../types';
 import { getCardsFromDB } from '../../utils/db';
 import { getHandHeights, saveHandHeights, getFreeformSizes, saveFreeformSizes } from '../../utils/settings';
+import { parseOracleText } from '../../utils/abilityUtils';
 import LayoutOne from '../Layouts/LayoutOne';
 import LayoutTwo from '../Layouts/LayoutTwo';
 import ContextMenu from '../ContextMenu/ContextMenu';
@@ -20,6 +21,8 @@ interface GameBoardProps {
     cardPreview: React.ReactNode;
     stackPanel: React.ReactNode;
     cardSize: number;
+    onAddToStack: (abilityText: string, card: CardType) => void;
+    hoveredStackCardId: string | null;
 }
 
 export interface GameBoardHandle {
@@ -30,7 +33,7 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return [...deck].sort(() => Math.random() - 0.5);
 };
 
-const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize }, ref) => {
+const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize, onAddToStack, hoveredStackCardId }, ref) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +41,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null);
   const [dropTarget, setDropTarget] = useState<CardLocation | null>(null);
   const [libraryContextMenu, setLibraryContextMenu] = useState<{ x: number, y: number, playerId: string } | null>(null);
+  const [cardContextMenu, setCardContextMenu] = useState<{ x: number, y: number, card: CardType } | null>(null);
   const [scryState, setScryState] = useState<{ playerId: string; cards: CardType[] } | null>(null);
   const [freeformCardSizes, setFreeformCardSizes] = useState<{[playerId: string]: number}>({});
   const [handHeights, setHandHeights] = useState<{ [playerId: string]: number }>({});
@@ -391,8 +395,21 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
 
   const handleCardContextMenu = useCallback((event: React.MouseEvent, card: CardType) => {
       event.preventDefault();
-      console.log("Context menu for:", card.name, card.instanceId);
+      setCardContextMenu({ x: event.clientX, y: event.clientY, card });
   }, []);
+
+  const buildCardAbilitiesMenu = useCallback((card: CardType) => {
+    const abilities = parseOracleText(card.oracle_text);
+
+    if (abilities.length === 0) {
+      return [{ label: '(No activatable abilities found)', action: () => {} }];
+    }
+
+    return abilities.map(ability => ({
+      label: ability,
+      action: () => onAddToStack(ability, card),
+    }));
+  }, [onAddToStack]);
 
   const handleDraw = useCallback((playerId: string, count: number) => {
     setPlayerStates(currentStates => {
@@ -557,7 +574,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       dropTarget: dropTarget,
       onCardHover: onCardHover,
       cardSize,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize]);
+      hoveredStackCardId,
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
@@ -590,6 +608,14 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           onHandResize={handleHandResize}
           {...interactionProps}
         />
+      )}
+      {cardContextMenu && (
+          <ContextMenu
+              x={cardContextMenu.x}
+              y={cardContextMenu.y}
+              onClose={() => setCardContextMenu(null)}
+              options={buildCardAbilitiesMenu(cardContextMenu.card)}
+          />
       )}
       {libraryContextMenu && (
           <ContextMenu

@@ -33,10 +33,11 @@ interface GameCardRendererProps {
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
   onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
   onCardHover: (card: CardType | null) => void; 
+  isHighlighted: boolean;
   style?: React.CSSProperties;
 }
 
-const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, ...rest }) => {
+const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
     
@@ -70,6 +71,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       imageDirectoryHandle={rest.imageDirectoryHandle}
       isTapped={card.isTapped}
       isFlipped={card.isFlipped}
+      isHighlighted={isHighlighted}
       onTap={() => rest.onCardTap(card.instanceId!)}
       onFlip={() => rest.onCardFlip(card.instanceId!)}
       onContextMenu={(e) => rest.onCardContextMenu(e, card)}
@@ -102,6 +104,7 @@ interface PlayerZoneProps {
   dropTarget: CardLocation | null;
   onCardHover: (card: CardType | null) => void; 
   cardSize: number;
+  hoveredStackCardId: string | null;
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -124,6 +127,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   onZoneDragLeave,
   dropTarget,
   onCardHover,
+  hoveredStackCardId,
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -263,6 +267,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onCardContextMenu={onCardContextMenu}
         onCardDragStart={onCardDragStart}
         onCardHover={onCardHover} 
+        isHighlighted={!!(hoveredStackCardId && card.instanceId === hoveredStackCardId)}
         style={cardStyle}
       />
     );
@@ -444,6 +449,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
                       onCardContextMenu={onCardContextMenu}
                       onCardDragStart={onCardDragStart}
                       onCardHover={onCardHover}
+                      isHighlighted={!!(hoveredStackCardId && card.instanceId === hoveredStackCardId)}
                       style={handCardStyle}
                     />
                   );

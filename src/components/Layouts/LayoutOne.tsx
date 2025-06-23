@@ -27,9 +27,10 @@ interface LayoutOneProps {
   cardPreview: React.ReactNode;
   stackPanel: React.ReactNode;
   cardSize: number;
+  hoveredStackCardId: string | null;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -44,6 +45,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             imagesDirectoryHandle={imagesDirectoryHandle}
             handHeight={handHeights[activeOpponent.id]}
             onHandResize={(deltaY) => onHandResize(activeOpponent.id, deltaY)}
+            hoveredStackCardId={hoveredStackCardId}
             {...interactionProps}
           />
         ) : (
@@ -60,6 +62,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           imagesDirectoryHandle={imagesDirectoryHandle}
           handHeight={handHeights[localPlayer.id]}
           onHandResize={(deltaY) => onHandResize(localPlayer.id, deltaY)}
+          hoveredStackCardId={hoveredStackCardId}
           {...interactionProps}
         />
         {cardPreview}

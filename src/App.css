@@ -251,6 +251,44 @@
   font-size: 1.1rem;
 }
 
+.stack-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  align-self: flex-start; /* Align list to the top */
+}
+
+.stack-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid #444;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.stack-item:last-child {
+  border-bottom: none;
+}
+
+.stack-item:hover {
+  background-color: #3a3f4a;
+}
+
+.stack-item-source {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.stack-item-text {
+  margin: 0;
+  font-size: 1rem;
+  white-space: pre-wrap; /* Preserve newlines from oracle text */
+}
+
 .stack-panel-content {
   flex-grow: 1;
   display: flex;

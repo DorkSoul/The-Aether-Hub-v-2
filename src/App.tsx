@@ -7,14 +7,19 @@ import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoar
 import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
-import type { GameSettings, GameState, Card as CardType } from './types';
+import type { GameSettings, GameState, Card as CardType, StackItem } from './types';
 import Tabs from './components/Tabs/Tabs';
 import Card from './components/Card/Card'; 
+import { TextWithMana } from './components/TextWithMana/TextWithMana';
 import './App.css';
 
 type View = 'decks' | 'game-setup' | 'game';
 
 interface StackPanelProps {
+  stack: StackItem[];
+  onItemClick: (id: string) => void;
+  onItemEnter: (cardInstanceId: string) => void;
+  onItemLeave: () => void;
   isMinimized: boolean;
   onToggleMinimize: () => void;
   onPopOut: () => void;
@@ -23,7 +28,7 @@ interface StackPanelProps {
   onResizeMouseDown: (event: React.MouseEvent) => void;
 }
 
-const StackPanel: React.FC<StackPanelProps> = ({ isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown }) => {
+const StackPanel: React.FC<StackPanelProps> = ({ stack, onItemClick, onItemEnter, onItemLeave, isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown }) => {
   if (isMinimized) {
     return (
       <div className="stack-panel-container minimized">
@@ -38,7 +43,7 @@ const StackPanel: React.FC<StackPanelProps> = ({ isMinimized, onToggleMinimize, 
     <div className="stack-panel-container" style={{ width: `${width}px` }}>
         {isResizable && <div className="stack-resizer" onMouseDown={onResizeMouseDown}></div>}
       <div className="stack-panel-header">
-        <h3>Stack</h3>
+        <h3>Stack ({stack.length})</h3>
         <div className="panel-buttons">
             <button onClick={onPopOut} title="Pop-out Stack">
                 <PopOutIcon />
@@ -49,9 +54,28 @@ const StackPanel: React.FC<StackPanelProps> = ({ isMinimized, onToggleMinimize, 
         </div>
       </div>
       <div className="stack-panel-content">
-        <div className="stack-placeholder">
-          <p>The stack is currently empty.</p>
-        </div>
+        {stack.length > 0 ? (
+          <ul className="stack-list">
+            {stack.map((item) => (
+              <li
+                key={item.id}
+                onClick={() => onItemClick(item.id)}
+                onMouseEnter={() => onItemEnter(item.cardInstanceId)}
+                onMouseLeave={onItemLeave}
+                className="stack-item"
+              >
+                <span className="stack-item-source">{item.sourceCardName}</span>
+                <p className="stack-item-text">
+                  <TextWithMana text={item.text} />
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="stack-placeholder">
+            <p>The stack is currently empty.</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -131,6 +155,8 @@ function App() {
   const gameBoardRef = useRef<GameBoardHandle>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
+  const [stack, setStack] = useState<StackItem[]>([]);
+  const [hoveredStackCardId, setHoveredStackCardId] = useState<string | null>(null);
   const [isStackMinimized, setIsStackMinimized] = useState(false);
   const [stackPopout, setStackPopout] = useState<Window | null>(null);
   const [stackPopoutContainer, setStackPopoutContainer] = useState<HTMLElement | null>(null);
@@ -426,7 +452,31 @@ function App() {
     setGameSettings(null);
     setLoadedGameState(null);
     setActiveOpponentId(null);
+    setStack([]);
     setView('game-setup');
+  };
+
+  const handleAddToStack = (abilityText: string, card: CardType) => {
+    if (!card.instanceId) return;
+    const newItem: StackItem = {
+      id: crypto.randomUUID(),
+      text: abilityText,
+      cardInstanceId: card.instanceId,
+      sourceCardName: card.name.split('//')[0].trim(),
+    };
+    setStack(prevStack => [...prevStack, newItem]);
+  };
+
+  const handleRemoveFromStack = (stackItemId: string) => {
+    setStack(prevStack => prevStack.filter(item => item.id !== stackItemId));
+  };
+
+  const handleStackItemEnter = (cardInstanceId: string) => {
+    setHoveredStackCardId(cardInstanceId);
+  };
+
+  const handleStackItemLeave = () => {
+    setHoveredStackCardId(null);
   };
 
   const cardPreviewContent = previewCard ? (
@@ -456,13 +506,38 @@ function App() {
   );
 
   const stackPanelContent = (
-    <div className="stack-placeholder">
-      <p>The stack is currently empty.</p>
-    </div>
+    <div className="stack-panel-content">
+        {stack.length > 0 ? (
+          <ul className="stack-list">
+            {stack.map((item) => (
+              <li
+                key={item.id}
+                onClick={() => handleRemoveFromStack(item.id)}
+                onMouseEnter={() => handleStackItemEnter(item.cardInstanceId)}
+                onMouseLeave={handleStackItemLeave}
+                className="stack-item"
+              >
+                <span className="stack-item-source">{item.sourceCardName}</span>
+                <p className="stack-item-text">
+                  <TextWithMana text={item.text} />
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="stack-placeholder">
+            <p>The stack is currently empty.</p>
+          </div>
+        )}
+      </div>
   );
 
   const framedStackPanel = (
       <StackPanel
+          stack={stack}
+          onItemClick={handleRemoveFromStack}
+          onItemEnter={handleStackItemEnter}
+          onItemLeave={handleStackItemLeave}
           isMinimized={isStackMinimized}
           onToggleMinimize={() => setIsStackMinimized(p => !p)}
           onPopOut={handleStackPopOut}
@@ -492,6 +567,8 @@ function App() {
               cardPreview={popout ? null : framedCardPreview}
               stackPanel={stackPopout ? null : framedStackPanel}
               cardSize={cardSize}
+              onAddToStack={handleAddToStack}
+              hoveredStackCardId={hoveredStackCardId}
             />
           );
         }
@@ -605,10 +682,8 @@ function App() {
         popoutContainer
       )}
       {stackPopoutContainer && createPortal(
-        <div className='stack-panel-content' style={{width: '100%', height: '100%', padding: '1rem', boxSizing: 'border-box' }}>
-            {stackPanelContent}
-        </div>,
-        stackPopoutContainer
+            stackPanelContent,
+            stackPopoutContainer
       )}
     </div>
   );

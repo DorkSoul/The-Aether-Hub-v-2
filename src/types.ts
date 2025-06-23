@@ -49,6 +49,13 @@ export interface Card {
   y?: number;
 }
 
+export interface StackItem {
+  id: string; // Unique ID for the stack item itself
+  text: string; // The ability/spell text
+  cardInstanceId: string; // The instanceId of the card that generated this item
+  sourceCardName: string; // The name of the source card for display
+}
+
 // Configuration for a single player in the game setup screen.
 export interface PlayerConfig {
     id: string;
