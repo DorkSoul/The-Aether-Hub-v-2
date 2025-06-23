@@ -144,36 +144,48 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     }
   }, []);
   
-  const cardRows = useMemo(() => {
+  const { cardRows, handCardStyle } = useMemo(() => {
     const handCards = playerState.hand;
-    if (!handWidth || handCards.length === 0 || handHeight <= 20) {
-        return [handCards];
+    if (!handWidth || handCards.length === 0 || handHeight <= 30) {
+      return { cardRows: [handCards], handCardStyle: {} };
     }
 
     const cardAspectRatio = 63 / 88;
     const cardGap = 5;
     const containerWidth = handWidth - 10; // Account for padding
 
-    // Determine min width based on hand height. Taller hand should have bigger "minimum" cards.
-    const idealCardHeight = handHeight - 20; // Rough height of a card in a single row
-    // We'll wrap if cards need to shrink to less than 50% of their ideal width for the current hand height.
+    // Determine a minimum card width to decide when to wrap.
+    const idealCardHeight = handHeight - 20;
     const minCardWidth = Math.max(60, idealCardHeight * cardAspectRatio * 0.5);
 
+    // Calculate the maximum number of cards that can fit in a row before wrapping.
     const maxCardsPerRow = Math.floor((containerWidth + cardGap) / (minCardWidth + cardGap));
 
     if (handCards.length <= maxCardsPerRow || maxCardsPerRow <= 0) {
-        return [handCards];
+      // If all cards fit in one row, we don't need to set a fixed width.
+      // Flexbox will handle the sizing.
+      return { cardRows: [handCards], handCardStyle: {} };
     }
     
-    // Fill rows completely, with the remainder going in the last row.
+    // If more cards than max, we need multiple rows.
     const rows: CardType[][] = [];
     const cardsToDistribute = [...handCards];
+    // This logic fills the first row completely before moving to the next, as requested.
     while (cardsToDistribute.length > 0) {
-        const cardsForRow = cardsToDistribute.splice(0, maxCardsPerRow);
-        rows.push(cardsForRow);
+      const cardsForRow = cardsToDistribute.splice(0, maxCardsPerRow);
+      rows.push(cardsForRow);
     }
     
-    return rows;
+    // To keep card sizes uniform across rows, we calculate a fixed width based
+    // on the row that has the most cards (which will be `maxCardsPerRow`).
+    const cardWidth = (containerWidth - (maxCardsPerRow - 1) * cardGap) / maxCardsPerRow;
+    
+    const style = {
+      width: `${cardWidth}px`,
+      flexShrink: 0, // Prevent cards from shrinking further than the calculated width
+    };
+
+    return { cardRows: rows, handCardStyle: style };
   }, [handWidth, playerState.hand, handHeight]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -404,6 +416,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
                       onCardContextMenu={onCardContextMenu}
                       onCardDragStart={onCardDragStart}
                       onCardHover={onCardHover}
+                      style={handCardStyle}
                     />
                   );
                 })}
