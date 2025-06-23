@@ -44,6 +44,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isHighlighted, setIsHighlighted] = useState(false);
 
   const flippableLayouts = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card', 'meld'];
   const isFlippable = flippableLayouts.includes(card.layout || '');
@@ -107,8 +108,19 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
       onContextMenu(e);
     }
   };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 1) { // Middle mouse button
+        e.preventDefault();
+        e.stopPropagation();
+        setIsHighlighted(true);
+        setTimeout(() => {
+            setIsHighlighted(false);
+        }, 3000); // Highlight for 3 seconds
+    }
+  };
   
-  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''}`;
+  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isHighlighted ? 'highlight-attention' : ''}`;
   
   let title = card.name;
   if (onTap || onFlip) {
@@ -120,7 +132,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
   const clickHandler = (e: React.MouseEvent) => {
       e.stopPropagation();
       
-      // --- MODIFIED --- This now correctly allows clicks for uncontrolled flippable cards.
       const canBeInteractedWith = !!onTap || !!onFlip || (isFlippable && !isFlipStateControlled);
       if (!canBeInteractedWith) return;
 
@@ -135,6 +146,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     className: flipperClasses,
     style: style,
     onContextMenu: handleContextMenu,
+    onMouseDown: handleMouseDown,
     title: title,
     draggable: !!onDragStart,
     onDragStart: onDragStart,
