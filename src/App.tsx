@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
-// --- MODIFIED --- Import new icons
 import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
@@ -67,12 +66,13 @@ interface CardPreviewProps {
   isResizable: boolean;
   width: number;
   onResizeMouseDown: (event: React.MouseEvent) => void;
+  forwardedRef: React.Ref<HTMLDivElement>;
 }
 
-const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown }) => {
+const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown, forwardedRef }) => {
   if (isMinimized) {
     return (
-      <div className="card-preview-container minimized">
+      <div className="card-preview-container minimized" ref={forwardedRef}>
         <button onClick={onToggleMinimize} title="Show Card Preview">
           <EyeIcon />
         </button>
@@ -81,7 +81,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, i
   }
 
   return (
-    <div className="card-preview-container" style={{ width: `${width}px` }}>
+    <div className="card-preview-container" style={{ width: `${width}px` }} ref={forwardedRef}>
         {isResizable && <div className="preview-resizer" onMouseDown={onResizeMouseDown}></div>}
       <div className="card-preview-header">
         <h3>Card Preview</h3>
@@ -129,6 +129,7 @@ function App() {
   const [previewWidth, setPreviewWidth] = useState(300);
   const isResizing = useRef(false);
   const gameBoardRef = useRef<GameBoardHandle>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const [isStackMinimized, setIsStackMinimized] = useState(false);
   const [stackPopout, setStackPopout] = useState<Window | null>(null);
@@ -164,11 +165,29 @@ function App() {
 
   const handleResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return;
-    const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 200 && newWidth < 800) {
-        setPreviewWidth(newWidth);
+    let newWidth = window.innerWidth - e.clientX;
+
+    if (previewContainerRef.current && !isPreviewMinimized) {
+        const contentElement = previewContainerRef.current.querySelector('.card-preview-content') as HTMLElement;
+        if (contentElement) {
+            const contentHeight = contentElement.clientHeight;
+            const cardAspectRatio = 63 / 88;
+            
+            const maxCardWidth = contentHeight * cardAspectRatio;
+            const maxPaneWidth = maxCardWidth ;
+
+            if (newWidth > maxPaneWidth) {
+                newWidth = maxPaneWidth;
+            }
+        }
     }
-  }, []);
+    
+    if (newWidth < 200) {
+        newWidth = 200;
+    }
+
+    setPreviewWidth(newWidth);
+  }, [isPreviewMinimized]);
 
   const handleResizeMouseUp = useCallback(() => {
     isResizing.current = false;
@@ -429,9 +448,10 @@ function App() {
           isMinimized={isPreviewMinimized}
           onToggleMinimize={() => setIsPreviewMinimized(p => !p)}
           onPopOut={handlePopOut}
-          isResizable={true}
+          isResizable={!popout}
           width={previewWidth}
           onResizeMouseDown={handleResizeMouseDown}
+          forwardedRef={previewContainerRef}
       />
   );
 
@@ -446,7 +466,7 @@ function App() {
           isMinimized={isStackMinimized}
           onToggleMinimize={() => setIsStackMinimized(p => !p)}
           onPopOut={handleStackPopOut}
-          isResizable={true}
+          isResizable={!stackPopout}
           width={stackWidth}
           onResizeMouseDown={handleStackResizeMouseDown}
       />
@@ -575,6 +595,7 @@ function App() {
         <div className="main-content-area">
           {renderView()}
         </div>
+        {view === 'decks' && (popout ? null : framedCardPreview)}
       </main>
 
       {popoutContainer && createPortal(
