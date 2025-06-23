@@ -124,4 +124,6 @@ export interface GameState {
     playerStates: PlayerState[];
     activeOpponentId: string | null;
     gameSettings: GameSettings;
+    handHeights?: { [playerId: string]: number };
+    freeformCardSizes?: { [playerId: string]: number };
 }

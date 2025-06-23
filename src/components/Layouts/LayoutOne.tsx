@@ -10,11 +10,13 @@ interface LayoutOneProps {
   activeOpponentId: string | null;
   playAreaLayout: 'rows' | 'freeform';
   freeformCardSizes: {[playerId: string]: number};
+  handHeights: {[playerId: string]: number};
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
   onLibraryContextMenu: (event: React.MouseEvent, playerId: string) => void;
   onUpdateFreeformCardSize: (playerId: string, delta: number) => void;
+  onHandResize: (playerId: string, deltaY: number) => void;
   onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
   onLibraryDragStart: (source: CardLocation, offset: {x: number, y: number}) => void;
   onZoneDrop: (destination: CardLocation, event: React.DragEvent) => void;
@@ -26,7 +28,7 @@ interface LayoutOneProps {
   stackPanel: React.ReactNode;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, cardPreview, stackPanel, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -39,6 +41,8 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             playerState={activeOpponent}
             isFlipped={true}
             imagesDirectoryHandle={imagesDirectoryHandle}
+            handHeight={handHeights[activeOpponent.id]}
+            onHandResize={(deltaY) => onHandResize(activeOpponent.id, deltaY)}
             {...interactionProps}
           />
         ) : (
@@ -53,6 +57,8 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           playerState={localPlayer}
           isFlipped={false}
           imagesDirectoryHandle={imagesDirectoryHandle}
+          handHeight={handHeights[localPlayer.id]}
+          onHandResize={(deltaY) => onHandResize(localPlayer.id, deltaY)}
           {...interactionProps}
         />
         {cardPreview}

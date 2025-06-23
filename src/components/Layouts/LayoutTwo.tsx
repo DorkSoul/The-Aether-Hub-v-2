@@ -9,11 +9,13 @@ interface LayoutTwoProps {
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
   playAreaLayout: 'rows' | 'freeform';
   freeformCardSizes: {[playerId: string]: number};
+  handHeights: {[playerId: string]: number};
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
   onLibraryContextMenu: (event: React.MouseEvent, playerId: string) => void;
   onUpdateFreeformCardSize: (playerId: string, delta: number) => void;
+  onHandResize: (playerId: string, deltaY: number) => void;
   onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
   onLibraryDragStart: (source: CardLocation, offset: {x: number, y: number}) => void;
   onZoneDrop: (destination: CardLocation, event: React.DragEvent) => void;
@@ -25,7 +27,7 @@ interface LayoutTwoProps {
   stackPanel: React.ReactNode;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -47,6 +49,8 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             playerState={player}
             isFlipped={true}
             imagesDirectoryHandle={imagesDirectoryHandle}
+            handHeight={handHeights[player.id]}
+            onHandResize={(deltaY) => onHandResize(player.id, deltaY)}
             {...interactionProps}
           />
         ))}
@@ -59,6 +63,8 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             playerState={player}
             isFlipped={false}
             imagesDirectoryHandle={imagesDirectoryHandle}
+            handHeight={handHeights[player.id]}
+            onHandResize={(deltaY) => onHandResize(player.id, deltaY)}
             {...interactionProps}
           />
         ))}

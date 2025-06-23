@@ -1,11 +1,13 @@
 // src/utils/settings.ts
 import { saveSettingToDB, getSettingFromDB } from './db';
-import type { GameSettings } from '../types'; // --- NEW --- Import GameSettings type
+import type { GameSettings } from '../types';
 
 const DECK_HANDLE_KEY = 'decksDirectoryHandle';
 const IMAGE_HANDLE_KEY = 'imagesDirectoryHandle';
 const CARD_SIZE_KEY = 'cardSize';
-const LAYOUT_KEY = 'gameLayout'; // --- NEW ---
+const LAYOUT_KEY = 'gameLayout';
+const HAND_HEIGHTS_KEY = 'handHeights';
+const FREEFORM_SIZES_KEY = 'freeformCardSizes';
 
 /**
  * Saves a FileSystemDirectoryHandle to IndexedDB.
@@ -57,7 +59,6 @@ export function getCardSize(defaultValue: number): number {
 
 
 /**
- * --- NEW ---
  * Saves the user's preferred game layout to LocalStorage.
  * @param layout The layout type to save.
  */
@@ -66,7 +67,6 @@ export function saveLayoutPreference(layout: GameSettings['layout']): void {
 }
 
 /**
- * --- NEW ---
  * Retrieves the user's preferred game layout from LocalStorage.
  * @param defaultValue The default layout to return if none is saved.
  * @returns The saved layout or the default value.
@@ -77,4 +77,40 @@ export function getLayoutPreference(defaultValue: GameSettings['layout']): GameS
         return savedValue;
     }
     return defaultValue;
+}
+
+/**
+ * Saves the hand height preferences to LocalStorage.
+ * @param heights An object mapping player index to height.
+ */
+export function saveHandHeights(heights: { [key: number]: number }): void {
+    localStorage.setItem(HAND_HEIGHTS_KEY, JSON.stringify(heights));
+}
+
+/**
+ * Retrieves the hand height preferences from LocalStorage.
+ * @param defaultValue The default object to return if none is saved.
+ * @returns The saved heights object or the default value.
+ */
+export function getHandHeights(defaultValue: { [key: number]: number }): { [key: number]: number } {
+    const savedValue = localStorage.getItem(HAND_HEIGHTS_KEY);
+    return savedValue ? JSON.parse(savedValue) : defaultValue;
+}
+
+/**
+ * Saves the freeform card size preferences to LocalStorage.
+ * @param sizes An object mapping player index to size.
+ */
+export function saveFreeformSizes(sizes: { [key: number]: number }): void {
+    localStorage.setItem(FREEFORM_SIZES_KEY, JSON.stringify(sizes));
+}
+
+/**
+ * Retrieves the freeform card size preferences from LocalStorage.
+ * @param defaultValue The default object to return if none is saved.
+ * @returns The saved sizes object or the default value.
+ */
+export function getFreeformSizes(defaultValue: { [key: number]: number }): { [key: number]: number } {
+    const savedValue = localStorage.getItem(FREEFORM_SIZES_KEY);
+    return savedValue ? JSON.parse(savedValue) : defaultValue;
 }

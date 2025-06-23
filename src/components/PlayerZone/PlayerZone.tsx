@@ -1,5 +1,5 @@
 // src/components/PlayerZone/PlayerZone.tsx
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import Card from '../Card/Card';
 import cardBackUrl from '../../assets/card_back.png';
@@ -87,11 +87,13 @@ interface PlayerZoneProps {
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
   playAreaLayout: 'rows' | 'freeform';
   freeformCardSizes: {[playerId: string]: number};
+  handHeight: number;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
   onLibraryContextMenu: (event: React.MouseEvent, playerId: string) => void;
   onUpdateFreeformCardSize: (playerId: string, delta: number) => void;
+  onHandResize: (deltaY: number) => void;
   onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
   onLibraryDragStart: (source: CardLocation, offset: {x: number, y: number}) => void;
   onZoneDrop: (destination: CardLocation, event: React.DragEvent) => void;
@@ -107,11 +109,13 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   imagesDirectoryHandle, 
   playAreaLayout,
   freeformCardSizes,
+  handHeight,
   onCardTap, 
   onCardFlip, 
   onCardContextMenu,
   onLibraryContextMenu,
   onUpdateFreeformCardSize,
+  onHandResize,
   onCardDragStart,
   onLibraryDragStart,
   onZoneDrop,
@@ -122,6 +126,36 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
+  const isResizing = useRef(false);
+  const lastY = useRef(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    lastY.current = e.clientY;
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!isResizing.current) return;
+      const deltaY = event.clientY - lastY.current;
+      lastY.current = event.clientY;
+      // For flipped (top) players, dragging down increases height.
+      // For normal (bottom) players, dragging up increases height.
+      onHandResize(isFlipped ? deltaY : -deltaY);
+    };
+
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }, [onHandResize, isFlipped]);
 
   const renderGameCard = (card: CardType, location: Omit<CardLocation, 'playerId'>) => {
     const source: CardLocation = { ...location, playerId };
@@ -303,10 +337,12 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       </div>
       <div 
         className={`hand ${dropTarget?.playerId === playerId && dropTarget?.zone === 'hand' ? 'drop-target' : ''}`}
+        style={{ flexBasis: `${handHeight}px` }}
         onDragOver={(e) => onZoneDragOver(e, { playerId, zone: 'hand' })}
         onDragLeave={onZoneDragLeave}
         onDrop={(e) => { e.stopPropagation(); onZoneDrop({ playerId, zone: 'hand' }, e); }}
       >
+        <div className="hand-resizer" onMouseDown={handleMouseDown}></div>
         {playerState.hand.map((card) => renderGameCard(card, { zone: 'hand' }))}
       </div>
     </div>

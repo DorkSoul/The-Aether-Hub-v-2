@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useCallback, useMemo } from 'react';
 import type { PlayerState, GameSettings, Card as CardType, GameState, DraggedItem, CardLocation } from '../../types';
 import { getCardsFromDB } from '../../utils/db';
+import { getHandHeights, saveHandHeights, getFreeformSizes, saveFreeformSizes } from '../../utils/settings';
 import LayoutOne from '../Layouts/LayoutOne';
 import LayoutTwo from '../Layouts/LayoutTwo';
 import ContextMenu from '../ContextMenu/ContextMenu';
@@ -38,6 +39,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [libraryContextMenu, setLibraryContextMenu] = useState<{ x: number, y: number, playerId: string } | null>(null);
   const [scryState, setScryState] = useState<{ playerId: string; cards: CardType[] } | null>(null);
   const [freeformCardSizes, setFreeformCardSizes] = useState<{[playerId: string]: number}>({});
+  const [handHeights, setHandHeights] = useState<{ [playerId: string]: number }>({});
 
   useImperativeHandle(ref, () => ({
       getGameState: () => {
@@ -46,6 +48,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
               playerStates,
               gameSettings: settings,
               activeOpponentId,
+              handHeights,
+              freeformCardSizes,
           };
       }
   }));
@@ -89,8 +93,15 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
               battlefield: pState.battlefield.map(row => row.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()}))),
           }));
           setPlayerStates(validatedStates);
-          const initialSizes = validatedStates.reduce((acc, p) => ({ ...acc, [p.id]: 140 }), {});
-          setFreeformCardSizes(initialSizes);
+          
+          const defaultHandHeights = getHandHeights({});
+          const initialHandHeights = initialState.handHeights || validatedStates.reduce((acc, p, i) => ({ ...acc, [p.id]: defaultHandHeights[i] || 150 }), {});
+          setHandHeights(initialHandHeights);
+
+          const defaultFreeformSizes = getFreeformSizes({});
+          const initialFreeformSizes = initialState.freeformCardSizes || validatedStates.reduce((acc, p, i) => ({ ...acc, [p.id]: defaultFreeformSizes[i] || 140 }), {});
+          setFreeformCardSizes(initialFreeformSizes);
+          
           setIsLoading(false);
           return;
       }
@@ -176,8 +187,19 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         });
 
         setPlayerStates(initialPlayerStates);
-        const initialSizes = initialPlayerStates.reduce((acc, p) => ({ ...acc, [p.id]: 140 }), {});
-        setFreeformCardSizes(initialSizes);
+        
+        const persistentHandHeights = getHandHeights({});
+        const persistentFreeformSizes = getFreeformSizes({});
+        const initialHandHeights: { [key: string]: number } = {};
+        const initialFreeformSizes: { [key: string]: number } = {};
+
+        initialPlayerStates.forEach((player, index) => {
+            initialHandHeights[player.id] = persistentHandHeights[index] || 150;
+            initialFreeformSizes[player.id] = persistentFreeformSizes[index] || 140;
+        });
+
+        setHandHeights(initialHandHeights);
+        setFreeformCardSizes(initialFreeformSizes);
 
       } catch (err) {
         console.error("Failed to initialize game:", err);
@@ -472,11 +494,42 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   }, [handleDraw, handleScry]);
 
   const handleUpdateFreeformCardSize = useCallback((playerId: string, delta: number) => {
-      setFreeformCardSizes(prev => ({
-          ...prev,
-          [playerId]: Math.max(60, Math.min(300, (prev[playerId] || 140) + delta))
-      }));
-  }, []);
+      setFreeformCardSizes(prevSizes => {
+          const newSize = Math.max(60, Math.min(300, (prevSizes[playerId] || 140) + delta));
+          
+          const playerIndex = playerStates?.findIndex(p => p.id === playerId);
+          if (playerIndex !== undefined && playerIndex !== -1) {
+              const persistentSizes = getFreeformSizes({});
+              persistentSizes[playerIndex] = newSize;
+              saveFreeformSizes(persistentSizes);
+          }
+
+          return {
+              ...prevSizes,
+              [playerId]: newSize
+          };
+      });
+  }, [playerStates]);
+
+  const handleHandResize = useCallback((playerId: string, deltaY: number) => {
+    setHandHeights(prevHeights => {
+        if (prevHeights[playerId] === undefined) return prevHeights;
+        const currentHeight = prevHeights[playerId];
+        const newHeight = Math.max(80, Math.min(500, currentHeight + deltaY));
+
+        const playerIndex = playerStates?.findIndex(p => p.id === playerId);
+        if (playerIndex !== undefined && playerIndex !== -1) {
+            const persistentHeights = getHandHeights({});
+            persistentHeights[playerIndex] = newHeight;
+            saveHandHeights(persistentHeights);
+        }
+        
+        return {
+            ...prevHeights,
+            [playerId]: newHeight
+        };
+    });
+  }, [playerStates]);
 
   const handleCardDragStart = useCallback((card: CardType, source: CardLocation, offset: {x: number, y: number}) => {
     handleDragStart({ type: 'card', card, source, offset });
@@ -522,6 +575,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           activeOpponentId={activeOpponentId}
           cardPreview={cardPreview}
           stackPanel={stackPanel}
+          handHeights={handHeights}
+          onHandResize={handleHandResize}
           {...interactionProps}
         />
       ) : (
@@ -529,6 +584,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           playerStates={playerStates} 
           cardPreview={cardPreview}
           stackPanel={stackPanel}
+          handHeights={handHeights}
+          onHandResize={handleHandResize}
           {...interactionProps}
         />
       )}
