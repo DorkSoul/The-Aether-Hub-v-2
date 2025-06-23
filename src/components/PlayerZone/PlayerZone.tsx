@@ -395,7 +395,6 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       <div 
         ref={handRef}
         className={`hand ${dropTarget?.playerId === playerId && dropTarget?.zone === 'hand' ? 'drop-target' : ''}`}
-        style={{ flexBasis: `${handHeight}px` }}
         onDragOver={(e) => onZoneDragOver(e, { playerId, zone: 'hand' })}
         onDragLeave={onZoneDragLeave}
         onDrop={(e) => { e.stopPropagation(); onZoneDrop({ playerId, zone: 'hand' }, e); }}
