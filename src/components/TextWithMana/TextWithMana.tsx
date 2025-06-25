@@ -1,15 +1,17 @@
 // src/components/TextWithMana/TextWithMana.tsx
 import React from 'react';
-import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon } from '../Icons/icons';
+import {
+    WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon,
+    ZeroGenericManaIcon, OneGenericManaIcon, TwoGenericManaIcon, ThreeGenericManaIcon, FourGenericManaIcon, FiveGenericManaIcon,
+    SixGenericManaIcon, SevenGenericManaIcon, EightGenericManaIcon, NineGenericManaIcon, TenGenericManaIcon, ElevenGenericManaIcon,
+    TwelveGenericManaIcon, ThirteenGenericManaIcon, FourteenGenericManaIcon, FifteenGenericManaIcon, SixteenGenericManaIcon,
+    SeventeenGenericManaIcon, EighteenGenericManaIcon, NineteenGenericManaIcon, TwentyGenericManaIcon, XGenericManaIcon,
+    WhitePhyrexianManaIcon, BluePhyrexianManaIcon, BlackPhyrexianManaIcon, RedPhyrexianManaIcon, GreenPhyrexianManaIcon,
+    TwoGenericWhiteManaSplitIcon, TwoGenericBlueManaSplitIcon, TwoGenericBlackManaSplitIcon, TwoGenericRedManaSplitIcon,
+    TwoGenericGreenManaSplitIcon, WhiteBlueManaIcon, WhiteBlackManaIcon, BlueBlackManaIcon, BlueRedManaIcon, BlackRedManaIcon,
+    BlackGreenManaIcon, RedGreenManaIcon, GreenWhiteManaIcon, GreenBlueManaIcon, SnowManaIcon, TapIcon
+} from '../Icons/icons';
 import './TextWithMana.css';
-
-// A simple Tap icon component
-const TapIcon = () => (
-    <svg viewBox="0 0 100 100" className="mana-icon-inline tap-icon">
-        <path d="M 85,50 A 35,35 0 1 1 50,15" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" />
-        <path d="M 50,15 L 30,30 M 50,15 L 70,30" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" />
-    </svg>
-);
 
 const symbolToIcon: { [key: string]: React.FC<any> } = {
     'W': WhiteManaIcon,
@@ -18,7 +20,49 @@ const symbolToIcon: { [key: string]: React.FC<any> } = {
     'R': RedManaIcon,
     'G': GreenManaIcon,
     'C': ColorlessManaIcon,
+    '0': ZeroGenericManaIcon,
+    '1': OneGenericManaIcon,
+    '2': TwoGenericManaIcon,
+    '3': ThreeGenericManaIcon,
+    '4': FourGenericManaIcon,
+    '5': FiveGenericManaIcon,
+    '6': SixGenericManaIcon,
+    '7': SevenGenericManaIcon,
+    '8': EightGenericManaIcon,
+    '9': NineGenericManaIcon,
+    '10': TenGenericManaIcon,
+    '11': ElevenGenericManaIcon,
+    '12': TwelveGenericManaIcon,
+    '13': ThirteenGenericManaIcon,
+    '14': FourteenGenericManaIcon,
+    '15': FifteenGenericManaIcon,
+    '16': SixteenGenericManaIcon,
+    '17': SeventeenGenericManaIcon,
+    '18': EighteenGenericManaIcon,
+    '19': NineteenGenericManaIcon,
+    '20': TwentyGenericManaIcon,
+    'X': XGenericManaIcon,
+    'W/P': WhitePhyrexianManaIcon,
+    'U/P': BluePhyrexianManaIcon,
+    'B/P': BlackPhyrexianManaIcon,
+    'R/P': RedPhyrexianManaIcon,
+    'G/P': GreenPhyrexianManaIcon,
+    '2/W': TwoGenericWhiteManaSplitIcon,
+    '2/U': TwoGenericBlueManaSplitIcon,
+    '2/B': TwoGenericBlackManaSplitIcon,
+    '2/R': TwoGenericRedManaSplitIcon,
+    '2/G': TwoGenericGreenManaSplitIcon,
+    'W/U': WhiteBlueManaIcon,
+    'W/B': WhiteBlackManaIcon,
+    'U/B': BlueBlackManaIcon,
+    'U/R': BlueRedManaIcon,
+    'B/R': BlackRedManaIcon,
+    'B/G': BlackGreenManaIcon,
+    'R/G': RedGreenManaIcon,
+    'G/W': GreenWhiteManaIcon,
+    'G/U': GreenBlueManaIcon,
     'T': TapIcon,
+    'S': SnowManaIcon,
 };
 
 export const TextWithMana: React.FC<{ text: string }> = ({ text }) => {
@@ -28,19 +72,6 @@ export const TextWithMana: React.FC<{ text: string }> = ({ text }) => {
     const elements = parts.map((part, index) => {
         if (part.startsWith('{') && part.endsWith('}')) {
             const symbol = part.slice(1, -1);
-
-            // Handle numeric mana costs, e.g., {3}
-            const numericValue = parseInt(symbol, 10);
-            if (!isNaN(numericValue) && String(numericValue) === symbol) {
-                // Render N colorless mana icons
-                return (
-                    <span key={index} className="mana-symbol-group">
-                        {Array.from({ length: numericValue }).map((_, i) => <ColorlessManaIcon key={i} className="mana-icon-inline" />)}
-                    </span>
-                );
-            }
-            
-            // Handle regular symbols like {W}, {U}, {T}
             const IconComponent = symbolToIcon[symbol.toUpperCase()];
             if (IconComponent) {
                 return <IconComponent key={index} className="mana-icon-inline" />;

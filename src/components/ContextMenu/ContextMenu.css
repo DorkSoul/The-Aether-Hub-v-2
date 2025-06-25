@@ -33,6 +33,11 @@
     font-size: 14px;
     white-space: normal; /* Ensure long lines of text will wrap */
     line-height: 1.4;   /* Improve readability for multi-line items */
+    border-bottom: 1px solid #555; /* Add a bottom border to each item */
+}
+
+.context-menu li:last-child {
+    border-bottom: none; /* Remove the border from the last item */
 }
 
 .context-menu li:hover {

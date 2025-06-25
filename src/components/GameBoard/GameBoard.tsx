@@ -399,7 +399,25 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   }, []);
 
   const buildCardAbilitiesMenu = useCallback((card: CardType) => {
-    const abilities = parseOracleText(card.oracle_text);
+    const abilities: string[] = [];
+    const layoutsToCombine = ["adventure", "split", "flip"];
+
+    if (layoutsToCombine.includes(card.layout ?? "") && card.card_faces) {
+      card.card_faces.forEach(face => {
+        if (face.oracle_text) {
+          abilities.push(...parseOracleText(face.oracle_text));
+        }
+      });
+    } else {
+      let oracleText: string | undefined;
+      if (card.card_faces && card.card_faces.length > 0) {
+        const faceIndex = card.isFlipped ? 1 : 0;
+        oracleText = card.card_faces[faceIndex]?.oracle_text;
+      } else {
+        oracleText = card.oracle_text;
+      }
+      abilities.push(...parseOracleText(oracleText));
+    }
 
     if (abilities.length === 0) {
       return [{ label: '(No activatable abilities found)', action: () => {} }];
