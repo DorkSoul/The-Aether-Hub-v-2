@@ -45,6 +45,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [scryState, setScryState] = useState<{ playerId: string; cards: CardType[] } | null>(null);
   const [freeformCardSizes, setFreeformCardSizes] = useState<{[playerId: string]: number}>({});
   const [handHeights, setHandHeights] = useState<{ [playerId: string]: number }>({});
+  const prevPlayAreaLayout = React.useRef(settings.playAreaLayout);
 
   useImperativeHandle(ref, () => ({
       getGameState: () => {
@@ -215,8 +216,41 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     };
 
     setupGame();
-  }, [settings, initialState]);
+  }, [settings.players, initialState]);
   
+  useEffect(() => {
+    if (prevPlayAreaLayout.current !== settings.playAreaLayout) {
+      setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+        return currentStates.map(playerState => {
+          const allBattlefieldCards = playerState.battlefield.flat();
+          if (settings.playAreaLayout === 'freeform') {
+            const cardWidth = freeformCardSizes[playerState.id] || 140;
+            const gap = 10;
+            const cardsWithPositions = allBattlefieldCards.map((card, index) => ({
+              ...card,
+              x: index * (cardWidth + gap) + gap,
+              y: gap,
+            }));
+            return {
+              ...playerState,
+              battlefield: [cardsWithPositions, [], [], []],
+            };
+          } else { // 'rows'
+            const newBattlefield: CardType[][] = [[], [], [], []];
+            const cardsToDistribute = allBattlefieldCards.map(({ x, y, ...rest }) => rest);
+            newBattlefield[1] = cardsToDistribute;
+            return {
+              ...playerState,
+              battlefield: newBattlefield,
+            };
+          }
+        });
+      });
+    }
+    prevPlayAreaLayout.current = settings.playAreaLayout;
+  }, [settings.playAreaLayout, freeformCardSizes]);
+
   const handleDragStart = useCallback((item: DraggedItem) => {
     setDraggedItem(item);
   }, []);
