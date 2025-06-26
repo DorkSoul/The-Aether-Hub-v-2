@@ -11,6 +11,49 @@ interface GameSetupProps {
   onLoadGame: (gameState: GameState) => void;
 }
 
+// Helper function to convert HEX to HSL color values
+const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+    }
+
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+};
+
+
+// Helper function to convert HSL color values to a HEX string
+const hslToHex = (h: number, s: number, l: number): string => {
+  s /= 100;
+  l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number): string => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+};
+
 const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame, onLoadGame }) => {
   const [players, setPlayers] = useState<PlayerConfig[]>([
     { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000' },
@@ -37,19 +80,37 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
   const handleAddPlayer = () => {
     if (players.length < 8) {
       const newPlayerId = (players.length + 1).toString();
-      const randomColor = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
-      setPlayers([...players, { id: newPlayerId, name: `Player ${newPlayerId}`, deckFile: null, color: randomColor }]);
+      
+      const existingHues = players.map(p => hexToHsl(p.color).h);
+      let newHue: number;
+      let attempt = 0;
+      const maxAttempts = 20; // Prevent infinite loops
+      const minHueDistance = 30; // Minimum distance between hues on the 360-degree color wheel
+
+      do {
+          newHue = Math.floor(Math.random() * 360);
+          attempt++;
+      } while (
+          attempt < maxAttempts &&
+          existingHues.some(existingHue => {
+              const diff = Math.abs(existingHue - newHue);
+              return Math.min(diff, 360 - diff) < minHueDistance;
+          })
+      );
+
+      // Generate a bright, non-pastel color and convert to HEX
+      const vibrantColor = hslToHex(newHue, 90, 55); // High saturation, mid-range lightness
+
+      setPlayers([...players, { id: newPlayerId, name: `Player ${newPlayerId}`, deckFile: null, color: vibrantColor }]);
     }
   };
 
   const handleRemovePlayer = (id: string) => {
-    if (players.length > 2) {
-      setPlayers(players.filter(p => p.id !== id));
-    }
+    setPlayers(players.filter(p => p.id !== id));
   };
 
   const handleUpdatePlayer = (id: string, field: keyof PlayerConfig, value: any) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
+    setPlayers(players.map(p => (p.id === id ? { ...p, [field]: value } : p)));
   };
   
   const handleLoadGame = async () => {
@@ -99,7 +160,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
               deckFiles={deckFiles}
               onUpdate={(field, value) => handleUpdatePlayer(p.id, field, value)}
               onRemove={() => handleRemovePlayer(p.id)}
-              isRemoveable={players.length > 2}
+              isRemoveable={true}
             />
           ))}
         </div>

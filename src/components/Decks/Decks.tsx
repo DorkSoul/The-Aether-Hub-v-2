@@ -17,7 +17,7 @@ interface DecksProps {
   onCloseImportModal: () => void;
   cardSize: number;
   onDeckLoaded: (deckName: string, cardCount: number) => void;
-  onCardHover: (card: CardType | null) => void; // --- NEW ---
+  onCardHover: (card: CardType | null) => void;
 }
 
 interface DeckInfo {
@@ -62,7 +62,7 @@ const Decks: React.FC<DecksProps> = ({
   onCloseImportModal,
   cardSize,
   onDeckLoaded,
-  onCardHover, // --- NEW ---
+  onCardHover,
 }) => {
   const [activeDeckFile, setActiveDeckFile] = useState<FileSystemFileHandle | null>(null);
   const [decks, setDecks] = useState<DeckInfo[]>([]);
@@ -126,7 +126,7 @@ const Decks: React.FC<DecksProps> = ({
           await writable.close();
           
           setNotification('Deck saved successfully!');
-          refreshDeckList(decksDirectoryHandle);
+          await refreshDeckList(decksDirectoryHandle);
           onDeckLoaded(deckDataToSave.name, allCards.length);
           
           setTimeout(() => setNotification(''), 3000);
@@ -206,7 +206,6 @@ const Decks: React.FC<DecksProps> = ({
       setLoadingMessage('Saving deck file...');
       const cardsWithInstanceIds = fullDeckCards.map(card => ({ ...card, instanceId: crypto.randomUUID() }));
       
-      // --- MODIFIED --- Do not automatically assign commanders. All cards go to the main deck.
       const importedCommanders: CardType[] = [];
       const importedCommanderIds: string[] = [];
       const mainDeckCards = cardsWithInstanceIds;
@@ -220,7 +219,7 @@ const Decks: React.FC<DecksProps> = ({
       await writable.write(deckJsonString);
       await writable.close();
 
-      refreshDeckList(decksDirectoryHandle);
+      await refreshDeckList(decksDirectoryHandle);
       
       setCommanders(importedCommanders);
       setGroupedCards(groupCardsByType(mainDeckCards));
@@ -505,7 +504,7 @@ const Decks: React.FC<DecksProps> = ({
                 onDeckLoaded('', 0);
             }
             
-            refreshDeckList(decksDirectoryHandle);
+            await refreshDeckList(decksDirectoryHandle);
 
         } catch (err) {
             console.error("Error deleting deck:", err);
@@ -537,7 +536,7 @@ const Decks: React.FC<DecksProps> = ({
           await writable.write(newDeckJsonString);
           await writable.close();
 
-          refreshDeckList(decksDirectoryHandle);
+          await refreshDeckList(decksDirectoryHandle);
           setNotification(`Deck "${deckInfo.name}" duplicated as "${newDeckName}".`);
           setTimeout(() => setNotification(''), 3000);
 
@@ -548,43 +547,44 @@ const Decks: React.FC<DecksProps> = ({
   };
 
   const handleRenameDeck = async () => {
-      if (!deckContextMenu || !decksDirectoryHandle) return;
-      const { deckInfo } = deckContextMenu;
+    if (!deckContextMenu || !decksDirectoryHandle) return;
+    const { deckInfo } = deckContextMenu;
+    const originalFileHandle = deckInfo.fileHandle;
 
-      const newDeckName = prompt("Enter new name for the deck:", deckInfo.name);
-      if (!newDeckName || newDeckName.trim() === '' || newDeckName === deckInfo.name) return;
+    const newDeckName = prompt("Enter new name for the deck:", deckInfo.name);
+    if (!newDeckName || newDeckName.trim() === '' || newDeckName === deckInfo.name) return;
 
-      try {
-          setNotification('Renaming deck...');
+    try {
+        setNotification('Renaming deck...');
 
-          const file = await deckInfo.fileHandle.getFile();
-          const text = await file.text();
-          const deckData = JSON.parse(text);
+        const file = await originalFileHandle.getFile();
+        const text = await file.text();
+        const deckData = JSON.parse(text);
 
-          deckData.name = newDeckName;
-          const newDeckJsonString = JSON.stringify(deckData, null, 2);
-          const newFileName = `${newDeckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-          
-          const newFileHandle = await decksDirectoryHandle.getFileHandle(newFileName, { create: true });
-          const writable = await newFileHandle.createWritable();
-          await writable.write(newDeckJsonString);
-          await writable.close();
+        deckData.name = newDeckName;
+        const newDeckJsonString = JSON.stringify(deckData, null, 2);
+        const newFileName = `${newDeckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+        
+        const newFileHandle = await decksDirectoryHandle.getFileHandle(newFileName, { create: true });
+        const writable = await newFileHandle.createWritable();
+        await writable.write(newDeckJsonString);
+        await writable.close();
 
-          await decksDirectoryHandle.removeEntry(deckInfo.fileHandle.name);
+        await decksDirectoryHandle.removeEntry(originalFileHandle.name);
+        
+        if (activeDeckFile?.name === originalFileHandle.name) {
+            setActiveDeckFile(newFileHandle);
+            onDeckLoaded(newDeckName, deckData.cards.length);
+        }
 
-          if (activeDeckFile?.name === deckInfo.fileHandle.name) {
-              setActiveDeckFile(newFileHandle);
-              onDeckLoaded(newDeckName, deckData.cards.length);
-          }
+        await refreshDeckList(decksDirectoryHandle);
+        setNotification(`Deck renamed to "${newDeckName}".`);
+        setTimeout(() => setNotification(''), 3000);
 
-          refreshDeckList(decksDirectoryHandle);
-          setNotification(`Deck renamed to "${newDeckName}".`);
-          setTimeout(() => setNotification(''), 3000);
-
-      } catch (err) {
-          console.error("Error renaming deck:", err);
-          setError("Could not rename the deck.");
-      }
+    } catch (err) {
+        console.error("Error renaming deck:", err);
+        setError("Could not rename the deck.");
+    }
   };
 
   const handleAddCardByUrl = async () => {
@@ -621,10 +621,8 @@ const Decks: React.FC<DecksProps> = ({
         setNotification(`Card "${newCardData.name}" added to "${deckInfo.name}".`);
         setTimeout(() => setNotification(''), 3000);
 
-        // Refresh the deck list to show new card count
         await refreshDeckList(decksDirectoryHandle);
 
-        // If the modified deck is the one currently being viewed, update the view
         if (activeDeckFile?.name === deckInfo.fileHandle.name) {
             const commanderInstanceIds = new Set(deckDataToSave.commanders || []);
             const loadedCommanders = updatedCards.filter(c => c.instanceId && commanderInstanceIds.has(c.instanceId));

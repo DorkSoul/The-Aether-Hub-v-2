@@ -1,5 +1,5 @@
 // src/components/PlayerSetupRow.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { PlayerConfig } from '../../types';
 
 interface PlayerSetupRowProps {
@@ -10,7 +10,34 @@ interface PlayerSetupRowProps {
   isRemoveable: boolean;
 }
 
+interface DeckInfo {
+    fileHandle: FileSystemFileHandle;
+    displayName: string;
+}
+
 const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUpdate, onRemove, isRemoveable }) => {
+    const [deckInfos, setDeckInfos] = useState<DeckInfo[]>([]);
+
+    useEffect(() => {
+        const fetchDeckNames = async () => {
+            const infos = await Promise.all(
+                deckFiles.map(async (fileHandle) => {
+                    try {
+                        const file = await fileHandle.getFile();
+                        const text = await file.text();
+                        const deckData = JSON.parse(text);
+                        return { fileHandle, displayName: deckData.name || fileHandle.name.replace('.json', '') };
+                    } catch (e) {
+                        return { fileHandle, displayName: fileHandle.name.replace('.json', '') };
+                    }
+                })
+            );
+            setDeckInfos(infos);
+        };
+        fetchDeckNames();
+    }, [deckFiles]);
+
+
   return (
     <div className="player-setup-row">
       <input
@@ -36,10 +63,11 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         className="player-deck-select"
         required
       >
-        <option value="" disabled>Select a deck</option>
-        {deckFiles.map(file => (
-          <option key={file.name} value={file.name}>
-            {file.name.replace('.json', '')}
+        {/* Conditionally render the placeholder */}
+        {!player.deckFile && <option value="" disabled>Select a deck</option>}
+        {deckInfos.map(info => (
+          <option key={info.fileHandle.name} value={info.fileHandle.name}>
+            {info.displayName}
           </option>
         ))}
       </select>
