@@ -28,9 +28,10 @@ interface LayoutTwoProps {
   cardSize: number;
   hoveredStackCardId: string | null;
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
+  onResetMana: (playerId: string) => void;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -56,6 +57,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             onHandResize={(deltaY) => onHandResize(player.id, deltaY)}
             hoveredStackCardId={hoveredStackCardId}
             onUpdateMana={onUpdateMana}
+            onResetMana={onResetMana}
             {...interactionProps}
           />
         ))}
@@ -72,6 +74,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             onHandResize={(deltaY) => onHandResize(player.id, deltaY)}
             hoveredStackCardId={hoveredStackCardId}
             onUpdateMana={onUpdateMana}
+            onResetMana={onResetMana}
             {...interactionProps}
           />
         ))}

@@ -3,7 +3,7 @@ import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react'
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import Card from '../Card/Card';
 import cardBackUrl from '../../assets/card_back.png';
-import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon, PlusIcon, MinusIcon } from '../Icons/icons';
+import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon, PlusIcon, MinusIcon, CloseIcon } from '../Icons/icons';
 import './PlayerZone.css';
 
 interface ManaCounterProps {
@@ -118,6 +118,7 @@ interface PlayerZoneProps {
   cardSize: number;
   hoveredStackCardId: string | null;
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
+  onResetMana: (playerId: string) => void;
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -141,7 +142,8 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   dropTarget,
   onCardHover,
   hoveredStackCardId,
-  onUpdateMana
+  onUpdateMana,
+  onResetMana
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -400,6 +402,9 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
               }}
             />
           ))}
+          <button onClick={() => onResetMana(playerId)} className="reset-mana-btn" title="Reset all mana to 0">
+              <CloseIcon />
+          </button>
         </div>
         <h3>{playerState.name}: {playerState.life} Life</h3>
         {playAreaLayout === 'freeform' && (

@@ -29,9 +29,10 @@ interface LayoutOneProps {
   cardSize: number;
   hoveredStackCardId: string | null;
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
+  onResetMana: (playerId: string) => void;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -48,6 +49,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             onHandResize={(deltaY) => onHandResize(activeOpponent.id, deltaY)}
             hoveredStackCardId={hoveredStackCardId}
             onUpdateMana={onUpdateMana}
+            onResetMana={onResetMana}
             {...interactionProps}
           />
         ) : (
@@ -66,6 +68,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           onHandResize={(deltaY) => onHandResize(localPlayer.id, deltaY)}
           hoveredStackCardId={hoveredStackCardId}
           onUpdateMana={onUpdateMana}
+          onResetMana={onResetMana}
           {...interactionProps}
         />
         {cardPreview}

@@ -586,6 +586,21 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     });
   }, []);
 
+  const handleResetMana = useCallback((playerId: string) => {
+    setPlayerStates(currentStates => {
+      if (!currentStates) return null;
+      return currentStates.map(pState => {
+        if (pState.id === playerId) {
+          return {
+            ...pState,
+            mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
+          };
+        }
+        return pState;
+      });
+    });
+  }, []);
+
   const handleCardDragStart = useCallback((card: CardType, source: CardLocation, offset: {x: number, y: number}) => {
     handleDragStart({ type: 'card', card, source, offset });
   }, [handleDragStart]);
@@ -613,7 +628,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       cardSize,
       hoveredStackCardId,
       onUpdateMana: handleUpdateMana,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana]);
+      onResetMana: handleResetMana,
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;

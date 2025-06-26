@@ -66,6 +66,7 @@
   background-color: rgba(0,0,0,0.5);
   padding: 1px 4px;
   border-radius: 10px;
+  cursor: pointer;
 }
 
 .mana-counter svg {
@@ -79,6 +80,29 @@
   color: white;
   min-width: 1ch;
   text-align: center;
+  user-select: none;
+}
+
+.reset-mana-btn {
+  background-color: rgba(0, 0, 0, 0.5);
+  border: none;
+  padding: 4px;
+  margin-left: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border-radius: 10px;
+}
+
+.reset-mana-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.reset-mana-btn:hover {
+    background-color: rgba(255, 0, 0, 0.4);
 }
 
 .freeform-controls {
