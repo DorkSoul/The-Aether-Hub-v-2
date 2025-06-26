@@ -1,6 +1,6 @@
 // src/components/Layouts/LayoutTwo.tsx
 import React from 'react';
-import type { PlayerState, Card as CardType, CardLocation } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
@@ -27,9 +27,10 @@ interface LayoutTwoProps {
   stackPanel: React.ReactNode;
   cardSize: number;
   hoveredStackCardId: string | null;
+  onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -54,6 +55,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             handHeight={handHeights[player.id]}
             onHandResize={(deltaY) => onHandResize(player.id, deltaY)}
             hoveredStackCardId={hoveredStackCardId}
+            onUpdateMana={onUpdateMana}
             {...interactionProps}
           />
         ))}
@@ -69,6 +71,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             handHeight={handHeights[player.id]}
             onHandResize={(deltaY) => onHandResize(player.id, deltaY)}
             hoveredStackCardId={hoveredStackCardId}
+            onUpdateMana={onUpdateMana}
             {...interactionProps}
           />
         ))}

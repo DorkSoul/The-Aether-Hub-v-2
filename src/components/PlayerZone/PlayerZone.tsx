@@ -6,7 +6,14 @@ import cardBackUrl from '../../assets/card_back.png';
 import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon, PlusIcon, MinusIcon } from '../Icons/icons';
 import './PlayerZone.css';
 
-const ManaCounter: React.FC<{ type: ManaType; count: number }> = ({ type, count }) => {
+interface ManaCounterProps {
+  type: ManaType;
+  count: number;
+  onClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+}
+
+const ManaCounter: React.FC<ManaCounterProps> = ({ type, count, onClick, onContextMenu }) => {
   const Icon = {
     white: WhiteManaIcon,
     blue: BlueManaIcon,
@@ -17,7 +24,12 @@ const ManaCounter: React.FC<{ type: ManaType; count: number }> = ({ type, count 
   }[type];
 
   return (
-    <div className="mana-counter" title={`${count} ${type} mana`}>
+    <div
+      className="mana-counter"
+      title={`${count} ${type} mana`}
+      onClick={onClick}
+      onContextMenu={onContextMenu}
+    >
       <Icon />
       <span className="mana-count">{count}</span>
     </div>
@@ -105,6 +117,7 @@ interface PlayerZoneProps {
   onCardHover: (card: CardType | null) => void; 
   cardSize: number;
   hoveredStackCardId: string | null;
+  onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -128,6 +141,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   dropTarget,
   onCardHover,
   hoveredStackCardId,
+  onUpdateMana
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -379,6 +393,11 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
               key={manaType}
               type={manaType}
               count={playerState.mana[manaType]}
+              onClick={() => onUpdateMana(playerId, manaType, 1)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                onUpdateMana(playerId, manaType, -1);
+              }}
             />
           ))}
         </div>

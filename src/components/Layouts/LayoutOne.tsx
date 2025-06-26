@@ -1,6 +1,6 @@
 // src/components/Layouts/LayoutOne.tsx
 import React from 'react';
-import type { PlayerState, Card as CardType, CardLocation } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
@@ -28,9 +28,10 @@ interface LayoutOneProps {
   stackPanel: React.ReactNode;
   cardSize: number;
   hoveredStackCardId: string | null;
+  onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -46,6 +47,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             handHeight={handHeights[activeOpponent.id]}
             onHandResize={(deltaY) => onHandResize(activeOpponent.id, deltaY)}
             hoveredStackCardId={hoveredStackCardId}
+            onUpdateMana={onUpdateMana}
             {...interactionProps}
           />
         ) : (
@@ -63,6 +65,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           handHeight={handHeights[localPlayer.id]}
           onHandResize={(deltaY) => onHandResize(localPlayer.id, deltaY)}
           hoveredStackCardId={hoveredStackCardId}
+          onUpdateMana={onUpdateMana}
           {...interactionProps}
         />
         {cardPreview}

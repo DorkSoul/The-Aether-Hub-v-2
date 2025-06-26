@@ -1,6 +1,6 @@
 // src/components/GameBoard/GameBoard.tsx
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useCallback, useMemo } from 'react';
-import type { PlayerState, GameSettings, Card as CardType, GameState, DraggedItem, CardLocation } from '../../types';
+import type { PlayerState, GameSettings, Card as CardType, GameState, DraggedItem, CardLocation, ManaType } from '../../types';
 import { getCardsFromDB } from '../../utils/db';
 import { getHandHeights, saveHandHeights, getFreeformSizes, saveFreeformSizes } from '../../utils/settings';
 import { parseOracleText } from '../../utils/abilityUtils';
@@ -567,6 +567,25 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     });
   }, [playerStates]);
 
+  const handleUpdateMana = useCallback((playerId: string, manaType: ManaType, delta: number) => {
+    setPlayerStates(currentStates => {
+      if (!currentStates) return null;
+      return currentStates.map(pState => {
+        if (pState.id === playerId) {
+          const newManaValue = Math.max(0, pState.mana[manaType] + delta);
+          return {
+            ...pState,
+            mana: {
+              ...pState.mana,
+              [manaType]: newManaValue,
+            }
+          };
+        }
+        return pState;
+      });
+    });
+  }, []);
+
   const handleCardDragStart = useCallback((card: CardType, source: CardLocation, offset: {x: number, y: number}) => {
     handleDragStart({ type: 'card', card, source, offset });
   }, [handleDragStart]);
@@ -593,7 +612,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onCardHover: onCardHover,
       cardSize,
       hoveredStackCardId,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId]);
+      onUpdateMana: handleUpdateMana,
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;

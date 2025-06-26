@@ -802,3 +802,21 @@ export const UntapIcon = ({ width = 24, height = 24, ...props }: IconProps) => (
         <path fill="#ffffff" d="m -866.055,-185.72301 -12.648,7.418 c 6.16,9.566 9.238,18.406 9.238,26.512 0,6.648 -1.969,11.977 -5.895,15.988 -3.938,4.018 -9.219,6.023 -15.871,6.023 -11.113,0 -23.719,-5.797 -37.824,-17.391 l 10.094,-9.977 c 9.656,8.76 18.73,13.135 27.246,13.135 3.078,0 5.207,-0.564 6.379,-1.699 1.18,-1.137 1.766,-3.244 1.766,-6.322 0,-6.162 -1.867,-11.596 -5.594,-16.295 l -8.996,12.643 v -34.531 z" />
     </svg>
 );
+
+export const CloseIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
