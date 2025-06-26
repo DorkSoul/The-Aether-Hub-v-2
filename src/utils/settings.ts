@@ -8,6 +8,7 @@ const CARD_SIZE_KEY = 'cardSize';
 const LAYOUT_KEY = 'gameLayout';
 const HAND_HEIGHTS_KEY = 'handHeights';
 const FREEFORM_SIZES_KEY = 'freeformCardSizes';
+const PREVIEW_WIDTH_KEY = 'previewWidth';
 
 /**
  * Saves a FileSystemDirectoryHandle to IndexedDB.
@@ -113,4 +114,22 @@ export function saveFreeformSizes(sizes: { [key: number]: number }): void {
 export function getFreeformSizes(defaultValue: { [key: number]: number }): { [key: number]: number } {
     const savedValue = localStorage.getItem(FREEFORM_SIZES_KEY);
     return savedValue ? JSON.parse(savedValue) : defaultValue;
+}
+
+/**
+ * Saves the card preview panel width to LocalStorage.
+ * @param width The width value to save.
+ */
+export function savePreviewWidth(width: number): void {
+    localStorage.setItem(PREVIEW_WIDTH_KEY, width.toString());
+}
+
+/**
+ * Retrieves the card preview panel width from LocalStorage.
+ * @param defaultValue The default width to return if none is saved.
+ * @returns The saved width or the default value.
+ */
+export function getPreviewWidth(defaultValue: number): number {
+    const savedValue = localStorage.getItem(PREVIEW_WIDTH_KEY);
+    return savedValue ? parseInt(savedValue, 10) : defaultValue;
 }

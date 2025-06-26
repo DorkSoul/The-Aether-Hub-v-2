@@ -133,18 +133,6 @@
     background-color: rgba(100, 108, 255, 0.4); /* Highlight on hover */
 }
 
-
-.card-preview-container.minimized {
-  width: 50px !important;
-  padding: 1rem 0.5rem;
-  justify-content: center;
-  align-items: center;
-}
-
-.card-preview-container.minimized .card-preview-header {
-  display: none;
-}
-
 .card-preview-header {
   display: flex;
   justify-content: space-between;
@@ -155,7 +143,16 @@
 /* --- NEW --- Generic class for panel header buttons */
 .panel-buttons {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.25rem;
+}
+
+.panel-buttons button {
+    padding: 4px;
+}
+
+.panel-buttons svg {
+    width: 16px;
+    height: 16px;
 }
 
 .card-preview-header h3 {
@@ -226,17 +223,6 @@
 
 .stack-resizer:hover {
     background-color: rgba(100, 108, 255, 0.4);
-}
-
-.stack-panel-container.minimized {
-  width: 50px !important;
-  padding: 1rem 0.5rem;
-  justify-content: center;
-  align-items: center;
-}
-
-.stack-panel-container.minimized .stack-panel-header {
-  display: none;
 }
 
 .stack-panel-header {

@@ -111,52 +111,36 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
       <div className="setup-section">
         <h3>Game Layout</h3>
         <div className="layout-options">
-          <label>
-            <input
-              type="radio"
-              name="layout"
-              value="1vAll"
-              checked={layout === '1vAll'}
-              onChange={() => setLayout('1vAll')}
-            />
+          <button
+            className={layout === '1vAll' ? 'active' : ''}
+            onClick={() => setLayout('1vAll')}
+          >
             1 vs. All (Tabbed opponents)
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="layout"
-              value="split"
-              checked={layout === 'split'}
-              onChange={() => setLayout('split')}
-            />
+          </button>
+          <button
+            className={layout === 'split' ? 'active' : ''}
+            onClick={() => setLayout('split')}
+          >
             Split Screen
-          </label>
+          </button>
         </div>
       </div>
       
       <div className="setup-section">
         <h3>Play Area</h3>
         <div className="layout-options">
-          <label>
-            <input
-              type="radio"
-              name="playAreaLayout"
-              value="rows"
-              checked={playAreaLayout === 'rows'}
-              onChange={() => setPlayAreaLayout('rows')}
-            />
+           <button
+            className={playAreaLayout === 'rows' ? 'active' : ''}
+            onClick={() => setPlayAreaLayout('rows')}
+          >
             4 Rows
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="playAreaLayout"
-              value="freeform"
-              checked={playAreaLayout === 'freeform'}
-              onChange={() => setPlayAreaLayout('freeform')}
-            />
+          </button>
+          <button
+            className={playAreaLayout === 'freeform' ? 'active' : ''}
+            onClick={() => setPlayAreaLayout('freeform')}
+          >
             Freeform
-          </label>
+          </button>
         </div>
       </div>
     </div>

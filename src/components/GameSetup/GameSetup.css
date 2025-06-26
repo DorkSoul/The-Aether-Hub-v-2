@@ -75,3 +75,24 @@
   display: flex;
   gap: 1rem;
 }
+
+.layout-options button {
+    flex: 1;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border: 2px solid #555;
+    background-color: #333;
+    color: #ccc;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.layout-options button.active {
+    background-color: #646cff;
+    border-color: #8c92ff;
+    color: white;
+}
+
+.layout-options button:not(.active):hover {
+    background-color: #444;
+}

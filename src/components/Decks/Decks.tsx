@@ -587,6 +587,63 @@ const Decks: React.FC<DecksProps> = ({
       }
   };
 
+  const handleAddCardByUrl = async () => {
+    if (!deckContextMenu || !decksDirectoryHandle) return;
+    const { deckInfo } = deckContextMenu;
+
+    const url = prompt(`Enter Scryfall URL of the card to add to "${deckInfo.name}":`);
+    if (!url) return;
+
+    setIsLoading(true);
+    setLoadingMessage('Fetching card data...');
+    try {
+        const newCardData = await getCardByUrl(url);
+        if (!newCardData) {
+            throw new Error("Card not found at the provided URL.");
+        }
+
+        setLoadingMessage('Adding card to deck file...');
+        
+        const file = await deckInfo.fileHandle.getFile();
+        const text = await file.text();
+        const deckData: { name: string; cards: CardType[]; commanders?: string[] } = JSON.parse(text);
+
+        const newCardWithInstanceId = { ...newCardData, instanceId: crypto.randomUUID() };
+        const updatedCards = [...deckData.cards, newCardWithInstanceId];
+        
+        const deckDataToSave = { ...deckData, cards: updatedCards };
+        const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
+
+        const writable = await deckInfo.fileHandle.createWritable();
+        await writable.write(deckJsonString);
+        await writable.close();
+
+        setNotification(`Card "${newCardData.name}" added to "${deckInfo.name}".`);
+        setTimeout(() => setNotification(''), 3000);
+
+        // Refresh the deck list to show new card count
+        await refreshDeckList(decksDirectoryHandle);
+
+        // If the modified deck is the one currently being viewed, update the view
+        if (activeDeckFile?.name === deckInfo.fileHandle.name) {
+            const commanderInstanceIds = new Set(deckDataToSave.commanders || []);
+            const loadedCommanders = updatedCards.filter(c => c.instanceId && commanderInstanceIds.has(c.instanceId));
+            const mainDeckCards = updatedCards.filter(c => !c.instanceId || !commanderInstanceIds.has(c.instanceId));
+            
+            setCommanders(loadedCommanders);
+            setGroupedCards(groupCardsByType(mainDeckCards));
+            onDeckLoaded(deckDataToSave.name, updatedCards.length);
+        }
+
+    } catch (err) {
+        console.error("Error adding card from URL:", err);
+        setError(err instanceof Error ? err.message : "An error occurred while adding the card.");
+    } finally {
+        setIsLoading(false);
+        setLoadingMessage('');
+    }
+  };
+
   let cardCounter = 0;
 
   return (
@@ -608,6 +665,7 @@ const Decks: React.FC<DecksProps> = ({
               options={[
                   { label: 'Rename', action: handleRenameDeck },
                   { label: 'Duplicate', action: handleDuplicateDeck },
+                  { label: 'Add Card from URL...', action: handleAddCardByUrl },
                   { label: 'Delete', action: handleDeleteDeck },
               ]}
           />

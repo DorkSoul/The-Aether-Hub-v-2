@@ -5,7 +5,7 @@ import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
 import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon } from './components/Icons/icons';
-import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize } from './utils/settings';
+import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize, savePreviewWidth, getPreviewWidth } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
 import type { GameSettings, GameState, Card as CardType, StackItem } from './types';
 import Tabs from './components/Tabs/Tabs';
@@ -20,25 +20,14 @@ interface StackPanelProps {
   onItemClick: (id: string) => void;
   onItemEnter: (cardInstanceId: string) => void;
   onItemLeave: () => void;
-  isMinimized: boolean;
-  onToggleMinimize: () => void;
+  onHide: () => void;
   onPopOut: () => void;
   isResizable: boolean;
   width: number;
   onResizeMouseDown: (event: React.MouseEvent) => void;
 }
 
-const StackPanel: React.FC<StackPanelProps> = ({ stack, onItemClick, onItemEnter, onItemLeave, isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown }) => {
-  if (isMinimized) {
-    return (
-      <div className="stack-panel-container minimized">
-        <button onClick={onToggleMinimize} title="Show Stack">
-          <EyeIcon />
-        </button>
-      </div>
-    );
-  }
-
+const StackPanel: React.FC<StackPanelProps> = ({ stack, onItemClick, onItemEnter, onItemLeave, onHide, onPopOut, isResizable, width, onResizeMouseDown }) => {
   return (
     <div className="stack-panel-container" style={{ width: `${width}px` }}>
         {isResizable && <div className="stack-resizer" onMouseDown={onResizeMouseDown}></div>}
@@ -48,7 +37,7 @@ const StackPanel: React.FC<StackPanelProps> = ({ stack, onItemClick, onItemEnter
             <button onClick={onPopOut} title="Pop-out Stack">
                 <PopOutIcon />
             </button>
-            <button onClick={onToggleMinimize} title="Minimize Stack">
+            <button onClick={onHide} title="Hide Stack">
                 <MinimizeIcon />
             </button>
         </div>
@@ -84,8 +73,7 @@ const StackPanel: React.FC<StackPanelProps> = ({ stack, onItemClick, onItemEnter
 interface CardPreviewProps {
   card: CardType | null;
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
-  isMinimized: boolean;
-  onToggleMinimize: () => void;
+  onHide: () => void;
   onPopOut: () => void;
   isResizable: boolean;
   width: number;
@@ -93,17 +81,7 @@ interface CardPreviewProps {
   forwardedRef: React.Ref<HTMLDivElement>;
 }
 
-const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, isMinimized, onToggleMinimize, onPopOut, isResizable, width, onResizeMouseDown, forwardedRef }) => {
-  if (isMinimized) {
-    return (
-      <div className="card-preview-container minimized" ref={forwardedRef}>
-        <button onClick={onToggleMinimize} title="Show Card Preview">
-          <EyeIcon />
-        </button>
-      </div>
-    );
-  }
-
+const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, onHide, onPopOut, isResizable, width, onResizeMouseDown, forwardedRef }) => {
   return (
     <div className="card-preview-container" style={{ width: `${width}px` }} ref={forwardedRef}>
         {isResizable && <div className="preview-resizer" onMouseDown={onResizeMouseDown}></div>}
@@ -113,7 +91,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, i
             <button onClick={onPopOut} title="Pop-out Preview">
                 <PopOutIcon />
             </button>
-            <button onClick={onToggleMinimize} title="Minimize Preview">
+            <button onClick={onHide} title="Hide Preview">
                 <MinimizeIcon />
             </button>
         </div>
@@ -147,17 +125,17 @@ function App() {
   const [activeOpponentId, setActiveOpponentId] = useState<string | null>(null);
   const [loadedGameState, setLoadedGameState] = useState<GameState | null>(null);
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
-  const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   const [popout, setPopout] = useState<Window | null>(null);
   const [popoutContainer, setPopoutContainer] = useState<HTMLElement | null>(null);
-  const [previewWidth, setPreviewWidth] = useState(300);
+  const [previewWidth, setPreviewWidth] = useState(() => getPreviewWidth(300));
   const isResizing = useRef(false);
   const gameBoardRef = useRef<GameBoardHandle>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const [stack, setStack] = useState<StackItem[]>([]);
   const [hoveredStackCardId, setHoveredStackCardId] = useState<string | null>(null);
-  const [isStackMinimized, setIsStackMinimized] = useState(false);
+  const [isStackVisible, setIsStackVisible] = useState(true);
   const [stackPopout, setStackPopout] = useState<Window | null>(null);
   const [stackPopoutContainer, setStackPopoutContainer] = useState<HTMLElement | null>(null);
   const [stackWidth, setStackWidth] = useState(300);
@@ -188,12 +166,40 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    savePreviewWidth(previewWidth);
+  }, [previewWidth]);
+
+  useEffect(() => {
+    if (view === 'game') {
+        const timer = setTimeout(() => {
+            if (previewContainerRef.current && isPreviewVisible) {
+                const contentElement = previewContainerRef.current.querySelector('.card-preview-content') as HTMLElement;
+                if (contentElement) {
+                    const contentHeight = contentElement.clientHeight;
+                    const cardAspectRatio = 63 / 88;
+                    const maxPaneWidth = contentHeight * cardAspectRatio;
+                    
+                    setPreviewWidth(currentWidth => {
+                        if (currentWidth > maxPaneWidth) {
+                            return maxPaneWidth;
+                        }
+                        return currentWidth;
+                    });
+                }
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }
+  }, [view, isPreviewVisible]);
+
 
   const handleResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return;
     let newWidth = window.innerWidth - e.clientX;
 
-    if (previewContainerRef.current && !isPreviewMinimized) {
+    if (previewContainerRef.current && isPreviewVisible) {
         const contentElement = previewContainerRef.current.querySelector('.card-preview-content') as HTMLElement;
         if (contentElement) {
             const contentHeight = contentElement.clientHeight;
@@ -208,12 +214,12 @@ function App() {
         }
     }
     
-    if (newWidth < 200) {
-        newWidth = 200;
+    if (newWidth < 100) {
+        newWidth = 100;
     }
 
     setPreviewWidth(newWidth);
-  }, [isPreviewMinimized]);
+  }, [isPreviewVisible]);
 
   const handleResizeMouseUp = useCallback(() => {
     isResizing.current = false;
@@ -238,7 +244,7 @@ function App() {
   const handleStackResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizingStack.current) return;
     const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 200 && newWidth < 800) {
+    if (newWidth > 100 && newWidth < 800) {
         setStackWidth(newWidth);
     }
   }, []);
@@ -495,8 +501,7 @@ function App() {
       <CardPreview
           card={previewCard}
           imageDirectoryHandle={imagesDirectoryHandle}
-          isMinimized={isPreviewMinimized}
-          onToggleMinimize={() => setIsPreviewMinimized(p => !p)}
+          onHide={() => setIsPreviewVisible(false)}
           onPopOut={handlePopOut}
           isResizable={!popout}
           width={previewWidth}
@@ -538,8 +543,7 @@ function App() {
           onItemClick={handleRemoveFromStack}
           onItemEnter={handleStackItemEnter}
           onItemLeave={handleStackItemLeave}
-          isMinimized={isStackMinimized}
-          onToggleMinimize={() => setIsStackMinimized(p => !p)}
+          onHide={() => setIsStackVisible(false)}
           onPopOut={handleStackPopOut}
           isResizable={!stackPopout}
           width={stackWidth}
@@ -564,8 +568,8 @@ function App() {
               onOpponentChange={setActiveOpponentId}
               onCardHover={handleCardHover}
               previewCard={previewCard}
-              cardPreview={popout ? null : framedCardPreview}
-              stackPanel={stackPopout ? null : framedStackPanel}
+              cardPreview={isPreviewVisible && !popout ? framedCardPreview : null}
+              stackPanel={isStackVisible && !stackPopout ? framedStackPanel : null}
               cardSize={cardSize}
               onAddToStack={handleAddToStack}
               hoveredStackCardId={hoveredStackCardId}
@@ -621,6 +625,18 @@ function App() {
               <>
                 <button onClick={handleSaveGame} title="Save Game"> Save Game</button>
                 <button onClick={handleQuitGame}>Quit Game</button>
+                <button
+                  onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === '1vAll' ? 'split' : '1vAll'}) : s)}
+                  title="Toggle Game Layout"
+                >
+                  Layout
+                </button>
+                <button
+                  onClick={() => setGameSettings(s => s ? ({...s, playAreaLayout: s.playAreaLayout === 'rows' ? 'freeform' : 'rows'}) : s)}
+                  title="Toggle Play Area Layout"
+                >
+                  Play Area
+                </button>
               </>
             )}
           </nav>
@@ -658,6 +674,12 @@ function App() {
                 </button>
               </>
             )}
+            {view === 'game' && (
+              <>
+                <button onClick={() => setIsStackVisible(v => !v)} title="Toggle Stack Panel">Stack</button>
+                <button onClick={() => setIsPreviewVisible(v => !v)} title="Toggle Preview Panel">Preview</button>
+              </>
+            )}
             <button onClick={handleToggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
               {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
             </button>
@@ -672,7 +694,6 @@ function App() {
         <div className="main-content-area">
           {renderView()}
         </div>
-        {view === 'decks' && (popout ? null : framedCardPreview)}
       </main>
 
       {popoutContainer && createPortal(
