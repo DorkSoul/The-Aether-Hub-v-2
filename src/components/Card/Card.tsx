@@ -1,7 +1,8 @@
 // src/components/Card/Card.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import type { Card as CardType } from '../../types';
 import { getAndCacheCardImageUrl } from '../../utils/imageCaching';
+import { UpArrowIcon, DownArrowIcon, RemoveIcon } from '../Icons/icons';
 import './Card.css';
 
 interface CardProps {
@@ -9,11 +10,12 @@ interface CardProps {
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
   onContextMenu?: (event: React.MouseEvent) => void;
   isTapped?: boolean;
-  isFlipped?: boolean; 
+  isFlipped?: boolean;
   isHighlighted?: boolean;
   heldCounter?: string | null;
   onCounterApply?: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove?: (cardInstanceId: string, counterType: string) => void;
+  onRemoveAllCounters?: (cardInstanceId: string, counterType: string) => void;
   onFlip?: () => void;
   onTap?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
@@ -22,15 +24,47 @@ interface CardProps {
   style?: React.CSSProperties;
 }
 
+interface CounterDisplayProps {
+    counters: { [key: string]: number };
+    cardInstanceId: string;
+    onCounterApply: (cardInstanceId: string, counterType: string) => void;
+    onCounterRemove: (cardInstanceId: string, counterType: string) => void;
+    onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
+}
+
+const CounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ counters, cardInstanceId, onCounterApply, onCounterRemove, onRemoveAllCounters }, ref) => {
+    return (
+        <div className="counter-display" onClick={(e) => e.stopPropagation()} ref={ref}>
+            <div className="counter-row header-row">
+                <span className="header-label">#</span>
+                <span className="header-label type-header">Type</span>
+                <span className="header-label actions-header">Actions</span>
+            </div>
+            {Object.entries(counters).map(([type, count]) => (
+                <div key={type} className="counter-row">
+                    <span className="counter-amount">{count}</span>
+                    <span className="counter-type">{type}</span>
+                    <div className="counter-actions">
+                        <button onClick={() => onCounterApply(cardInstanceId, type)}><UpArrowIcon /></button>
+                        <button onClick={() => onCounterRemove(cardInstanceId, type)}><DownArrowIcon /></button>
+                        <button onClick={() => onRemoveAllCounters(cardInstanceId, type)}><RemoveIcon /></button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+});
+
 interface SingleCardViewProps {
   name: string;
   imageUrl: string | null;
   power?: string;
   toughness?: string;
   counters?: { [key: string]: number };
+  onCounterOverlayClick: (e: React.MouseEvent) => void;
 }
 
-const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, toughness, counters }) => {
+const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, toughness, counters, onCounterOverlayClick }) => {
     const calculateModifiedStats = () => {
         if (power === undefined || toughness === undefined) return null;
 
@@ -40,8 +74,10 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
         if (counters) {
             for (const [type, count] of Object.entries(counters)) {
                 const parts = type.split('/');
-                powerMod += parseInt(parts[0], 10) * count;
-                toughnessMod += parseInt(parts[1], 10) * count;
+                if (parts.length === 2 && !isNaN(parseInt(parts[0], 10)) && !isNaN(parseInt(parts[1], 10))) {
+                    powerMod += parseInt(parts[0], 10) * count;
+                    toughnessMod += parseInt(parts[1], 10) * count;
+                }
             }
         }
         
@@ -57,12 +93,13 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
     };
 
     const modifiedStats = calculateModifiedStats();
+    const hasCounters = counters && Object.keys(counters).length > 0;
 
     return (
         <div className="card">
             <img src={imageUrl || ''} alt={name} />
             {modifiedStats && (
-                <div className="pt-overlay">
+                <div className="pt-overlay" onClick={onCounterOverlayClick}>
                     <svg viewBox="0 0 50 20" preserveAspectRatio="xMidYMid meet">
                         <text
                             x="50%"
@@ -77,16 +114,35 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
                     </svg>
                 </div>
             )}
+            {hasCounters && !modifiedStats && (
+                 <div className="pt-overlay" onClick={onCounterOverlayClick} style={{width: "auto", padding: "0 5px"}}>
+                    <svg viewBox="0 0 50 20" preserveAspectRatio="xMidYMid meet">
+                       <text
+                            x="50%"
+                            y="60%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            fontSize="16"
+                            fill="white"
+                        >
+                            Counters
+                        </text>
+                    </svg>
+                </div>
+            )}
         </div>
     );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style, isHighlighted = false, heldCounter, onCounterApply, onCounterRemove }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style, isHighlighted = false, heldCounter, onCounterApply, onCounterRemove, onRemoveAllCounters }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPinged, setIsPinged] = useState(false);
+  const [showCounterDisplay, setShowCounterDisplay] = useState(false);
+  const counterDisplayRef = useRef<HTMLDivElement>(null);
+
 
   const flippableLayouts = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card', 'meld'];
   const isFlippable = flippableLayouts.includes(card.layout || '');
@@ -179,6 +235,9 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
       
   const clickHandler = (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (showCounterDisplay && counterDisplayRef.current && counterDisplayRef.current.contains(e.target as Node)) {
+        return;
+      }
 
       if (heldCounter && onCounterApply) {
         onCounterApply(card.instanceId!, heldCounter);
@@ -205,17 +264,32 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     onDragStart: onDragStart,
     onDragEnd: onDragEnd,
     onMouseEnter: () => onCardHover?.(card),
+    onMouseLeave: () => setShowCounterDisplay(false)
   };
   
   if (isLoading) {
     return (
       <div {...baseDivProps}>
-        <SingleCardView name={card.name} imageUrl={null} />
+        <SingleCardView name={card.name} imageUrl={null} onCounterOverlayClick={(e) => { e.stopPropagation(); setShowCounterDisplay(true);}} />
       </div>
     );
   }
 
   const { power, toughness, counters } = card;
+  const hasCounters = counters && Object.keys(counters).length > 0;
+
+  const handleCounterOverlayClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if(hasCounters) {
+          setShowCounterDisplay(prev => !prev);
+      }
+  }
+
+  const singleCardViewProps = {
+      onCounterOverlayClick: handleCounterOverlayClick,
+      counters,
+  };
+
 
   if (isFlippable) {
     const frontName = card.card_faces?.[0]?.name || card.name;
@@ -228,12 +302,15 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
       >
         <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
-            <SingleCardView name={frontName} imageUrl={frontImageUrl} power={card.card_faces?.[0]?.power || power} toughness={card.card_faces?.[0]?.toughness || toughness} counters={counters} />
+            <SingleCardView name={frontName} imageUrl={frontImageUrl} power={card.card_faces?.[0]?.power || power} toughness={card.card_faces?.[0]?.toughness || toughness} {...singleCardViewProps}/>
           </div>
           <div className="card-back">
-            <SingleCardView name={backName} imageUrl={backImageUrl} power={card.card_faces?.[1]?.power} toughness={card.card_faces?.[1]?.toughness} counters={counters} />
+            <SingleCardView name={backName} imageUrl={backImageUrl} power={card.card_faces?.[1]?.power} toughness={card.card_faces?.[1]?.toughness} {...singleCardViewProps}/>
           </div>
         </div>
+        {showCounterDisplay && hasCounters && onCounterApply && onCounterRemove && onRemoveAllCounters && (
+            <CounterDisplay ref={counterDisplayRef} counters={counters!} cardInstanceId={card.instanceId!} onCounterApply={onCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} />
+        )}
       </div>
     );
   }
@@ -243,7 +320,10 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
         {...baseDivProps}
         onClick={clickHandler} 
     >
-        <SingleCardView name={card.name} imageUrl={frontImageUrl} power={power} toughness={toughness} counters={counters} />
+        <SingleCardView name={card.name} imageUrl={frontImageUrl} power={power} toughness={toughness} {...singleCardViewProps}/>
+        {showCounterDisplay && hasCounters && onCounterApply && onCounterRemove && onRemoveAllCounters && (
+            <CounterDisplay ref={counterDisplayRef} counters={counters!} cardInstanceId={card.instanceId!} onCounterApply={onCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} />
+        )}
     </div>
   );
 };

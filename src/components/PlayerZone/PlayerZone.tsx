@@ -44,16 +44,17 @@ interface GameCardRendererProps {
   heldCounter: string | null;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
+  onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
   onCardDragStart: (card: CardType, source: CardLocation, offset: {x: number, y: number}) => void;
-  onCardHover: (card: CardType | null) => void; 
+  onCardHover: (card: CardType | null) => void;
   isHighlighted: boolean;
   style?: React.CSSProperties;
 }
 
-const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCounterRemove, ...rest }) => {
+const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCounterRemove, onRemoveAllCounters, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
     
@@ -91,6 +92,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       heldCounter={heldCounter}
       onCounterApply={onCounterApply}
       onCounterRemove={onCounterRemove}
+      onRemoveAllCounters={onRemoveAllCounters}
       onTap={() => rest.onCardTap(card.instanceId!)}
       onFlip={() => rest.onCardFlip(card.instanceId!)}
       onContextMenu={(e) => rest.onCardContextMenu(e, card)}
@@ -113,6 +115,7 @@ interface PlayerZoneProps {
   setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
+  onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -125,7 +128,7 @@ interface PlayerZoneProps {
   onZoneDragOver: (event: React.DragEvent, destination: CardLocation) => void;
   onZoneDragLeave: (event: React.DragEvent) => void;
   dropTarget: CardLocation | null;
-  onCardHover: (card: CardType | null) => void; 
+  onCardHover: (card: CardType | null) => void;
   cardSize: number;
   hoveredStackCardId: string | null;
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
@@ -159,6 +162,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   setHeldCounter,
   onCounterApply,
   onCounterRemove,
+  onRemoveAllCounters,
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -166,11 +170,11 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   const lastY = useRef(0);
   const handRef = useRef<HTMLDivElement>(null);
   const [handWidth, setHandWidth] = useState(0);
-  const [counterMenu, setCounterMenu] = useState<{ x: number, y: number, playerId: string } | null>(null);
+  const [counterMenu, setCounterMenu] = useState<{ x: number, y: number } | null>(null);
 
   const handleCounterClick = (event: React.MouseEvent) => {
     event.preventDefault();
-    setCounterMenu({ x: event.clientX, y: event.clientY, playerId });
+    setCounterMenu({ x: event.clientX, y: event.clientY });
   };
 
   const counterOptions = [
@@ -311,6 +315,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         heldCounter={heldCounter}
         onCounterApply={onCounterApply}
         onCounterRemove={onCounterRemove}
+        onRemoveAllCounters={onRemoveAllCounters}
         onCardTap={onCardTap}
         onCardFlip={onCardFlip}
         onCardContextMenu={onCardContextMenu}
@@ -506,6 +511,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
                       heldCounter={heldCounter}
                       onCounterApply={onCounterApply}
                       onCounterRemove={onCounterRemove}
+                      onRemoveAllCounters={onRemoveAllCounters}
                       onCardTap={onCardTap}
                       onCardFlip={onCardFlip}
                       onCardContextMenu={onCardContextMenu}

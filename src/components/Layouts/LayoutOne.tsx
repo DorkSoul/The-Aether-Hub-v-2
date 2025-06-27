@@ -15,6 +15,7 @@ interface LayoutOneProps {
   setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
+  onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -36,7 +37,7 @@ interface LayoutOneProps {
   onResetMana: (playerId: string) => void;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCounterRemove, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -58,6 +59,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             setHeldCounter={setHeldCounter}
             onCounterApply={onCounterApply}
             onCounterRemove={onCounterRemove}
+            onRemoveAllCounters={onRemoveAllCounters}
             {...interactionProps}
           />
         ) : (
@@ -81,6 +83,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           setHeldCounter={setHeldCounter}
           onCounterApply={onCounterApply}
           onCounterRemove={onCounterRemove}
+          onRemoveAllCounters={onRemoveAllCounters}
           {...interactionProps}
         />
         {cardPreview}

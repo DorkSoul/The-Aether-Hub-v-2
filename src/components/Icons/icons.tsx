@@ -828,3 +828,54 @@ export const CounterIcon = ({ width = 20, height = 20, ...props }: IconProps) =>
     <line x1="8" y1="12" x2="16" y2="12" />
   </svg>
 );
+
+export const UpArrowIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+
+export const DownArrowIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </svg>
+);
+
+export const RemoveIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);

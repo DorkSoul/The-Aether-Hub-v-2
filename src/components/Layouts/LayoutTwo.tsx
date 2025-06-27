@@ -14,6 +14,7 @@ interface LayoutTwoProps {
   setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
+  onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -35,7 +36,7 @@ interface LayoutTwoProps {
   onResetMana: (playerId: string) => void;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCounterRemove, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -66,6 +67,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             setHeldCounter={setHeldCounter}
             onCounterApply={onCounterApply}
             onCounterRemove={onCounterRemove}
+            onRemoveAllCounters={onRemoveAllCounters}
             {...interactionProps}
           />
         ))}
@@ -87,6 +89,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             setHeldCounter={setHeldCounter}
             onCounterApply={onCounterApply}
             onCounterRemove={onCounterRemove}
+            onRemoveAllCounters={onRemoveAllCounters}
             {...interactionProps}
           />
         ))}

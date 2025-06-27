@@ -106,6 +106,7 @@
     font-weight: bold;
     border: 1px solid #888;
     box-sizing: border-box;
+    cursor: pointer; /* Add cursor pointer */
 }
 
 .pt-overlay svg {
@@ -115,4 +116,67 @@
     left: 0px;
     top: 0px;
 
+}
+
+/* --- NEW --- Styles for the counter display */
+.counter-display {
+    position: absolute;
+    bottom: 15%;
+    right: 5.5%;
+    background-color: #3e4452;
+    color: white;
+    border-radius: 8px;
+    border: 1px solid #555;
+    padding: 5px;
+    display: table;
+    z-index: 10;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    min-width: 200px;
+    border-collapse: collapse;
+}
+
+.counter-row {
+    display: table-row;
+    border-bottom: 1px solid #555;
+}
+
+.counter-row:last-child {
+    border-bottom: none;
+}
+
+.counter-row.header-row {
+    font-weight: bold;
+    border-bottom: 2px solid #777;
+}
+
+.counter-row > * {
+    display: table-cell;
+    text-align: center;
+    padding: 5px;
+}
+
+.counter-row > :not(:last-child) {
+    border-right: 1px solid #555;
+}
+
+.counter-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.counter-row button {
+    background: none;
+    border: 1px solid white;
+    color: white;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.counter-row button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
 }

@@ -488,6 +488,16 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     });
   };
 
+  const handleRemoveAllCounters = (cardInstanceId: string, counterType: string) => {
+    updateCardState(cardInstanceId, card => {
+        const newCounters = { ...(card.counters || {}) };
+        if (newCounters[counterType]) {
+            delete newCounters[counterType];
+        }
+        return { ...card, counters: newCounters };
+    });
+  };
+
   const handleCardTap = useCallback((cardInstanceId: string) => {
       updateCardState(cardInstanceId, card => ({...card, isTapped: !card.isTapped}));
   }, [updateCardState]);
@@ -720,6 +730,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       setHeldCounter,
       onCounterApply: handleApplyCounter,
       onCounterRemove: handleRemoveCounter,
+      onRemoveAllCounters: handleRemoveAllCounters,
       onCardTap: handleCardTap,
       onCardFlip: handleCardFlip,
       onCardContextMenu: handleCardContextMenu,
@@ -736,7 +747,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       hoveredStackCardId,
       onUpdateMana: handleUpdateMana,
       onResetMana: handleResetMana,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleRemoveCounter]);
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleRemoveCounter, handleRemoveAllCounters]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;

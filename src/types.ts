@@ -52,6 +52,7 @@ export interface Card {
   // --- NEW --- Coordinates for freeform layout
   x?: number;
   y?: number;
+  onRemoveAllCounters?: (cardInstanceId: string, counterType: string) => void;
 }
 
 export interface StackItem {
