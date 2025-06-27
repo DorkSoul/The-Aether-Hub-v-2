@@ -11,6 +11,10 @@ interface LayoutOneProps {
   playAreaLayout: 'rows' | 'freeform';
   freeformCardSizes: {[playerId: string]: number};
   handHeights: {[playerId: string]: number};
+  heldCounter: string | null;
+  setHeldCounter: (counter: string | null) => void;
+  onCounterApply: (cardInstanceId: string, counterType: string) => void;
+  onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -32,7 +36,7 @@ interface LayoutOneProps {
   onResetMana: (playerId: string) => void;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCounterRemove, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -50,6 +54,10 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             hoveredStackCardId={hoveredStackCardId}
             onUpdateMana={onUpdateMana}
             onResetMana={onResetMana}
+            heldCounter={heldCounter}
+            setHeldCounter={setHeldCounter}
+            onCounterApply={onCounterApply}
+            onCounterRemove={onCounterRemove}
             {...interactionProps}
           />
         ) : (
@@ -69,6 +77,10 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           hoveredStackCardId={hoveredStackCardId}
           onUpdateMana={onUpdateMana}
           onResetMana={onResetMana}
+          heldCounter={heldCounter}
+          setHeldCounter={setHeldCounter}
+          onCounterApply={onCounterApply}
+          onCounterRemove={onCounterRemove}
           {...interactionProps}
         />
         {cardPreview}

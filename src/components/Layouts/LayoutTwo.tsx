@@ -10,6 +10,10 @@ interface LayoutTwoProps {
   playAreaLayout: 'rows' | 'freeform';
   freeformCardSizes: {[playerId: string]: number};
   handHeights: {[playerId: string]: number};
+  heldCounter: string | null;
+  setHeldCounter: (counter: string | null) => void;
+  onCounterApply: (cardInstanceId: string, counterType: string) => void;
+  onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -31,7 +35,7 @@ interface LayoutTwoProps {
   onResetMana: (playerId: string) => void;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCounterRemove, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -58,6 +62,10 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             hoveredStackCardId={hoveredStackCardId}
             onUpdateMana={onUpdateMana}
             onResetMana={onResetMana}
+            heldCounter={heldCounter}
+            setHeldCounter={setHeldCounter}
+            onCounterApply={onCounterApply}
+            onCounterRemove={onCounterRemove}
             {...interactionProps}
           />
         ))}
@@ -75,6 +83,10 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             hoveredStackCardId={hoveredStackCardId}
             onUpdateMana={onUpdateMana}
             onResetMana={onResetMana}
+            heldCounter={heldCounter}
+            setHeldCounter={setHeldCounter}
+            onCounterApply={onCounterApply}
+            onCounterRemove={onCounterRemove}
             {...interactionProps}
           />
         ))}

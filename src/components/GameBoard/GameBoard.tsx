@@ -8,6 +8,7 @@ import LayoutOne from '../Layouts/LayoutOne';
 import LayoutTwo from '../Layouts/LayoutTwo';
 import ContextMenu from '../ContextMenu/ContextMenu';
 import ScryModal from '../ScryModal/ScryModal';
+import HeldCounter from '../HeldCounter/HeldCounter';
 import './GameBoard.css';
 
 interface GameBoardProps {
@@ -45,6 +46,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [scryState, setScryState] = useState<{ playerId: string; cards: CardType[] } | null>(null);
   const [freeformCardSizes, setFreeformCardSizes] = useState<{[playerId: string]: number}>({});
   const [handHeights, setHandHeights] = useState<{ [playerId: string]: number }>({});
+  const [heldCounter, setHeldCounter] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const prevPlayAreaLayout = React.useRef(settings.playAreaLayout);
 
   useImperativeHandle(ref, () => ({
@@ -91,12 +94,12 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           const validatedStates = initialState.playerStates.map(pState => ({
               ...pState,
               mana: pState.mana || { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
-              hand: pState.hand.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
-              library: pState.library.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
-              graveyard: pState.graveyard.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
-              exile: pState.exile.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
-              commandZone: pState.commandZone.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()})),
-              battlefield: pState.battlefield.map(row => row.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID()}))),
+              hand: pState.hand.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
+              library: pState.library.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
+              graveyard: pState.graveyard.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
+              exile: pState.exile.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
+              commandZone: pState.commandZone.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
+              battlefield: pState.battlefield.map(row => row.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}}))),
           }));
           setPlayerStates(validatedStates);
           
@@ -118,7 +121,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             if (!p.deckFile) throw new Error(`Player ${p.name} has no deck file.`);
             return p.deckFile.getFile().then(file => file.text().then(text => JSON.parse(text)));
         });
-        const parsedDecks: { name: string, cards: CardType[], commanders?: string[] }[] = await Promise.all(deckFilePromises);
+        const parsedDecks: { name: string; cards: CardType[]; commanders?: string[] }[] = await Promise.all(deckFilePromises);
 
         const allCardIds = new Set<string>();
         parsedDecks.forEach(deck => {
@@ -154,6 +157,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
                   instanceId: newInstanceId,
                   isTapped: false,
                   isFlipped: false,
+                  counters: {},
               };
               return newCard;
           }).filter((c): c is CardType => c !== null); 
@@ -250,6 +254,50 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     }
     prevPlayAreaLayout.current = settings.playAreaLayout;
   }, [settings.playAreaLayout, freeformCardSizes]);
+  
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+        if (heldCounter) {
+            setMousePosition({ x: e.clientX, y: e.clientY });
+        }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [heldCounter]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+        if (heldCounter) {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.card-flipper')) {
+                setHeldCounter(null);
+            }
+        }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+        if (heldCounter) {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.card-flipper')) {
+                e.preventDefault();
+                setHeldCounter(null);
+            }
+        }
+    };
+
+    if (heldCounter) {
+        document.addEventListener('click', handleClick, true);
+        document.addEventListener('contextmenu', handleContextMenu, true);
+    }
+
+    return () => {
+        document.removeEventListener('click', handleClick, true);
+        document.removeEventListener('contextmenu', handleContextMenu, true);
+    };
+  }, [heldCounter]);
+
 
   const handleDragStart = useCallback((item: DraggedItem) => {
     setDraggedItem(item);
@@ -418,6 +466,27 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           });
       });
   }, []);
+
+  const handleApplyCounter = (cardInstanceId: string, counterType: string) => {
+    updateCardState(cardInstanceId, card => {
+        const newCounters = { ...(card.counters || {}) };
+        newCounters[counterType] = (newCounters[counterType] || 0) + 1;
+        return { ...card, counters: newCounters };
+    });
+  };
+
+  const handleRemoveCounter = (cardInstanceId: string, counterType: string) => {
+    updateCardState(cardInstanceId, card => {
+        const newCounters = { ...(card.counters || {}) };
+        if (newCounters[counterType] > 0) {
+            newCounters[counterType] -= 1;
+        }
+        if (newCounters[counterType] === 0) {
+            delete newCounters[counterType];
+        }
+        return { ...card, counters: newCounters };
+    });
+  };
 
   const handleCardTap = useCallback((cardInstanceId: string) => {
       updateCardState(cardInstanceId, card => ({...card, isTapped: !card.isTapped}));
@@ -647,6 +716,10 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       imagesDirectoryHandle,
       playAreaLayout: settings.playAreaLayout,
       freeformCardSizes,
+      heldCounter,
+      setHeldCounter,
+      onCounterApply: handleApplyCounter,
+      onCounterRemove: handleRemoveCounter,
       onCardTap: handleCardTap,
       onCardFlip: handleCardFlip,
       onCardContextMenu: handleCardContextMenu,
@@ -663,7 +736,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       hoveredStackCardId,
       onUpdateMana: handleUpdateMana,
       onResetMana: handleResetMana,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana]);
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleRemoveCounter]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
@@ -677,6 +750,9 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     
   return (
     <div className="game-board">
+      {heldCounter && (
+        <HeldCounter text={heldCounter} x={mousePosition.x} y={mousePosition.y} />
+      )}
       {settings.layout === '1vAll' ? (
         <LayoutOne 
           playerStates={playerStates} 

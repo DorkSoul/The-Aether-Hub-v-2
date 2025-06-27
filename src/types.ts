@@ -10,6 +10,8 @@ export interface CardFace {
   type_line: string;
   mana_cost?: string;
   oracle_text?: string;
+  power?: string;
+  toughness?: string;
 }
 
 export interface RelatedCard {
@@ -44,6 +46,9 @@ export interface Card {
   isFlipped?: boolean;
   mana_cost?: string;
   oracle_text?: string;
+  power?: string;
+  toughness?: string;
+  counters?: { [type: string]: number };
   // --- NEW --- Coordinates for freeform layout
   x?: number;
   y?: number;
