@@ -120,8 +120,8 @@
 
 .custom-counter-display-overlay {
     position: absolute;
-    bottom: 4.5%;
-    left: 5.5%;
+    top: 10.5%;
+    left: 7%;
     width: 22%;
     height: 9%;
     background-color: rgba(30, 30, 30, 0.85);
@@ -134,6 +134,8 @@
 }
 
 .custom-counter-display-overlay svg {
+    position: absolute;
+    left: 0px;
     width: 100%;
     height: 100%;
 }
