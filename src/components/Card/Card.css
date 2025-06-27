@@ -153,10 +153,17 @@
     display: table-cell;
     text-align: center;
     padding: 5px;
+    position: relative;
 }
 
-.counter-row > :not(:last-child) {
-    border-right: 1px solid #555;
+.counter-row > *:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    right: 0;
+    height: 70%;
+    width: 1px;
+    background-color: #555;
 }
 
 .counter-actions {
