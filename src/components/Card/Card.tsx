@@ -1,4 +1,5 @@
 // src/components/Card/Card.tsx
+
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import type { Card as CardType } from '../../types';
 import { getAndCacheCardImageUrl } from '../../utils/imageCaching';
@@ -17,6 +18,7 @@ interface CardProps {
   onCustomCounterApply?: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove?: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters?: (cardInstanceId: string, counterType: string) => void;
+  onCounterSelect?: (counterType: string) => void;
   onFlip?: () => void;
   onTap?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
@@ -31,9 +33,10 @@ interface CounterDisplayProps {
     onCounterApply: (cardInstanceId: string, counterType: string) => void;
     onCounterRemove: (cardInstanceId: string, counterType: string) => void;
     onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
+    onCounterSelect: (counterType: string) => void;
 }
 
-const CounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ counters, cardInstanceId, onCounterApply, onCounterRemove, onRemoveAllCounters }, ref) => {
+const CounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ counters, cardInstanceId, onCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect }, ref) => {
     return (
         <div className="counter-display" onClick={(e) => e.stopPropagation()} ref={ref}>
             <div className="counter-row header-row">
@@ -44,7 +47,7 @@ const CounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ counte
             {Object.entries(counters).map(([type, count]) => (
                 <div key={type} className="counter-row">
                     <span className="counter-amount">{count}</span>
-                    <span className="counter-type">{type}</span>
+                    <span className="counter-type clickable" onClick={() => onCounterSelect(type)}>{type}</span>
                     <div className="counter-actions">
                         <button onClick={() => onCounterApply(cardInstanceId, type)}><UpArrowIcon /></button>
                         <button onClick={() => onCounterRemove(cardInstanceId, type)}><DownArrowIcon /></button>
@@ -56,7 +59,7 @@ const CounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ counte
     );
 });
 
-const CustomCounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ counters, cardInstanceId, onCounterApply, onCounterRemove, onRemoveAllCounters }, ref) => {
+const CustomCounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ counters, cardInstanceId, onCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect }, ref) => {
     return (
         <div className="counter-display" style={{right: 'auto', left: '5.5%'}} onClick={(e) => e.stopPropagation()} ref={ref}>
             <div className="counter-row header-row">
@@ -67,7 +70,7 @@ const CustomCounterDisplay = forwardRef<HTMLDivElement, CounterDisplayProps>(({ 
             {Object.entries(counters).map(([type, count]) => (
                 <div key={type} className="counter-row">
                     <span className="counter-amount">{count}</span>
-                    <span className="counter-type">{type}</span>
+                    <span className="counter-type clickable" onClick={() => onCounterSelect(type)}>{type}</span>
                     <div className="counter-actions">
                         <button onClick={() => onCounterApply(cardInstanceId, type)}><UpArrowIcon /></button>
                         <button onClick={() => onCounterRemove(cardInstanceId, type)}><DownArrowIcon /></button>
@@ -177,7 +180,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
     );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style, isHighlighted = false, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style, isHighlighted = false, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
@@ -269,7 +272,8 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     }
   };
   
-  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isHighlighted || isPinged ? 'highlight-attention' : ''}`;
+  const isOverlayActive = showCounterDisplay || showCustomCounterDisplay;
+  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isHighlighted || isPinged ? 'highlight-attention' : ''} ${isOverlayActive ? 'overlay-active' : ''}`;
   
   let title = card.name;
   if (onTap || onFlip) {
@@ -376,11 +380,11 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
             <SingleCardView name={backName} imageUrl={backImageUrl} power={card.card_faces?.[1]?.power} toughness={card.card_faces?.[1]?.toughness} {...singleCardViewProps}/>
           </div>
         </div>
-        {showCounterDisplay && hasCounters && onCounterApply && onCounterRemove && onRemoveAllCounters && (
-            <CounterDisplay ref={counterDisplayRef} counters={counters!} cardInstanceId={card.instanceId!} onCounterApply={onCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} />
+        {showCounterDisplay && hasCounters && onCounterApply && onCounterRemove && onRemoveAllCounters && onCounterSelect &&(
+            <CounterDisplay ref={counterDisplayRef} counters={counters!} cardInstanceId={card.instanceId!} onCounterApply={onCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} onCounterSelect={onCounterSelect}/>
         )}
-         {showCustomCounterDisplay && hasCustomCounters && onCustomCounterApply && onCounterRemove && onRemoveAllCounters && (
-            <CustomCounterDisplay ref={customCounterDisplayRef} counters={customCounters!} cardInstanceId={card.instanceId!} onCounterApply={onCustomCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} />
+         {showCustomCounterDisplay && hasCustomCounters && onCustomCounterApply && onCounterRemove && onRemoveAllCounters && onCounterSelect && (
+            <CustomCounterDisplay ref={customCounterDisplayRef} counters={customCounters!} cardInstanceId={card.instanceId!} onCounterApply={onCustomCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} onCounterSelect={onCounterSelect} />
         )}
       </div>
     );
@@ -392,11 +396,11 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
         onClick={clickHandler} 
     >
         <SingleCardView name={card.name} imageUrl={frontImageUrl} power={power} toughness={toughness} {...singleCardViewProps}/>
-        {showCounterDisplay && hasCounters && onCounterApply && onCounterRemove && onRemoveAllCounters && (
-            <CounterDisplay ref={counterDisplayRef} counters={counters!} cardInstanceId={card.instanceId!} onCounterApply={onCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} />
+        {showCounterDisplay && hasCounters && onCounterApply && onCounterRemove && onRemoveAllCounters && onCounterSelect && (
+            <CounterDisplay ref={counterDisplayRef} counters={counters!} cardInstanceId={card.instanceId!} onCounterApply={onCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} onCounterSelect={onCounterSelect} />
         )}
-        {showCustomCounterDisplay && hasCustomCounters && onCustomCounterApply && onCounterRemove && onRemoveAllCounters && (
-            <CustomCounterDisplay ref={customCounterDisplayRef} counters={customCounters!} cardInstanceId={card.instanceId!} onCounterApply={onCustomCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} />
+        {showCustomCounterDisplay && hasCustomCounters && onCustomCounterApply && onCounterRemove && onRemoveAllCounters && onCounterSelect &&(
+            <CustomCounterDisplay ref={customCounterDisplayRef} counters={customCounters!} cardInstanceId={card.instanceId!} onCounterApply={onCustomCounterApply} onCounterRemove={onCounterRemove} onRemoveAllCounters={onRemoveAllCounters} onCounterSelect={onCounterSelect} />
         )}
     </div>
   );

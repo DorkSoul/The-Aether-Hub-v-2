@@ -1,4 +1,5 @@
 // src/components/PlayerZone/PlayerZone.tsx
+
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import Card from '../Card/Card';
@@ -46,6 +47,7 @@ interface GameCardRendererProps {
   onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
+  onCounterSelect: (counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -55,7 +57,7 @@ interface GameCardRendererProps {
   style?: React.CSSProperties;
 }
 
-const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, ...rest }) => {
+const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
     
@@ -95,6 +97,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       onCustomCounterApply={onCustomCounterApply}
       onCounterRemove={onCounterRemove}
       onRemoveAllCounters={onRemoveAllCounters}
+      onCounterSelect={onCounterSelect}
       onTap={() => rest.onCardTap(card.instanceId!)}
       onFlip={() => rest.onCardFlip(card.instanceId!)}
       onContextMenu={(e) => rest.onCardContextMenu(e, card)}
@@ -327,6 +330,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onCustomCounterApply={onCustomCounterApply}
         onCounterRemove={onCounterRemove}
         onRemoveAllCounters={onRemoveAllCounters}
+        onCounterSelect={setHeldCounter}
         onCardTap={onCardTap}
         onCardFlip={onCardFlip}
         onCardContextMenu={onCardContextMenu}
@@ -522,6 +526,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
                       heldCounter={heldCounter}
                       onCounterApply={onCounterApply}
                       onCustomCounterApply={onCustomCounterApply}
+      onCounterSelect={setHeldCounter}
                       onCounterRemove={onCounterRemove}
                       onRemoveAllCounters={onRemoveAllCounters}
                       onCardTap={onCardTap}
