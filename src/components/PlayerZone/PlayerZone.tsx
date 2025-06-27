@@ -43,6 +43,7 @@ interface GameCardRendererProps {
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
   heldCounter: string | null;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
+  onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
@@ -54,7 +55,7 @@ interface GameCardRendererProps {
   style?: React.CSSProperties;
 }
 
-const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCounterRemove, onRemoveAllCounters, ...rest }) => {
+const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
     
@@ -91,6 +92,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       isHighlighted={isHighlighted}
       heldCounter={heldCounter}
       onCounterApply={onCounterApply}
+      onCustomCounterApply={onCustomCounterApply}
       onCounterRemove={onCounterRemove}
       onRemoveAllCounters={onRemoveAllCounters}
       onTap={() => rest.onCardTap(card.instanceId!)}
@@ -114,6 +116,7 @@ interface PlayerZoneProps {
   heldCounter: string | null;
   setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
+  onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
@@ -161,6 +164,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   heldCounter,
   setHeldCounter,
   onCounterApply,
+  onCustomCounterApply,
   onCounterRemove,
   onRemoveAllCounters,
 }) => {
@@ -184,6 +188,12 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       { label: '-1/0', action: () => setHeldCounter('-1/0') },
       { label: '0/+1', action: () => setHeldCounter('0/+1') },
       { label: '0/-1', action: () => setHeldCounter('0/-1') },
+      { label: 'Custom', action: () => {
+          const customCounterName = prompt("Enter counter name:");
+          if (customCounterName) {
+              setHeldCounter(customCounterName);
+          }
+      }},
   ];
 
   useEffect(() => {
@@ -314,6 +324,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         imageDirectoryHandle={imagesDirectoryHandle}
         heldCounter={heldCounter}
         onCounterApply={onCounterApply}
+        onCustomCounterApply={onCustomCounterApply}
         onCounterRemove={onCounterRemove}
         onRemoveAllCounters={onRemoveAllCounters}
         onCardTap={onCardTap}
@@ -510,6 +521,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
                       imageDirectoryHandle={imagesDirectoryHandle}
                       heldCounter={heldCounter}
                       onCounterApply={onCounterApply}
+                      onCustomCounterApply={onCustomCounterApply}
                       onCounterRemove={onCounterRemove}
                       onRemoveAllCounters={onRemoveAllCounters}
                       onCardTap={onCardTap}

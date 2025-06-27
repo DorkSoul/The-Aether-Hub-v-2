@@ -118,6 +118,26 @@
 
 }
 
+.custom-counter-display-overlay {
+    position: absolute;
+    bottom: 4.5%;
+    left: 5.5%;
+    width: 22%;
+    height: 9%;
+    background-color: rgba(30, 30, 30, 0.85);
+    color: white;
+    border-radius: 3px;
+    font-weight: bold;
+    border: 1px solid #888;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.custom-counter-display-overlay svg {
+    width: 100%;
+    height: 100%;
+}
+
 /* --- NEW --- Styles for the counter display */
 .counter-display {
     position: absolute;

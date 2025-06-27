@@ -94,12 +94,12 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           const validatedStates = initialState.playerStates.map(pState => ({
               ...pState,
               mana: pState.mana || { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
-              hand: pState.hand.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
-              library: pState.library.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
-              graveyard: pState.graveyard.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
-              exile: pState.exile.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
-              commandZone: pState.commandZone.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}})),
-              battlefield: pState.battlefield.map(row => row.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}}))),
+              hand: pState.hand.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
+              library: pState.library.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
+              graveyard: pState.graveyard.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
+              exile: pState.exile.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
+              commandZone: pState.commandZone.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
+              battlefield: pState.battlefield.map(row => row.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}}))),
           }));
           setPlayerStates(validatedStates);
           
@@ -158,6 +158,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
                   isTapped: false,
                   isFlipped: false,
                   counters: {},
+                  customCounters: {},
               };
               return newCard;
           }).filter((c): c is CardType => c !== null); 
@@ -475,26 +476,47 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     });
   };
 
-  const handleRemoveCounter = (cardInstanceId: string, counterType: string) => {
+  const handleCustomCounterApply = useCallback((cardInstanceId: string, counterType: string) => {
+    updateCardState(cardInstanceId, card => {
+        const newCustomCounters = { ...(card.customCounters || {}) };
+        newCustomCounters[counterType] = (newCustomCounters[counterType] || 0) + 1;
+        return { ...card, customCounters: newCustomCounters };
+    });
+  }, [updateCardState]);
+
+  const handleCounterRemove = (cardInstanceId: string, counterType: string) => {
     updateCardState(cardInstanceId, card => {
         const newCounters = { ...(card.counters || {}) };
-        if (newCounters[counterType] > 0) {
-            newCounters[counterType] -= 1;
+        const newCustomCounters = { ...(card.customCounters || {}) };
+
+        if (newCounters[counterType]) {
+            if (newCounters[counterType] > 1) {
+                newCounters[counterType] -= 1;
+            } else {
+                delete newCounters[counterType];
+            }
+        } else if (newCustomCounters[counterType]) {
+            if (newCustomCounters[counterType] > 1) {
+                newCustomCounters[counterType] -= 1;
+            } else {
+                delete newCustomCounters[counterType];
+            }
         }
-        if (newCounters[counterType] === 0) {
-            delete newCounters[counterType];
-        }
-        return { ...card, counters: newCounters };
+        return { ...card, counters: newCounters, customCounters: newCustomCounters };
     });
   };
 
   const handleRemoveAllCounters = (cardInstanceId: string, counterType: string) => {
     updateCardState(cardInstanceId, card => {
         const newCounters = { ...(card.counters || {}) };
+        const newCustomCounters = { ...(card.customCounters || {}) };
+
         if (newCounters[counterType]) {
             delete newCounters[counterType];
+        } else if (newCustomCounters[counterType]) {
+            delete newCustomCounters[counterType];
         }
-        return { ...card, counters: newCounters };
+        return { ...card, counters: newCounters, customCounters: newCustomCounters };
     });
   };
 
@@ -729,7 +751,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       heldCounter,
       setHeldCounter,
       onCounterApply: handleApplyCounter,
-      onCounterRemove: handleRemoveCounter,
+      onCustomCounterApply: handleCustomCounterApply,
+      onCounterRemove: handleCounterRemove,
       onRemoveAllCounters: handleRemoveAllCounters,
       onCardTap: handleCardTap,
       onCardFlip: handleCardFlip,
@@ -747,7 +770,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       hoveredStackCardId,
       onUpdateMana: handleUpdateMana,
       onResetMana: handleResetMana,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleRemoveCounter, handleRemoveAllCounters]);
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleCustomCounterApply, handleCounterRemove, handleRemoveAllCounters]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;

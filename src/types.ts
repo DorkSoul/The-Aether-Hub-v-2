@@ -49,6 +49,7 @@ export interface Card {
   power?: string;
   toughness?: string;
   counters?: { [type: string]: number };
+  customCounters?: { [type: string]: number };
   // --- NEW --- Coordinates for freeform layout
   x?: number;
   y?: number;

@@ -13,6 +13,7 @@ interface LayoutTwoProps {
   heldCounter: string | null;
   setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
+  onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
@@ -36,7 +37,7 @@ interface LayoutTwoProps {
   onResetMana: (playerId: string) => void;
 }
 
-const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
+const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
@@ -66,6 +67,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             heldCounter={heldCounter}
             setHeldCounter={setHeldCounter}
             onCounterApply={onCounterApply}
+            onCustomCounterApply={onCustomCounterApply}
             onCounterRemove={onCounterRemove}
             onRemoveAllCounters={onRemoveAllCounters}
             {...interactionProps}
@@ -88,6 +90,7 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
             heldCounter={heldCounter}
             setHeldCounter={setHeldCounter}
             onCounterApply={onCounterApply}
+            onCustomCounterApply={onCustomCounterApply}
             onCounterRemove={onCounterRemove}
             onRemoveAllCounters={onRemoveAllCounters}
             {...interactionProps}
