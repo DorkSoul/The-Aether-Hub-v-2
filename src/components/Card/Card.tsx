@@ -91,9 +91,10 @@ interface SingleCardViewProps {
   customCounters?: { [key: string]: number };
   onCounterOverlayClick: (e: React.MouseEvent) => void;
   onCustomCounterOverlayClick: (e: React.MouseEvent) => void;
+  cardWidth?: number;
 }
 
-const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, toughness, counters, customCounters, onCounterOverlayClick, onCustomCounterOverlayClick }) => {
+const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, toughness, counters, customCounters, onCounterOverlayClick, onCustomCounterOverlayClick, cardWidth }) => {
     const calculateModifiedStats = () => {
         if (power === undefined || toughness === undefined) return null;
 
@@ -124,6 +125,8 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
     const modifiedStats = calculateModifiedStats();
     const hasCounters = counters && Object.keys(counters).length > 0;
     const hasCustomCounters = customCounters && Object.keys(customCounters).length > 0;
+    const customCounterNames = hasCustomCounters ? Object.keys(customCounters).join(', ') : '';
+    const baseFontSize = cardWidth ? cardWidth / 18 : 8;
 
     return (
         <div className="card">
@@ -161,19 +164,8 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
                 </div>
             )}
             {hasCustomCounters && (
-                 <div className="custom-counter-display-overlay" onClick={onCustomCounterOverlayClick}>
-                    <svg viewBox="0 0 60 25" preserveAspectRatio="xMidYMid meet">
-                       <text
-                            x="50%"
-                            y="50%"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            fontSize="12"
-                            fill="white"
-                        >
-                            Counters
-                        </text>
-                    </svg>
+                 <div className="custom-counter-display-overlay" onClick={onCustomCounterOverlayClick} style={{ fontSize: `${baseFontSize}px` }}>
+                    {customCounterNames}
                 </div>
             )}
         </div>
@@ -190,6 +182,23 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
   const [showCustomCounterDisplay, setShowCustomCounterDisplay] = useState(false);
   const counterDisplayRef = useRef<HTMLDivElement>(null);
   const customCounterDisplayRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [actualCardWidth, setActualCardWidth] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const cardElement = cardRef.current;
+    if (cardElement) {
+      const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          setActualCardWidth(entry.contentRect.width);
+        }
+      });
+      resizeObserver.observe(cardElement);
+      return () => resizeObserver.disconnect();
+    }
+  }, []);
+
+  const cardWidth = style?.width ? parseInt(String(style.width).replace('px', '')) : actualCardWidth;
 
 
   const flippableLayouts = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card', 'meld'];
@@ -325,13 +334,14 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     onMouseLeave: () => {
         setShowCounterDisplay(false);
         setShowCustomCounterDisplay(false);
-    }
+    },
+    ref: cardRef,
   };
   
   if (isLoading) {
     return (
       <div {...baseDivProps}>
-        <SingleCardView name={card.name} imageUrl={null} onCounterOverlayClick={(e) => { e.stopPropagation(); setShowCounterDisplay(true);}} onCustomCounterOverlayClick={(e) => { e.stopPropagation(); setShowCustomCounterDisplay(true);}} />
+        <SingleCardView name={card.name} imageUrl={null} onCounterOverlayClick={(e) => { e.stopPropagation(); setShowCounterDisplay(true);}} onCustomCounterOverlayClick={(e) => { e.stopPropagation(); setShowCustomCounterDisplay(true);}} cardWidth={cardWidth}/>
       </div>
     );
   }
@@ -360,6 +370,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
       onCustomCounterOverlayClick: handleCustomCounterOverlayClick,
       counters,
       customCounters,
+      cardWidth,
   };
 
 
