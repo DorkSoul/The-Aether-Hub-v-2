@@ -177,27 +177,45 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   const lastY = useRef(0);
   const handRef = useRef<HTMLDivElement>(null);
   const [handWidth, setHandWidth] = useState(0);
-  const [counterMenu, setCounterMenu] = useState<{ x: number, y: number } | null>(null);
+  const [xyCounterMenu, setXYCounterMenu] = useState<{ x: number, y: number } | null>(null);
+  const [abilitiesMenu, setAbilitiesMenu] = useState<{ x: number, y: number } | null>(null);
 
-  const handleCounterClick = (event: React.MouseEvent) => {
+  const handleXYCounterClick = (event: React.MouseEvent) => {
     event.preventDefault();
-    setCounterMenu({ x: event.clientX, y: event.clientY });
+    setXYCounterMenu({ x: event.clientX, y: event.clientY });
   };
 
-  const counterOptions = [
-      { label: '+1/+1', action: () => setHeldCounter('+1/+1') },
-      { label: '-1/-1', action: () => setHeldCounter('-1/-1') },
-      { label: '+1/0', action: () => setHeldCounter('+1/0') },
-      { label: '-1/0', action: () => setHeldCounter('-1/0') },
-      { label: '0/+1', action: () => setHeldCounter('0/+1') },
-      { label: '0/-1', action: () => setHeldCounter('0/-1') },
-      { label: 'Custom', action: () => {
-          const customCounterName = prompt("Enter counter name:");
-          if (customCounterName) {
-              setHeldCounter(customCounterName);
-          }
-      }},
+  const handleAbilitiesClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setAbilitiesMenu({ x: event.clientX, y: event.clientY });
+  };
+
+  const handleCustomCounterClick = () => {
+    const customCounterName = prompt("Enter counter name:");
+    if (customCounterName) {
+        setHeldCounter(customCounterName);
+    }
+  };
+
+  const xyCounterOptions = [
+    { label: '+1/+1', action: () => setHeldCounter('+1/+1') },
+    { label: '-1/-1', action: () => setHeldCounter('-1/-1') },
+    { label: '+1/0', action: () => setHeldCounter('+1/0') },
+    { label: '-1/0', action: () => setHeldCounter('-1/0') },
+    { label: '0/+1', action: () => setHeldCounter('0/+1') },
+    { label: '0/-1', action: () => setHeldCounter('0/-1') },
   ];
+
+  const abilities = [
+      'deathtouch', 'defender', 'double strike', 'first strike', 'flying', 'goad', 
+      'haste', 'hexproof', 'indestructible', 'lifelink', 'menace', 'reach', 
+      'shroud', 'trample', 'vigilance'
+  ].sort();
+
+  const abilityOptions = abilities.map(ability => ({
+      label: ability.charAt(0).toUpperCase() + ability.slice(1),
+      action: () => setHeldCounter(ability),
+  }));
 
   useEffect(() => {
     if (handRef.current) {
@@ -460,9 +478,17 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
           </button>
         </div>
         <h3>{playerState.name}: {playerState.life} Life</h3>
-        <button className="counter-btn" onClick={handleCounterClick} title="Counters">
-          Counters
-        </button>
+        <div className="counter-buttons">
+            <button className="counter-btn" onClick={handleXYCounterClick} title="±X/±Y Counters">
+              ±X/±Y
+            </button>
+            <button className="counter-btn" onClick={handleAbilitiesClick} title="Ability Counters">
+              Abilities
+            </button>
+            <button className="counter-btn" onClick={handleCustomCounterClick} title="Custom Counters">
+              Custom
+            </button>
+        </div>
         {playAreaLayout === 'freeform' && (
           <div className="freeform-controls">
             <button onClick={() => onUpdateFreeformCardSize(playerId, -10)} title="Decrease Card Size"><MinusIcon /></button>
@@ -542,16 +568,30 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
             </div>
         ))}
       </div>
-      {counterMenu && (
+      {xyCounterMenu && (
         <ContextMenu
-          x={counterMenu.x}
-          y={counterMenu.y}
-          onClose={() => setCounterMenu(null)}
-          options={counterOptions.map(opt => ({
+          x={xyCounterMenu.x}
+          y={xyCounterMenu.y}
+          onClose={() => setXYCounterMenu(null)}
+          options={xyCounterOptions.map(opt => ({
             ...opt,
             action: () => {
               opt.action();
-              setCounterMenu(null);
+              setXYCounterMenu(null);
+            }
+          }))}
+        />
+      )}
+      {abilitiesMenu && (
+        <ContextMenu
+          x={abilitiesMenu.x}
+          y={abilitiesMenu.y}
+          onClose={() => setAbilitiesMenu(null)}
+          options={abilityOptions.map(opt => ({
+            ...opt,
+            action: () => {
+              opt.action();
+              setAbilitiesMenu(null);
             }
           }))}
         />

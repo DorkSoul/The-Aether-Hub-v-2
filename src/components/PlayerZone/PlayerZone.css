@@ -328,11 +328,16 @@
     margin: 0;
 }
 
-.counter-btn {
+.counter-buttons {
   position: absolute;
   left: 75%;
   top: 50%;
   transform: translate(-50%, -50%);
+  display: flex;
+  gap: 5px;
+}
+
+.counter-btn {
   background-color: rgba(0, 0, 0, 0.5);
   border: 1px solid #666;
   color: #fff;
@@ -347,6 +352,6 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-.player-zone.flipped .counter-btn {
+.player-zone.flipped .counter-buttons {
     left: 25%;
 }
