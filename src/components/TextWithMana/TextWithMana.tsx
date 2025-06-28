@@ -66,7 +66,6 @@ const symbolToIcon: { [key: string]: React.FC<any> } = {
 };
 
 export const TextWithMana: React.FC<{ text: string }> = ({ text }) => {
-    // Regex to find all {X} style symbols, keeping the delimiters
     const parts = text.split(/({[^{}]+})/g).filter(part => part);
 
     const elements = parts.map((part, index) => {

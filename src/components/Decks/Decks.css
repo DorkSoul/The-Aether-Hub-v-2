@@ -114,10 +114,8 @@
 }
 
 .deck-view-cards {
-    /* MODIFIED: This now allows cards to wrap and centers them, instead of forcing a single scrolling row. */
     justify-content: center;
     flex-wrap: wrap;
-    /* overflow-x: hidden; */ /* Ensure no horizontal scrollbar appears */
     padding-bottom: 15px;
     align-items: center;
 }

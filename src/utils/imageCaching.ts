@@ -1,6 +1,6 @@
 // src/utils/imageCaching.ts
 import type { Card } from '../types';
-import { queueImageDownload } from './imageDownloader'; // Import the new download queue
+import { queueImageDownload } from './imageDownloader'; 
 
 /**
  * Generates a sanitized, consistent filename for a card or a specific face.
@@ -68,7 +68,6 @@ export async function getAndCacheCardImageUrl(
     } catch (e) {
         if (e instanceof DOMException && e.name === 'NotFoundError') {
             try {
-                // Use the download queue instead of a direct fetch.
                 const imageBlob = await queueImageDownload(scryfallUrl);
 
                 const newFileHandle = await directoryHandle.getFileHandle(filename, { create: true });

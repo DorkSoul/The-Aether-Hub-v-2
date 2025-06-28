@@ -241,7 +241,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
               ...playerState,
               battlefield: [cardsWithPositions, [], [], []],
             };
-          } else { // 'rows'
+          } else { 
             const newBattlefield: CardType[][] = [[], [], [], []];
             const cardsToDistribute = allBattlefieldCards.map(({ x, y, ...rest }) => rest);
             newBattlefield[1] = cardsToDistribute;

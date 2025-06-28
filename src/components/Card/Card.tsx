@@ -242,7 +242,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     };
   }, [card.id, card.layout, imageDirectoryHandle]);
 
-  const handlePrimaryAction = () => { // Typically left-click
+  const handlePrimaryAction = () => { 
     if (onTap) {
       onTap();
     } else if (!isFlipStateControlled && isFlippable) {
@@ -250,7 +250,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     }
   };
 
-  const handleSecondaryAction = () => { // Typically Ctrl+Click
+  const handleSecondaryAction = () => { 
     if (onFlip) {
       onFlip();
     }
@@ -271,13 +271,13 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 1) { // Middle mouse button
+    if (e.button === 1) { 
         e.preventDefault();
         e.stopPropagation();
         setIsPinged(true);
         setTimeout(() => {
             setIsPinged(false);
-        }, 1800); // Highlight for 3 animation cycles
+        }, 1800); 
     }
   };
   

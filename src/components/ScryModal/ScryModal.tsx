@@ -16,7 +16,6 @@ const ScryModal: React.FC<ScryModalProps> = ({ isOpen, cards, imageDirectoryHand
     const [bottomCards, setBottomCards] = useState<CardType[]>([]);
     const [remainingCards, setRemainingCards] = useState<CardType[]>([]);
 
-    // Reset the modal's state whenever it's opened with a new set of cards
     useEffect(() => {
         if (isOpen) {
             setRemainingCards(cards);
@@ -27,7 +26,7 @@ const ScryModal: React.FC<ScryModalProps> = ({ isOpen, cards, imageDirectoryHand
 
     if (!isOpen) return null;
 
-    // Handles moving a card to the 'top' or 'bottom' pile
+
     const handleDecision = (card: CardType, destination: 'top' | 'bottom') => {
         if (destination === 'top') {
             setTopCards(prev => [...prev, card]);
@@ -37,14 +36,14 @@ const ScryModal: React.FC<ScryModalProps> = ({ isOpen, cards, imageDirectoryHand
         setRemainingCards(prev => prev.filter(c => c.instanceId !== card.instanceId));
     };
 
-    // Finishes the scry action and closes the modal
+
     const handleFinish = () => {
-        // If there are undecided cards, prompt the user to place them on top by default
+       
         if (remainingCards.length > 0) {
             if (window.confirm(`You have not made a decision for ${remainingCards.length} card(s). Place the rest on top of the library?`)) {
                 onClose([...topCards, ...remainingCards], bottomCards);
             } else {
-                return; // User cancelled, do not close modal yet
+                return; 
             }
         } else {
             onClose(topCards, bottomCards);

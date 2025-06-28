@@ -7,7 +7,7 @@ interface TabsProps {
   onItemClick: (item: string) => void;
 }
 
-// Simple styling for the tabs, can be expanded in App.css
+
 const tabStyle: React.CSSProperties = {
     display: 'flex',
     padding: '0',

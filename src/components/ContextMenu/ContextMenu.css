@@ -15,7 +15,7 @@
     border-radius: 8px;
     padding: 5px 0;
     min-width: 240px;
-    max-width: 350px; /* Constrain the menu's maximum width */
+    max-width: 350px; 
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     opacity: 0;
     transition: opacity 0.05s linear;
@@ -31,13 +31,13 @@
     padding: 10px 15px;
     cursor: pointer;
     font-size: 14px;
-    white-space: normal; /* Ensure long lines of text will wrap */
-    line-height: 1.4;   /* Improve readability for multi-line items */
-    border-bottom: 1px solid #555; /* Add a bottom border to each item */
+    white-space: normal; 
+    line-height: 1.4; 
+    border-bottom: 1px solid #555;
 }
 
 .context-menu li:last-child {
-    border-bottom: none; /* Remove the border from the last item */
+    border-bottom: none;
 }
 
 .context-menu li:hover {

@@ -3,7 +3,6 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type { Card } from '../types';
 
 const DB_NAME = 'AetherHubDB';
-// --- MODIFIED --- Added a new store name for settings.
 const CARD_STORE_NAME = 'cards';
 const SETTINGS_STORE_NAME = 'settings';
 
@@ -11,7 +10,7 @@ let dbPromise: Promise<IDBPDatabase> | null = null;
 
 function initDB() {
   if (!dbPromise) {
-    // --- MODIFIED --- Incremented DB version and added the new object store.
+
     dbPromise = openDB(DB_NAME, 2, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
@@ -43,7 +42,7 @@ export async function getCardsFromDB(cardIds: string[]): Promise<Card[]> {
   return cards.filter((card): card is Card => card !== undefined);
 }
 
-// --- NEW --- Functions to save and retrieve settings from IndexedDB.
+
 export async function saveSettingToDB(key: string, value: any) {
     const db = await initDB();
     const tx = db.transaction(SETTINGS_STORE_NAME, 'readwrite');

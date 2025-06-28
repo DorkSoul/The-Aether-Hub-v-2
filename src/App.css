@@ -4,7 +4,6 @@
   text-align: center;
 }
 
-/* --- MODIFIED --- Using a three-column flexbox layout. */
 .app-header {
   background-color: #282c34;
   padding: 1rem;
@@ -14,7 +13,6 @@
   gap: 1rem;
 }
 
-/* --- MODIFIED --- Let flex children determine alignment. */
 .header-left {
   flex: 1;
   display: flex;
@@ -29,21 +27,17 @@
   justify-content: flex-end;
 }
 
-/* --- MODIFIED --- This container no longer needs a margin. */
 .opponent-tabs-container {
-  /* No special layout styles needed here anymore */
 }
 
-/* --- NEW --- This wrapper grows to fill available space and centers the tabs. */
 .opponent-tabs-wrapper {
   flex-grow: 1;
   display: flex;
   justify-content: center;
 }
 
-/* --- MODIFIED --- Title is centered by its flexbox parent. */
 .app-title {
-  flex-shrink: 0; /* Prevents title from shrinking */
+  flex-shrink: 0; 
   display: flex;
   justify-content: center;
   align-items: baseline;
@@ -93,7 +87,6 @@
   border-bottom: 2px solid #555;
 }
 
-/* --- NEW --- Container for the main view (Decks or GameBoard) */
 .main-content-area {
   flex-grow: 1;
   display: flex;
@@ -102,21 +95,18 @@
   min-width: 0;
 }
 
-/* --- MODIFIED --- Styles for the Card Preview Pane */
 .card-preview-container {
-  position: relative; /* For positioning the resizer */
+  position: relative; 
   display: flex;
   flex-direction: column;
-  /* width is now controlled by component state */
   flex-shrink: 0;
   background-color: #282c34;
   border-left: 2px solid #555;
   padding: 1rem;
   overflow-y: auto;
-  transition: padding 0.3s ease; /* Animate padding but not width */
+  transition: padding 0.3s ease; 
 }
 
-/* --- NEW --- Draggable handle for resizing the preview pane. */
 .preview-resizer {
     position: absolute;
     top: 0;
@@ -125,12 +115,12 @@
     height: 100%;
     cursor: col-resize;
     z-index: 10;
-    background-color: rgba(100, 108, 255, 0); /* Transparent by default */
+    background-color: rgba(100, 108, 255, 0); 
     transition: background-color 0.2s ease;
 }
 
 .preview-resizer:hover {
-    background-color: rgba(100, 108, 255, 0.4); /* Highlight on hover */
+    background-color: rgba(100, 108, 255, 0.4);
 }
 
 .card-preview-header {
@@ -140,7 +130,6 @@
   margin-bottom: 1rem;
 }
 
-/* --- NEW --- Generic class for panel header buttons */
 .panel-buttons {
     display: flex;
     gap: 0.25rem;
@@ -160,17 +149,15 @@
   font-size: 1.1rem;
 }
 
-/* --- MODIFIED --- Ensure the content area can shrink and doesn't overflow. */
 .card-preview-content {
   flex-grow: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 0; /* Allows the flex item to shrink properly. */
-  overflow: hidden; /* Explicitly prevent children from overflowing. */
+  min-height: 0; 
+  overflow: hidden; 
 }
 
-/* --- MODIFIED --- Make the card scale to fit the preview area without overflowing. */
 .card-preview-content .card-flipper {
     width: 100%;
     height: auto;
@@ -196,7 +183,6 @@
   box-sizing: border-box;
 }
 
-/* --- MODIFIED --- Styles for the Stack Panel are now for a right-aligned panel */
 .stack-panel-container {
   position: relative;
   display: flex;
@@ -242,7 +228,7 @@
   padding: 0;
   margin: 0;
   width: 100%;
-  align-self: flex-start; /* Align list to the top */
+  align-self: flex-start; 
 }
 
 .stack-item {
@@ -272,7 +258,7 @@
 .stack-item-text {
   margin: 0;
   font-size: 1rem;
-  white-space: pre-wrap; /* Preserve newlines from oracle text */
+  white-space: pre-wrap; 
 }
 
 .stack-panel-content {
@@ -297,7 +283,6 @@
 }
 
 
-/* Utility Classes */
 .error-message {
   color: #ff6b6b;
   font-weight: bold;
@@ -335,7 +320,7 @@
 
 .main-nav button:not(:disabled):hover {
     opacity: 1;
-    border-color: #646cff; /* From index.css */
+    border-color: #646cff; 
 }
 
 .main-nav button:disabled {
@@ -344,7 +329,6 @@
     cursor: default;
 }
 
-/* --- NEW --- Styles for the fullscreen notification */
 .fullscreen-notification {
   position: fixed;
   top: 20px;
@@ -356,7 +340,7 @@
   border-radius: 8px;
   z-index: 9999;
   font-size: 1.1rem;
-  pointer-events: none; /* Make it non-interactive */
+  pointer-events: none; 
   opacity: 0;
   transition: opacity 0.5s ease-in-out;
 }

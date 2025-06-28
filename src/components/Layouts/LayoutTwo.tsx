@@ -41,11 +41,11 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
 
-  // Distribute players to top and bottom rows
+
   playerStates.forEach((player, index) => {
-    if (index % 2 === 0) { // Player 1, 3, 5... go to bottom
+    if (index % 2 === 0) { 
       bottomPlayers.push(player);
-    } else { // Player 2, 4, 6... go to top
+    } else { 
       topPlayers.push(player);
     }
   });

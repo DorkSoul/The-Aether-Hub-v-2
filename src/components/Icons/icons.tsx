@@ -53,7 +53,6 @@ export const PopOutIcon = () => (
     </svg>
 );
 
-// --- NEW --- Fullscreen Icons
 export const EnterFullscreenIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -226,7 +225,6 @@ export const ColorlessManaIcon = ({ width = 24, height = 24, ...props }: IconPro
   </svg>
 );
 
-// --- NEWLY ADDED ICONS ---
 
 export const ZeroGenericManaIcon = ({ width = 24, height = 24, ...props }: IconProps) => (
   <svg width={width} height={height} viewBox="-945 -210.002 100 99.999998" {...props}>
@@ -414,11 +412,7 @@ export const SnowManaIcon: React.FC<IconProps> = ({ width = 24, height = 24, ...
   </svg>
 );
 
-/**
- * Base component for all split mana icons.
- * This sets up the SVG canvas with a viewBox that correctly frames the complex coordinate system
- * of the split mana symbols, ensuring they all render consistently.
- */
+
 const SplitManaIconBase: React.FC<IconProps> = ({ width = 24, height = 24, children, ...props }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -431,9 +425,7 @@ const SplitManaIconBase: React.FC<IconProps> = ({ width = 24, height = 24, child
     </svg>
   );
 
-/**
- * White/Blue Split Mana Icon Component
- */
+
 export const WhiteBlueManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(0,-315.003)">
@@ -457,9 +449,7 @@ export const WhiteBlueManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * White/Black Split Mana Icon Component
- */
+
 export const WhiteBlackManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-105,-315.003)">
@@ -477,9 +467,7 @@ export const WhiteBlackManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Blue/Black Split Mana Icon Component
- */
+
 export const BlueBlackManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-210,-315.003)">
@@ -497,9 +485,7 @@ export const BlueBlackManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Blue/Red Split Mana Icon Component
- */
+
 export const BlueRedManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-315,-315.003)">
@@ -517,9 +503,7 @@ export const BlueRedManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Black/Red Split Mana Icon Component
- */
+
 export const BlackRedManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-420,-315.003)">
@@ -537,9 +521,7 @@ export const BlackRedManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Black/Green Split Mana Icon Component
- */
+
 export const BlackGreenManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-525,-315.003)">
@@ -557,9 +539,7 @@ export const BlackGreenManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Red/White Split Mana Icon Component
- */
+
 export const RedWhiteManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-630,-315.003)">
@@ -577,9 +557,7 @@ export const RedWhiteManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Red/Green Split Mana Icon Component
- */
+
 export const RedGreenManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-735,-315.003)">
@@ -597,9 +575,6 @@ export const RedGreenManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Green/White Split Mana Icon Component
- */
 export const GreenWhiteManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-840,-315.00202)">
@@ -617,9 +592,7 @@ export const GreenWhiteManaIcon: React.FC<IconProps> = (props) => (
   </SplitManaIconBase>
 );
 
-/**
- * Green/Blue Split Mana Icon Component
- */
+
 export const GreenBlueManaIcon: React.FC<IconProps> = (props) => (
   <SplitManaIconBase {...props}>
     <g transform="translate(-945,-315.00202)">

@@ -1,7 +1,6 @@
 // src/utils/cardUtils.ts
 import type { Card } from '../types';
 
-// Defines the order of types for display
 const typeOrder: { [key: string]: number } = {
   'Creature': 1,
   'Planeswalker': 2,
@@ -12,12 +11,12 @@ const typeOrder: { [key: string]: number } = {
   'Land': 7,
 };
 
-// This function groups cards by their primary type
+
 export const groupCardsByType = (cards: Card[]): Record<string, Card[]> => {
   const grouped: Record<string, Card[]> = {};
 
   cards.forEach(card => {
-    // Find the most relevant type from our predefined list
+
     let primaryType = 'Other';
     for (const type of Object.keys(typeOrder)) {
       if (card.type_line.includes(type)) {
@@ -32,7 +31,7 @@ export const groupCardsByType = (cards: Card[]): Record<string, Card[]> => {
     grouped[primaryType].push(card);
   });
 
-  // Sort the groups based on our predefined order
+
   const sortedGrouped = Object.entries(grouped).sort((a, b) => {
     const orderA = typeOrder[a[0]] || 99;
     const orderB = typeOrder[b[0]] || 99;

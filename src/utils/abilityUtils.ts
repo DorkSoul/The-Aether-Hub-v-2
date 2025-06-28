@@ -8,6 +8,5 @@ export const parseOracleText = (oracleText: string | undefined): string[] => {
     if (!oracleText) {
         return [];
     }
-    // Split by one or more newline characters to handle different spacings.
     return oracleText.split(/\n+/).filter(text => text.trim() !== '');
 };

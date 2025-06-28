@@ -43,7 +43,7 @@ export async function getCardByUrl(url: string): Promise<Card | null> {
         const result = await fetchCardCollection([{ set, collector_number }]);
         if (result.data && result.data.length > 0) {
             const card = result.data[0];
-            // If the card is a meld card, we need to fetch its result part separately
+            // If the card is a meld card, fetch its result part separately
             if (card.layout === 'meld' && card.all_parts) {
                 const meldPart = card.all_parts.find(p => p.component === 'meld_result');
                 if (meldPart && meldPart.uri) {
@@ -92,7 +92,7 @@ export async function getCardsFromNames(namesOrIdentifiers: (string | CardIdenti
     }
 
     if (i < chunks.length - 1) {
-      // Increased delay to 1 second between batch requests for card data.
+      // Delay to 1 second between batch requests for card data.
       await delay(1000);
     }
   }

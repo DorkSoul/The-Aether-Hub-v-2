@@ -35,11 +35,11 @@
   width: 80px;
   height: 112px;
   transition: transform 0.3s ease-in-out, margin 0.3s ease-in-out; 
-  position: relative; /* Ensure z-index works */
+  position: relative; 
 }
 
 .card-flipper.overlay-active {
-    z-index: 100; /* Bring to front when counter display is active */
+    z-index: 100; 
 }
 
 .card-flipper.tapped {

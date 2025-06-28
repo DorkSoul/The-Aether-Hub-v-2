@@ -12,7 +12,6 @@ const DeckImportModal: React.FC<DeckImportModalProps> = ({ isOpen, onClose, onSa
   const [deckName, setDeckName] = useState('');
   const [decklist, setDecklist] = useState('');
 
-  // --- MODIFIED ---
   // This effect runs when the 'isOpen' prop changes.
   // If the modal is being opened, it resets the state for the input fields.
   useEffect(() => {
