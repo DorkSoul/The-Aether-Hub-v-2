@@ -35,9 +35,6 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, options, onClose }) => 
       let newTop = y;
       let newLeft = x;
 
-      if (y + offsetHeight > innerHeight) {
-        newTop = y - offsetHeight;
-      }
       if (x + offsetWidth > innerWidth) {
         newLeft = x - offsetWidth;
       }

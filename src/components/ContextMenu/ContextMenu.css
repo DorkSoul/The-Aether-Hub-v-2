@@ -13,7 +13,7 @@
     background-color: #3e4452;
     border: 1px solid #555;
     border-radius: 8px;
-    padding: 5px 0;
+    padding: 0;
     min-width: 240px;
     max-width: 350px; 
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -28,7 +28,7 @@
 }
 
 .context-menu li {
-    padding: 10px 15px;
+    padding: 5px 10px;
     cursor: pointer;
     font-size: 14px;
     white-space: normal; 
