@@ -15,6 +15,7 @@ interface LayoutOneProps {
   setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
+  onPlayerCounterApply: (playerId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
@@ -38,7 +39,7 @@ interface LayoutOneProps {
   onResetMana: (playerId: string) => void;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -60,6 +61,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
             setHeldCounter={setHeldCounter}
             onCounterApply={onCounterApply}
             onCustomCounterApply={onCustomCounterApply}
+            onPlayerCounterApply={onPlayerCounterApply}
             onCounterRemove={onCounterRemove}
             onRemoveAllCounters={onRemoveAllCounters}
             {...interactionProps}
@@ -85,6 +87,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           setHeldCounter={setHeldCounter}
           onCounterApply={onCounterApply}
           onCustomCounterApply={onCustomCounterApply}
+          onPlayerCounterApply={onPlayerCounterApply}
           onCounterRemove={onCounterRemove}
           onRemoveAllCounters={onRemoveAllCounters}
           {...interactionProps}

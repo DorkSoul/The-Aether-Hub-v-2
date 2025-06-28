@@ -93,7 +93,8 @@ export interface PlayerState {
   graveyard: Card[];
   exile: Card[];
   commandZone: Card[];
-  battlefield: Card[][]; 
+  battlefield: Card[][];
+  counters?: { [type: string]: number };
 }
 
 

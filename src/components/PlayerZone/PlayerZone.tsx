@@ -120,6 +120,7 @@ interface PlayerZoneProps {
   setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
+  onPlayerCounterApply: (playerId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
@@ -168,6 +169,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   setHeldCounter,
   onCounterApply,
   onCustomCounterApply,
+  onPlayerCounterApply,
   onCounterRemove,
   onRemoveAllCounters,
 }) => {
@@ -457,6 +459,9 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     ? [libraryZoneJsx, graveyardZoneJsx, exileZoneJsx, commandZoneJsx] 
     : [commandZoneJsx, exileZoneJsx, graveyardZoneJsx, libraryZoneJsx];
 
+  const playerCounters = playerState.counters ? Object.entries(playerState.counters).map(([type, amount]) => `${type}: ${amount}`).join(', ') : '';
+
+
   return (
     <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
       <div className="player-header">
@@ -477,7 +482,10 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
               <CloseIcon />
           </button>
         </div>
-        <h3>{playerState.name}: {playerState.life} Life</h3>
+        <h3 onClick={() => heldCounter && onPlayerCounterApply(playerId, heldCounter)}>
+            {playerState.name}: {playerState.life} Life
+            {playerCounters && <span className="player-counters"> ({playerCounters})</span>}
+        </h3>
         <div className="counter-buttons">
             <button className="counter-btn" onClick={handleXYCounterClick} title="±X/±Y Counters">
               ±X/±Y

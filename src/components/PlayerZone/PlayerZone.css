@@ -41,6 +41,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  user-select: none;
 }
 
 .mana-pool {
@@ -353,4 +355,11 @@
 
 .player-zone.flipped .counter-buttons {
     left: 25%;
+}
+
+.player-counters {
+    font-style: italic;
+    font-size: 0.9rem;
+    color: #ccc;
+    margin-left: 8px;
 }

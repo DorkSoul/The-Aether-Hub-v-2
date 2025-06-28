@@ -94,6 +94,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           const validatedStates = initialState.playerStates.map(pState => ({
               ...pState,
               mana: pState.mana || { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
+              counters: pState.counters || {},
               hand: pState.hand.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
               library: pState.library.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
               graveyard: pState.graveyard.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
@@ -188,6 +189,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             color: playerConfig.color,
             life: 40,
             mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
+            counters: {},
             hand: initialHand,
             library: library,
             graveyard: [],
@@ -272,7 +274,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     const handleClick = (e: MouseEvent) => {
         if (heldCounter) {
             const target = e.target as HTMLElement;
-            if (!target.closest('.card-flipper')) {
+            if (!target.closest('.card-flipper') && !target.closest('h3')) {
                 setHeldCounter(null);
             }
         }
@@ -281,7 +283,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     const handleContextMenu = (e: MouseEvent) => {
         if (heldCounter) {
             const target = e.target as HTMLElement;
-            if (!target.closest('.card-flipper')) {
+            if (!target.closest('.card-flipper') && !target.closest('h3')) {
                 e.preventDefault();
                 setHeldCounter(null);
             }
@@ -483,6 +485,20 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         return { ...card, customCounters: newCustomCounters };
     });
   }, [updateCardState]);
+
+  const handlePlayerCounterApply = (playerId: string, counterType: string) => {
+    setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+        return currentStates.map(pState => {
+            if (pState.id === playerId) {
+                const newCounters = { ...(pState.counters || {}) };
+                newCounters[counterType] = (newCounters[counterType] || 0) + 1;
+                return { ...pState, counters: newCounters };
+            }
+            return pState;
+        });
+    });
+  };
 
   const handleCounterRemove = (cardInstanceId: string, counterType: string) => {
     updateCardState(cardInstanceId, card => {
@@ -752,6 +768,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       setHeldCounter,
       onCounterApply: handleApplyCounter,
       onCustomCounterApply: handleCustomCounterApply,
+      onPlayerCounterApply: handlePlayerCounterApply,
       onCounterRemove: handleCounterRemove,
       onRemoveAllCounters: handleRemoveAllCounters,
       onCardTap: handleCardTap,
@@ -770,7 +787,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       hoveredStackCardId,
       onUpdateMana: handleUpdateMana,
       onResetMana: handleResetMana,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleCustomCounterApply, handleCounterRemove, handleRemoveAllCounters]);
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
