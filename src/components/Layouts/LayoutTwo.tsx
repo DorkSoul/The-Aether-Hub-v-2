@@ -1,5 +1,5 @@
 // src/components/Layouts/LayoutTwo.tsx
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
@@ -41,6 +41,29 @@ interface LayoutTwoProps {
 const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHandle, cardPreview, stackPanel, handHeights, onHandResize, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
   const topPlayers: PlayerState[] = [];
   const bottomPlayers: PlayerState[] = [];
+  const [topSectionHeight, setTopSectionHeight] = useState(50);
+  const layoutRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const startY = e.clientY;
+    const startHeight = topSectionHeight;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      if (layoutRef.current) {
+        const newHeight = startHeight + (deltaY / layoutRef.current.clientHeight) * 100;
+        setTopSectionHeight(Math.max(20, Math.min(80, newHeight)));
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [topSectionHeight]);
 
 
   playerStates.forEach((player, index) => {
@@ -52,8 +75,8 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
   });
 
   return (
-    <div className="game-layout-split">
-      <div className="top-players">
+    <div className="game-layout-split" ref={layoutRef}>
+      <div className="top-players" style={{ height: `${topSectionHeight}%` }}>
         {topPlayers.map(player => (
           <PlayerZone
             key={player.id}
@@ -77,7 +100,8 @@ const LayoutTwo: React.FC<LayoutTwoProps> = ({ playerStates, imagesDirectoryHand
         ))}
         {stackPanel}
       </div>
-      <div className="bottom-players">
+      <div className="layout-divider" onMouseDown={handleMouseDown}></div>
+      <div className="bottom-players" style={{ height: `calc(100% - ${topSectionHeight}% - 2px)` }}>
         {bottomPlayers.map(player => (
           <PlayerZone
             key={player.id}

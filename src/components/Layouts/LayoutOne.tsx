@@ -1,5 +1,5 @@
 // src/components/Layouts/LayoutOne.tsx
-import React from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
@@ -43,10 +43,33 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
+  const [topSectionHeight, setTopSectionHeight] = useState(50);
+  const layoutRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const startY = e.clientY;
+    const startHeight = topSectionHeight;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      if (layoutRef.current) {
+        const newHeight = startHeight + (deltaY / layoutRef.current.clientHeight) * 100;
+        setTopSectionHeight(Math.max(20, Math.min(80, newHeight)));
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [topSectionHeight]);
 
   return (
-    <div className="game-layout-1vAll">
-      <div className="top-section">
+    <div className="game-layout-1vAll" ref={layoutRef}>
+      <div className="top-section" style={{ height: `${topSectionHeight}%` }}>
         {activeOpponent ? (
           <PlayerZone
             playerState={activeOpponent}
@@ -73,7 +96,8 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
         )}
         {stackPanel}
       </div>
-      <div className="bottom-section">
+      <div className="layout-divider" onMouseDown={handleMouseDown}></div>
+      <div className="bottom-section" style={{ height: `calc(100% - ${topSectionHeight}% - 2px)` }}>
         <PlayerZone
           playerState={localPlayer}
           isFlipped={false}

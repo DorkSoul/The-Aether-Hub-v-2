@@ -7,10 +7,17 @@
 
 .top-section, .bottom-section,
 .top-players, .bottom-players {
-  flex: 1;
+  flex-grow: 1;
   display: flex;
   min-height: 0; 
 }
 .top-section {
   flex-direction: row;
+}
+
+.layout-divider {
+    height: 2px;
+    background-color: #555;
+    cursor: ns-resize;
+    flex-shrink: 0;
 }
