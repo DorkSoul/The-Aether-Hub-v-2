@@ -702,7 +702,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     setHandHeights(prevHeights => {
         if (prevHeights[playerId] === undefined) return prevHeights;
         const currentHeight = prevHeights[playerId];
-        const newHeight = Math.max(80, Math.min(500, currentHeight + deltaY));
+        const newHeight = Math.max(20, Math.min(500, currentHeight + deltaY));
 
         const playerIndex = playerStates?.findIndex(p => p.id === playerId);
         if (playerIndex !== undefined && playerIndex !== -1) {
