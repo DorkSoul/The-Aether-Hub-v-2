@@ -11,8 +11,11 @@
   display: flex;
   min-height: 0; 
 }
-.top-section {
+.top-section, .top-players {
   flex-direction: row;
+}
+.bottom-players {
+    flex-direction: row;
 }
 
 .layout-divider {
@@ -20,4 +23,17 @@
     background-color: #555;
     cursor: ns-resize;
     flex-shrink: 0;
+}
+
+.layout-divider-horizontal {
+    width: 2px;
+    background-color: #555;
+    cursor: col-resize;
+    flex-shrink: 0;
+}
+
+.resizable-player-area {
+    flex: 1;
+    display: flex;
+    min-width: 0;
 }
