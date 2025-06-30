@@ -356,10 +356,32 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     let dropCoords: { x: number; y: number } | null = null;
     if (destination.zone === 'battlefield' && settings.playAreaLayout === 'freeform' && event.currentTarget) {
         const containerRect = event.currentTarget.getBoundingClientRect();
-        dropCoords = {
-            x: event.clientX - containerRect.left - draggedItem.offset.x,
-            y: event.clientY - containerRect.top - draggedItem.offset.y,
-        };
+        const dropX = event.clientX - containerRect.left - draggedItem.offset.x;
+        const dropY = event.clientY - containerRect.top - draggedItem.offset.y;
+
+        const destPlayerState = playerStates?.find(p => p.id === destination.playerId);
+        let isDestFlipped = false;
+        if (destPlayerState && playerStates) {
+            if (settings.layout === 'tabs') {
+                isDestFlipped = activeOpponentId === destPlayerState.id;
+            } else { // split
+                const playerIndex = playerStates.findIndex(p => p.id === destPlayerState.id);
+                isDestFlipped = playerIndex % 2 !== 0;
+            }
+        }
+
+        if (isDestFlipped) {
+            const cardWidth = freeformCardSizes[destination.playerId];
+            dropCoords = {
+                x: containerRect.width - dropX - cardWidth,
+                y: dropY,
+            };
+        } else {
+            dropCoords = {
+                x: dropX,
+                y: dropY,
+            };
+        }
     }
 
     setPlayerStates(currentStates => {
@@ -469,7 +491,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
 
     setDraggedItem(null);
     setDropTarget(null);
-}, [draggedItem, settings.playAreaLayout]);
+}, [draggedItem, settings.playAreaLayout, playerStates, activeOpponentId, freeformCardSizes]);
   
   const updateCardState = useCallback((cardInstanceId: string, update: (card: CardType) => CardType) => {
       setPlayerStates(currentStates => {
