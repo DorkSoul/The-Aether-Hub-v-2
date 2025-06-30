@@ -36,13 +36,15 @@ interface LayoutTwoProps {
   hoveredStackCardId: string | null;
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
   onResetMana: (playerId: string) => void;
+  isTopRotated: boolean;
 }
 
 const ResizableSection: React.FC<{
     players: PlayerState[];
     isFlipped: boolean;
-    commonProps: Omit<LayoutTwoProps, 'playerStates' | 'cardPreview' | 'stackPanel'>;
-}> = ({ players, isFlipped, commonProps }) => {
+    isViewRotated: boolean;
+    commonProps: Omit<LayoutTwoProps, 'playerStates' | 'cardPreview' | 'stackPanel' | 'isTopRotated'>;
+}> = ({ players, isFlipped, isViewRotated, commonProps }) => {
     const [widths, setWidths] = useState<number[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -106,6 +108,7 @@ const ResizableSection: React.FC<{
                         <PlayerZone
                             playerState={player}
                             isFlipped={isFlipped}
+                            isViewRotated={isViewRotated}
                             handHeight={commonProps.handHeights[player.id]}
                             onHandResize={(deltaY) => commonProps.onHandResize(player.id, deltaY)}
                             imagesDirectoryHandle={commonProps.imagesDirectoryHandle}
@@ -174,17 +177,17 @@ const LayoutTwo: React.FC<LayoutTwoProps> = (props) => {
   const topPlayers = props.playerStates.filter((_, index) => index % 2 !== 0);
   const bottomPlayers = props.playerStates.filter((_, index) => index % 2 === 0);
 
-  const { playerStates, cardPreview, stackPanel, ...commonProps } = props;
+  const { playerStates, cardPreview, stackPanel, isTopRotated, ...commonProps } = props;
 
   return (
     <div className="game-layout-split" ref={layoutRef}>
       <div className="top-players" style={{ height: `${topSectionHeight}%` }}>
-        <ResizableSection players={topPlayers} isFlipped={true} commonProps={commonProps} />
+        <ResizableSection players={topPlayers} isFlipped={true} isViewRotated={isTopRotated} commonProps={commonProps} />
         {stackPanel}
       </div>
       <div className="layout-divider" onMouseDown={handleVerticalMouseDown}></div>
       <div className="bottom-players" style={{ height: `calc(100% - ${topSectionHeight}% - 2px)` }}>
-        <ResizableSection players={bottomPlayers} isFlipped={false} commonProps={commonProps} />
+        <ResizableSection players={bottomPlayers} isFlipped={false} isViewRotated={false} commonProps={commonProps} />
         {cardPreview}
       </div>
     </div>

@@ -243,6 +243,7 @@
     height: 100%;
     border-radius: 5px;
     aspect-ratio: 63 / 88;
+    transition: transform 0.5s ease-in-out;
 }
 
 .card-back-image.rotated {

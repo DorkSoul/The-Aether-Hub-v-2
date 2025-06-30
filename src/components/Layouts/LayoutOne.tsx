@@ -37,9 +37,10 @@ interface LayoutOneProps {
   hoveredStackCardId: string | null;
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
   onResetMana: (playerId: string) => void;
+  isTopRotated: boolean;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, isTopRotated, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -74,6 +75,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
           <PlayerZone
             playerState={activeOpponent}
             isFlipped={true}
+            isViewRotated={isTopRotated}
             imagesDirectoryHandle={imagesDirectoryHandle}
             handHeight={handHeights[activeOpponent.id]}
             onHandResize={(deltaY) => onHandResize(activeOpponent.id, deltaY)}
@@ -101,6 +103,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
         <PlayerZone
           playerState={localPlayer}
           isFlipped={false}
+          isViewRotated={false}
           imagesDirectoryHandle={imagesDirectoryHandle}
           handHeight={handHeights[localPlayer.id]}
           onHandResize={(deltaY) => onHandResize(localPlayer.id, deltaY)}

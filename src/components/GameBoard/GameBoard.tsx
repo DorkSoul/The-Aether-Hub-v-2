@@ -24,6 +24,7 @@ interface GameBoardProps {
     cardSize: number;
     onAddToStack: (abilityText: string, card: CardType) => void;
     hoveredStackCardId: string | null;
+    isTopRotated: boolean;
 }
 
 export interface GameBoardHandle {
@@ -34,7 +35,7 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return [...deck].sort(() => Math.random() - 0.5);
 };
 
-const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize, onAddToStack, hoveredStackCardId }, ref) => {
+const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize, onAddToStack, hoveredStackCardId, isTopRotated }, ref) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -812,6 +813,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           stackPanel={stackPanel}
           handHeights={handHeights}
           onHandResize={handleHandResize}
+          isTopRotated={isTopRotated}
           {...interactionProps}
         />
       ) : (
@@ -821,6 +823,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           stackPanel={stackPanel}
           handHeights={handHeights}
           onHandResize={handleHandResize}
+          isTopRotated={isTopRotated}
           {...interactionProps}
         />
       )}

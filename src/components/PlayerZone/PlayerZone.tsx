@@ -116,6 +116,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, is
 interface PlayerZoneProps {
   playerState: PlayerState;
   isFlipped: boolean;
+  isViewRotated: boolean;
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
   playAreaLayout: 'rows' | 'freeform';
   freeformCardSizes: {[playerId: string]: number};
@@ -148,7 +149,8 @@ interface PlayerZoneProps {
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
   playerState, 
-  isFlipped, 
+  isFlipped,
+  isViewRotated,
   imagesDirectoryHandle, 
   playAreaLayout,
   freeformCardSizes,
@@ -357,13 +359,15 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     const cardStyle = (size && card.x !== undefined && card.y !== undefined)
         ? { position: 'absolute' as const, left: `${card.x}px`, top: `${card.y}px`, width: `${size}px`, height: `${size * 1.4}px` }
         : {};
+    
+    const finalBoardRotation = isFlipped ? !isViewRotated : false;
 
     return (
       <GameCardRenderer
         key={`${location.zone}-${card.instanceId}`}
         card={card}
         location={source}
-        isBoardRotated={isFlipped}
+        isBoardRotated={finalBoardRotation}
         imageDirectoryHandle={imagesDirectoryHandle}
         heldCounter={heldCounter}
         onCounterApply={onCounterApply}
@@ -479,7 +483,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         }}
       >
         <div className="card-outline">
-            {playerState.library.length > 0 ? <img src={cardBackUrl} alt="Card back" className={`card-back-image ${isFlipped ? 'rotated' : ''}`} /> : <span className="zone-label-full">Library</span>}
+            {playerState.library.length > 0 ? <img src={cardBackUrl} alt="Card back" className={`card-back-image ${(isFlipped && !isViewRotated) ? 'rotated' : ''}`} /> : <span className="zone-label-full">Library</span>}
             {playerState.library.length > 0 && <span className="zone-count">{playerState.library.length}</span>}
         </div>
       </div>
@@ -581,17 +585,18 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         {cardRows.map((row, rowIndex) => (
             <div key={rowIndex} className="hand-row">
                 {row.map((card) => {
+                  const finalBoardRotation = isFlipped ? !isViewRotated : false;
                   return (
                     <GameCardRenderer
                       key={`hand-${card.instanceId}`}
                       card={card}
                       location={{ playerId, zone: 'hand' }}
-                      isBoardRotated={isFlipped}
+                      isBoardRotated={finalBoardRotation}
                       imageDirectoryHandle={imagesDirectoryHandle}
                       heldCounter={heldCounter}
                       onCounterApply={onCounterApply}
                       onCustomCounterApply={onCustomCounterApply}
-      onCounterSelect={setHeldCounter}
+                      onCounterSelect={setHeldCounter}
                       onCounterRemove={onCounterRemove}
                       onRemoveAllCounters={onRemoveAllCounters}
                       onCardTap={onCardTap}

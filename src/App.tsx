@@ -4,12 +4,12 @@ import { createPortal } from 'react-dom';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
-import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon } from './components/Icons/icons';
+import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon, RotateIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize, savePreviewWidth, getPreviewWidth } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
 import type { GameSettings, GameState, Card as CardType, StackItem } from './types';
 import Tabs from './components/Tabs/Tabs';
-import Card from './components/Card/Card'; 
+import Card from './components/Card/Card';
 import { TextWithMana } from './components/TextWithMana/TextWithMana';
 import './App.css';
 
@@ -140,6 +140,7 @@ function App() {
   const [stackPopoutContainer, setStackPopoutContainer] = useState<HTMLElement | null>(null);
   const [stackWidth, setStackWidth] = useState(300);
   const isResizingStack = useRef(false);
+  const [isTopRotated, setIsTopRotated] = useState(false);
   
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
   const [showFullscreenNotification, setShowFullscreenNotification] = useState(false);
@@ -573,6 +574,7 @@ function App() {
               cardSize={cardSize}
               onAddToStack={handleAddToStack}
               hoveredStackCardId={hoveredStackCardId}
+              isTopRotated={isTopRotated}
             />
           );
         }
@@ -677,6 +679,9 @@ function App() {
             {view === 'game' && (
               <>
                 <button onClick={() => setIsStackVisible(v => !v)} title="Toggle Stack Panel">Stack</button>
+                <button onClick={() => setIsTopRotated(r => !r)} title="Rotate Opponent's Cards">
+                  <RotateIcon />
+                </button>
                 <button onClick={() => setIsPreviewVisible(v => !v)} title="Toggle Preview Panel">Preview</button>
               </>
             )}

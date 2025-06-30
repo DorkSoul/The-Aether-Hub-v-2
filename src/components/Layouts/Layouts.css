@@ -1,4 +1,4 @@
-/* src/components/Layouts.css */
+/* src/components/Layouts/Layouts.css */
 .game-layout-1vAll, .game-layout-split {
   display: flex;
   flex-direction: column;
