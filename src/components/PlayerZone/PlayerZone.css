@@ -245,6 +245,10 @@
     aspect-ratio: 63 / 88;
 }
 
+.card-back-image.rotated {
+    transform: rotate(180deg);
+}
+
 .hand {
   flex: 0 0 auto;
   min-height: 0;

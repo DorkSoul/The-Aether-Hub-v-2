@@ -12,6 +12,7 @@ interface CardProps {
   onContextMenu?: (event: React.MouseEvent) => void;
   isTapped?: boolean;
   isFlipped?: boolean;
+  isBoardRotated?: boolean;
   isHighlighted?: boolean;
   heldCounter?: string | null;
   onCounterApply?: (cardInstanceId: string, counterType: string) => void;
@@ -172,7 +173,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
     );
 };
 
-const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style, isHighlighted = false, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect }) => {
+const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, isTapped = false, isFlipped: isFlippedProp, isBoardRotated, onFlip, onTap, onDragStart, onDragEnd, onCardHover, style, isHighlighted = false, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect }) => {
   const [isFlippedLocal, setIsFlippedLocal] = useState(false);
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
@@ -282,7 +283,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
   };
   
   const isOverlayActive = showCounterDisplay || showCustomCounterDisplay;
-  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isHighlighted || isPinged ? 'highlight-attention' : ''} ${isOverlayActive ? 'overlay-active' : ''}`;
+  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isBoardRotated ? 'board-rotated' : ''} ${isHighlighted || isPinged ? 'highlight-attention' : ''} ${isOverlayActive ? 'overlay-active' : ''}`;
   
   let title = card.name;
   if (onTap || onFlip) {

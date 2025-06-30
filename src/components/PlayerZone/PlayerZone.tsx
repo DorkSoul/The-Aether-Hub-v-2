@@ -41,6 +41,7 @@ const ManaCounter: React.FC<ManaCounterProps> = ({ type, count, onClick, onConte
 interface GameCardRendererProps {
   card: CardType;
   location: CardLocation;
+  isBoardRotated: boolean;
   imageDirectoryHandle: FileSystemDirectoryHandle | null;
   heldCounter: string | null;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
@@ -57,7 +58,7 @@ interface GameCardRendererProps {
   style?: React.CSSProperties;
 }
 
-const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect, ...rest }) => {
+const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, isBoardRotated, onCardDragStart, style, isHighlighted, heldCounter, onCounterApply, onCustomCounterApply, onCounterRemove, onRemoveAllCounters, onCounterSelect, ...rest }) => {
   const handleDragStart = useCallback((event: React.DragEvent) => {
     event.stopPropagation();
     
@@ -93,6 +94,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
       imageDirectoryHandle={rest.imageDirectoryHandle}
       isTapped={card.isTapped}
       isFlipped={card.isFlipped}
+      isBoardRotated={isBoardRotated}
       isHighlighted={isHighlighted}
       heldCounter={heldCounter}
       onCounterApply={onCounterApply}
@@ -361,6 +363,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         key={`${location.zone}-${card.instanceId}`}
         card={card}
         location={source}
+        isBoardRotated={isFlipped}
         imageDirectoryHandle={imagesDirectoryHandle}
         heldCounter={heldCounter}
         onCounterApply={onCounterApply}
@@ -476,7 +479,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         }}
       >
         <div className="card-outline">
-            {playerState.library.length > 0 ? <img src={cardBackUrl} alt="Card back" className="card-back-image" /> : <span className="zone-label-full">Library</span>}
+            {playerState.library.length > 0 ? <img src={cardBackUrl} alt="Card back" className={`card-back-image ${isFlipped ? 'rotated' : ''}`} /> : <span className="zone-label-full">Library</span>}
             {playerState.library.length > 0 && <span className="zone-count">{playerState.library.length}</span>}
         </div>
       </div>
@@ -583,6 +586,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
                       key={`hand-${card.instanceId}`}
                       card={card}
                       location={{ playerId, zone: 'hand' }}
+                      isBoardRotated={isFlipped}
                       imageDirectoryHandle={imagesDirectoryHandle}
                       heldCounter={heldCounter}
                       onCounterApply={onCounterApply}
