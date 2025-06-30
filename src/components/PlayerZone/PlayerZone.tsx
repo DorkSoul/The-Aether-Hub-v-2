@@ -199,7 +199,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       resizeObserver.observe(commandZoneElement);
       return () => resizeObserver.disconnect();
     }
-  }, [numCommanders]);
+  }, [numCommanders, playAreaLayout]);
 
   const handleXYCounterClick = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -400,7 +400,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     aspectRatio: `${63 * Math.max(1, numCommanders)} / 88`,
   };
 
-  if (isFlipped && numCommanders > 1) {
+  if (isFlipped && numCommanders > 1 && playAreaLayout === 'freeform') {
     const offset = commandZoneCardWidth * (numCommanders - 1);
     commandZoneStyle.left = `-${offset}px`;
   }
