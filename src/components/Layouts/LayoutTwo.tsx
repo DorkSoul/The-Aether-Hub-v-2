@@ -37,14 +37,16 @@ interface LayoutTwoProps {
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
   onResetMana: (playerId: string) => void;
   isTopRotated: boolean;
+  resetKey: number;
 }
 
 const ResizableSection: React.FC<{
     players: PlayerState[];
     isFlipped: boolean;
     isViewRotated: boolean;
-    commonProps: Omit<LayoutTwoProps, 'playerStates' | 'cardPreview' | 'stackPanel' | 'isTopRotated'>;
-}> = ({ players, isFlipped, isViewRotated, commonProps }) => {
+    commonProps: Omit<LayoutTwoProps, 'playerStates' | 'cardPreview' | 'stackPanel' | 'isTopRotated' | 'resetKey'>;
+    resetKey: number;
+}> = ({ players, isFlipped, isViewRotated, commonProps, resetKey }) => {
     const [widths, setWidths] = useState<number[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +54,7 @@ const ResizableSection: React.FC<{
         if (players.length > 0) {
             setWidths(Array(players.length).fill(100 / players.length));
         }
-    }, [players.length]);
+    }, [players.length, resetKey]);
 
     const createHorizontalResizeHandler = (index: number) => (e: React.MouseEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -153,6 +155,10 @@ const LayoutTwo: React.FC<LayoutTwoProps> = (props) => {
   const [topSectionHeight, setTopSectionHeight] = useState(50);
   const layoutRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    setTopSectionHeight(50);
+  }, [props.resetKey]);
+
   const handleVerticalMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const startY = e.clientY;
     const startHeight = topSectionHeight;
@@ -177,17 +183,17 @@ const LayoutTwo: React.FC<LayoutTwoProps> = (props) => {
   const topPlayers = props.playerStates.filter((_, index) => index % 2 !== 0);
   const bottomPlayers = props.playerStates.filter((_, index) => index % 2 === 0);
 
-  const { playerStates, cardPreview, stackPanel, isTopRotated, ...commonProps } = props;
+  const { playerStates, cardPreview, stackPanel, isTopRotated, resetKey, ...commonProps } = props;
 
   return (
     <div className="game-layout-split" ref={layoutRef}>
       <div className="top-players" style={{ height: `${topSectionHeight}%` }}>
-        <ResizableSection players={topPlayers} isFlipped={true} isViewRotated={isTopRotated} commonProps={commonProps} />
+        <ResizableSection players={topPlayers} isFlipped={true} isViewRotated={isTopRotated} commonProps={commonProps} resetKey={resetKey} />
         {stackPanel}
       </div>
       <div className="layout-divider" onMouseDown={handleVerticalMouseDown}></div>
       <div className="bottom-players" style={{ height: `calc(100% - ${topSectionHeight}% - 2px)` }}>
-        <ResizableSection players={bottomPlayers} isFlipped={false} isViewRotated={false} commonProps={commonProps} />
+        <ResizableSection players={bottomPlayers} isFlipped={false} isViewRotated={false} commonProps={commonProps} resetKey={resetKey} />
         {cardPreview}
       </div>
     </div>

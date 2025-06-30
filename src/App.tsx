@@ -454,6 +454,12 @@ function App() {
           }
       }
   };
+
+  const handleResetLayouts = () => {
+    if (gameBoardRef.current) {
+      gameBoardRef.current.resetLayouts();
+    }
+  };
   
   const handleQuitGame = () => {
     setGameSettings(null);
@@ -678,6 +684,7 @@ function App() {
             )}
             {view === 'game' && (
               <>
+                <button onClick={handleResetLayouts} title="Reset player area sizes">Reset</button>
                 <button onClick={() => setIsStackVisible(v => !v)} title="Toggle Stack Panel">Stack</button>
                 <button onClick={() => setIsTopRotated(r => !r)} title="Rotate Opponent's Cards">
                   <RotateIcon />

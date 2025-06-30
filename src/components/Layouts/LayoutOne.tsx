@@ -38,14 +38,19 @@ interface LayoutOneProps {
   onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
   onResetMana: (playerId: string) => void;
   isTopRotated: boolean;
+  resetKey: number;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, isTopRotated, ...interactionProps }) => {
+const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, isTopRotated, resetKey, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
   const [topSectionHeight, setTopSectionHeight] = useState(50);
   const layoutRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setTopSectionHeight(50);
+  }, [resetKey]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const startY = e.clientY;

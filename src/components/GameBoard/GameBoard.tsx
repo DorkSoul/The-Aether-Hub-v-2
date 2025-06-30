@@ -29,6 +29,7 @@ interface GameBoardProps {
 
 export interface GameBoardHandle {
     getGameState: () => GameState | null;
+    resetLayouts: () => void;
 }
 
 const shuffleDeck = (deck: CardType[]): CardType[] => {
@@ -50,6 +51,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [heldCounter, setHeldCounter] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const prevPlayAreaLayout = React.useRef(settings.playAreaLayout);
+  const [resetKey, setResetKey] = useState(0);
 
   useImperativeHandle(ref, () => ({
       getGameState: () => {
@@ -61,6 +63,21 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
               handHeights,
               freeformCardSizes,
           };
+      },
+      resetLayouts: () => {
+        if (playerStates) {
+            const defaultHandHeights = playerStates.reduce((acc, p) => ({ ...acc, [p.id]: 150 }), {});
+            const defaultFreeformSizes = playerStates.reduce((acc, p) => ({ ...acc, [p.id]: 140 }), {});
+            setHandHeights(defaultHandHeights);
+            setFreeformCardSizes(defaultFreeformSizes);
+
+            const handHeightsToSave = playerStates.reduce((acc, p, i) => ({...acc, [i]: 150}), {});
+            const freeformSizesToSave = playerStates.reduce((acc, p, i) => ({...acc, [i]: 140}), {});
+
+            saveHandHeights(handHeightsToSave);
+            saveFreeformSizes(freeformSizesToSave);
+            setResetKey(prev => prev + 1);
+        }
       }
   }));
 
@@ -814,6 +831,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           handHeights={handHeights}
           onHandResize={handleHandResize}
           isTopRotated={isTopRotated}
+          resetKey={resetKey}
           {...interactionProps}
         />
       ) : (
@@ -824,6 +842,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           handHeights={handHeights}
           onHandResize={handleHandResize}
           isTopRotated={isTopRotated}
+          resetKey={resetKey}
           {...interactionProps}
         />
       )}
