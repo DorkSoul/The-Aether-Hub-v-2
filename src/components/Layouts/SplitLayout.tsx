@@ -186,8 +186,10 @@ const SplitLayout: React.FC<SplitLayoutProps> = (props) => {
         <ResizableSection players={topPlayers} isFlipped={true} isViewRotated={isTopRotated} commonProps={commonProps} resetKey={resetKey} />
         {stackPanel}
       </div>
-      <div className="global-actions-bar" onMouseDown={handleVerticalMouseDown}>
+      <div className="global-actions-bar">
+        <div className="global-actions-bar-resizer top" onMouseDown={handleVerticalMouseDown}></div>
         {globalActions}
+        <div className="global-actions-bar-resizer bottom" onMouseDown={handleVerticalMouseDown}></div>
       </div>
       <div className="bottom-players" style={{ height: `calc(100% - ${topSectionHeight}% - 34px)` }}>
         <ResizableSection players={bottomPlayers} isFlipped={false} isViewRotated={false} commonProps={commonProps} resetKey={resetKey} />

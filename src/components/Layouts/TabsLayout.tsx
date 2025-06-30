@@ -92,8 +92,10 @@ const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHa
         )}
         {stackPanel}
       </div>
-      <div className="global-actions-bar" onMouseDown={handleMouseDown}>
+      <div className="global-actions-bar">
+        <div className="global-actions-bar-resizer top" onMouseDown={handleMouseDown}></div>
         {globalActions}
+        <div className="global-actions-bar-resizer bottom" onMouseDown={handleMouseDown}></div>
       </div>
       <div className="bottom-section" style={{ height: `calc(100% - ${topSectionHeight}% - 34px)` }}>
         <PlayerZone

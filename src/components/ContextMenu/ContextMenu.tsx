@@ -32,21 +32,25 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, options, onClose }) => 
       const { innerWidth, innerHeight } = window;
       const { offsetWidth, offsetHeight } = menuElement;
 
-      let newTop = y;
+      let newTop = y - (offsetHeight / 2);
       let newLeft = x;
 
       if (x + offsetWidth > innerWidth) {
         newLeft = x - offsetWidth;
       }
+       if (newLeft < 0) {
+        newLeft = 5;
+      }
       if (newTop < 0) {
         newTop = 5;
       }
-      if (newLeft < 0) {
-        newLeft = 5;
+      if (newTop + offsetHeight > innerHeight) {
+          newTop = innerHeight - offsetHeight - 5;
       }
+
       setPosition({ top: newTop, left: newLeft, opacity: 1 });
     }
-  }, [x, y]);
+  }, [x, y, options]);
 
   const menuStyle = {
     top: `${position.top}px`,
