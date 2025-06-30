@@ -1,10 +1,10 @@
-// src/components/Layouts/LayoutOne.tsx
+// src/components/Layouts/TabsLayout.tsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
-interface LayoutOneProps {
+interface TabsLayoutProps {
   playerStates: PlayerState[];
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
   activeOpponentId: string | null;
@@ -41,7 +41,7 @@ interface LayoutOneProps {
   resetKey: number;
 }
 
-const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, isTopRotated, resetKey, ...interactionProps }) => {
+const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, isTopRotated, resetKey, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -74,7 +74,7 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
   }, [topSectionHeight]);
 
   return (
-    <div className="game-layout-1vAll" ref={layoutRef}>
+    <div className="game-layout-tabs" ref={layoutRef}>
       <div className="top-section" style={{ height: `${topSectionHeight}%` }}>
         {activeOpponent ? (
           <PlayerZone
@@ -132,4 +132,4 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
   );
 };
 
-export default React.memo(LayoutOne);
+export default React.memo(TabsLayout);

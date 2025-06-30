@@ -424,7 +424,7 @@ function App() {
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings);
     setLoadedGameState(null);
-    if (settings.layout === '1vAll' && settings.players.length > 1) {
+    if (settings.layout === 'tabs' && settings.players.length > 1) {
       setActiveOpponentId(settings.players[1].id);
     }
     setView('game');
@@ -602,7 +602,7 @@ function App() {
     }
   };
   
-  const opponents = view === 'game' && gameSettings && gameSettings.layout === '1vAll'
+  const opponents = view === 'game' && gameSettings && gameSettings.layout === 'tabs'
     ? gameSettings.players.slice(1)
     : [];
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -634,7 +634,7 @@ function App() {
                 <button onClick={handleSaveGame} title="Save Game"><SaveIcon /></button>
                 <button onClick={handleQuitGame} title="Quit Game"><QuitIcon /></button>
                 <button
-                  onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === '1vAll' ? 'split' : '1vAll'}) : s)}
+                  onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === 'tabs' ? 'split' : 'tabs'}) : s)}
                   title="Toggle Game Layout"
                 >
                   Layout
@@ -649,7 +649,7 @@ function App() {
             )}
           </nav>
           
-          {view === 'game' && gameSettings?.layout === '1vAll' && opponents.length > 0 && (
+          {view === 'game' && gameSettings?.layout === 'tabs' && opponents.length > 0 && (
             <div className="opponent-tabs-wrapper">
               <div className="opponent-tabs-container">
                 <Tabs

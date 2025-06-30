@@ -60,7 +60,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
     { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff' },
   ]);
   const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
-  const [layout, setLayout] = useState<GameSettings['layout']>('1vAll');
+  const [layout, setLayout] = useState<GameSettings['layout']>('tabs');
   const [playAreaLayout, setPlayAreaLayout] = useState<GameSettings['playAreaLayout']>('rows');
 
   useEffect(() => {
@@ -173,8 +173,8 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
         <h3>Game Layout</h3>
         <div className="layout-options">
           <button
-            className={layout === '1vAll' ? 'active' : ''}
-            onClick={() => setLayout('1vAll')}
+            className={layout === 'tabs' ? 'active' : ''}
+            onClick={() => setLayout('tabs')}
           >
             1 vs. All (Tabbed opponents)
           </button>

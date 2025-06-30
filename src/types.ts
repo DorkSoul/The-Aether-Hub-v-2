@@ -72,7 +72,7 @@ export interface PlayerConfig {
 
 export interface GameSettings {
     players: PlayerConfig[];
-    layout: '1vAll' | 'split';
+    layout: 'tabs' | 'split';
     playAreaLayout: 'rows' | 'freeform';
 }
 

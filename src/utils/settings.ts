@@ -74,7 +74,7 @@ export function saveLayoutPreference(layout: GameSettings['layout']): void {
  */
 export function getLayoutPreference(defaultValue: GameSettings['layout']): GameSettings['layout'] {
     const savedValue = localStorage.getItem(LAYOUT_KEY);
-    if (savedValue === '1vAll' || savedValue === 'split') {
+    if (savedValue === 'tabs' || savedValue === 'split') {
         return savedValue;
     }
     return defaultValue;

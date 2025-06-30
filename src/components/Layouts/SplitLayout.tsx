@@ -1,10 +1,10 @@
-// src/components/Layouts/LayoutTwo.tsx
+// src/components/Layouts/SplitLayout.tsx
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
-interface LayoutTwoProps {
+interface SplitLayoutProps {
   playerStates: PlayerState[];
   imagesDirectoryHandle: FileSystemDirectoryHandle | null;
   playAreaLayout: 'rows' | 'freeform';
@@ -44,7 +44,7 @@ const ResizableSection: React.FC<{
     players: PlayerState[];
     isFlipped: boolean;
     isViewRotated: boolean;
-    commonProps: Omit<LayoutTwoProps, 'playerStates' | 'cardPreview' | 'stackPanel' | 'isTopRotated' | 'resetKey'>;
+    commonProps: Omit<SplitLayoutProps, 'playerStates' | 'cardPreview' | 'stackPanel' | 'isTopRotated' | 'resetKey'>;
     resetKey: number;
 }> = ({ players, isFlipped, isViewRotated, commonProps, resetKey }) => {
     const [widths, setWidths] = useState<number[]>([]);
@@ -151,7 +151,7 @@ const ResizableSection: React.FC<{
 };
 
 
-const LayoutTwo: React.FC<LayoutTwoProps> = (props) => {
+const SplitLayout: React.FC<SplitLayoutProps> = (props) => {
   const [topSectionHeight, setTopSectionHeight] = useState(50);
   const layoutRef = useRef<HTMLDivElement>(null);
 
@@ -202,4 +202,4 @@ const LayoutTwo: React.FC<LayoutTwoProps> = (props) => {
   );
 };
 
-export default React.memo(LayoutTwo);
+export default React.memo(SplitLayout);

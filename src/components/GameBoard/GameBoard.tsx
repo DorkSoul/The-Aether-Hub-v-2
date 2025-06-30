@@ -4,8 +4,8 @@ import type { PlayerState, GameSettings, Card as CardType, GameState, DraggedIte
 import { getCardsFromDB } from '../../utils/db';
 import { getHandHeights, saveHandHeights, getFreeformSizes, saveFreeformSizes } from '../../utils/settings';
 import { parseOracleText } from '../../utils/abilityUtils';
-import LayoutOne from '../Layouts/LayoutOne';
-import LayoutTwo from '../Layouts/LayoutTwo';
+import TabsLayout from '../Layouts/TabsLayout';
+import SplitLayout from '../Layouts/SplitLayout';
 import ContextMenu from '../ContextMenu/ContextMenu';
 import ScryModal from '../ScryModal/ScryModal';
 import HeldCounter from '../HeldCounter/HeldCounter';
@@ -822,8 +822,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       {heldCounter && (
         <HeldCounter text={heldCounter} x={mousePosition.x} y={mousePosition.y} />
       )}
-      {settings.layout === '1vAll' ? (
-        <LayoutOne 
+      {settings.layout === 'tabs' ? (
+        <TabsLayout 
           playerStates={playerStates} 
           activeOpponentId={activeOpponentId}
           cardPreview={cardPreview}
@@ -835,7 +835,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           {...interactionProps}
         />
       ) : (
-        <LayoutTwo 
+        <SplitLayout 
           playerStates={playerStates} 
           cardPreview={cardPreview}
           stackPanel={stackPanel}

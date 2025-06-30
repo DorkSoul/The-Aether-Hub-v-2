@@ -1,5 +1,5 @@
 /* src/components/Layouts/Layouts.css */
-.game-layout-1vAll, .game-layout-split {
+.game-layout-tabs, .game-layout-split {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 45px);
