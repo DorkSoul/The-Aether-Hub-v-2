@@ -115,6 +115,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, o
 
 function App() {
   const [view, setView] = useState<View>('game-setup');
+  const [rootDirectoryHandle, setRootDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -377,6 +378,8 @@ function App() {
 
   useEffect(() => {
     const loadSavedHandles = async () => {
+      const savedRootHandle = await getDirectoryHandle('root');
+      if (savedRootHandle) setRootDirectoryHandle(savedRootHandle);
       const savedDecksHandle = await getDirectoryHandle('decks');
       if (savedDecksHandle) setDecksDirectoryHandle(savedDecksHandle);
       const savedImagesHandle = await getDirectoryHandle('images');
@@ -392,10 +395,12 @@ function App() {
   const handleSelectAppFolder = async () => {
     try {
       const rootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      setRootDirectoryHandle(rootHandle);
       const decksHandle = await rootHandle.getDirectoryHandle('decks', { create: true });
       const imagesHandle = await rootHandle.getDirectoryHandle('images', { create: true });
       setDecksDirectoryHandle(decksHandle);
       setImagesDirectoryHandle(imagesHandle);
+      await saveDirectoryHandle('root', rootHandle);
       await saveDirectoryHandle('decks', decksHandle);
       await saveDirectoryHandle('images', imagesHandle);
       setActiveDeckName('');
@@ -633,18 +638,6 @@ function App() {
               <>
                 <button onClick={handleSaveGame} title="Save Game"><SaveIcon /></button>
                 <button onClick={handleQuitGame} title="Quit Game"><QuitIcon /></button>
-                <button
-                  onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === 'tabs' ? 'split' : 'tabs'}) : s)}
-                  title="Toggle Game Layout"
-                >
-                  Layout
-                </button>
-                <button
-                  onClick={() => setGameSettings(s => s ? ({...s, playAreaLayout: s.playAreaLayout === 'rows' ? 'freeform' : 'rows'}) : s)}
-                  title="Toggle Play Area Layout"
-                >
-                  Area
-                </button>
               </>
             )}
           </nav>
@@ -683,19 +676,33 @@ function App() {
             )}
             {view === 'game' && (
               <>
+                <button
+                  className="game-layout-button"
+                  onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === 'tabs' ? 'split' : 'tabs'}) : s)}
+                  title="Toggle Game Layout"
+                >
+                  Layout
+                </button>
+                <button
+                  className="game-layout-button"
+                  onClick={() => setGameSettings(s => s ? ({...s, playAreaLayout: s.playAreaLayout === 'rows' ? 'freeform' : 'rows'}) : s)}
+                  title="Toggle Play Area Layout"
+                >
+                  Area
+                </button>
                 <button onClick={handleResetLayouts} title="Reset player area sizes">Reset</button>
                 <button onClick={() => setIsStackVisible(v => !v)} title="Toggle Stack Panel">Stack</button>
+                <button onClick={() => setIsPreviewVisible(v => !v)} title="Toggle Preview Panel">Preview</button>
                 <button onClick={() => setIsTopRotated(r => !r)} title="Rotate Opponent's Cards">
                   <RotateIcon />
                 </button>
-                <button onClick={() => setIsPreviewVisible(v => !v)} title="Toggle Preview Panel">Preview</button>
               </>
             )}
             <button onClick={handleToggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
               {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
             </button>
             <button onClick={handleSelectAppFolder} title="Select a local folder to store your decks and cached images.">
-              {decksDirectoryHandle ? `Data: ${decksDirectoryHandle.name}` : 'Select App Folder'}
+              {rootDirectoryHandle ? `Data: ${rootDirectoryHandle.name}` : 'Select App Folder'}
             </button>
           </div>
         </div>

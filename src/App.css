@@ -69,8 +69,11 @@
 
 .main-nav button {
   margin: 0;
-  padding: 0.4em 0.8em;
+  padding: 4px 8px;
   font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .settings-controls {
@@ -79,7 +82,7 @@
   gap: 5px;
 }
 
-.settings-controls button {
+.settings-controls button, .game-layout-button {
     padding: 4px 8px;
     font-size: 0.9em;
     display: flex;

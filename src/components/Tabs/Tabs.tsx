@@ -8,30 +8,50 @@ interface TabsProps {
 }
 
 
-const tabStyle: React.CSSProperties = {
+const tabContainerStyle: React.CSSProperties = {
     display: 'flex',
     padding: '0',
     backgroundColor: '#282c34',
     gap: '5px',
 };
 
-const tabButtonStyle = (isActive: boolean): React.CSSProperties => ({
-    padding: '5px 10px',
+const getTabButtonStyle = (isActive: boolean): React.CSSProperties => ({
+    margin: 0,
+    padding: '4px 8px',
+    fontSize: '0.9em',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     cursor: 'pointer',
-    border: '1px solid #555',
-    backgroundColor: isActive ? '#646cff' : '#1a1a1a',
+    borderRadius: '8px',
+    backgroundColor: '#1a1a1a',
     color: 'white',
-    borderRadius: '4px',
+    border: isActive ? '1px solid white' : '1px solid transparent',
+    opacity: isActive ? 1 : 0.7,
+    transition: 'opacity 0.2s, border-color 0.25s',
 });
+
 
 const Tabs: React.FC<TabsProps> = ({ items, activeItem, onItemClick }) => {
   return (
-    <div style={tabStyle}>
+    <div style={tabContainerStyle}>
       {items.map(item => (
         <button
           key={item}
-          style={tabButtonStyle(item === activeItem)}
+          style={getTabButtonStyle(item === activeItem)}
           onClick={() => onItemClick(item)}
+          onMouseEnter={(e) => {
+              if (item !== activeItem) {
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.borderColor = '#646cff';
+              }
+          }}
+          onMouseLeave={(e) => {
+              if (item !== activeItem) {
+                  e.currentTarget.style.opacity = '0.7';
+                  e.currentTarget.style.borderColor = 'transparent';
+              }
+          }}
         >
           {item}
         </button>
