@@ -301,6 +301,10 @@
     flex-direction: row;
 }
 
+.player-zone.flipped .play-area.freeform {
+  flex-direction: row-reverse;
+}
+
 .play-area.freeform .side-zones-container {
     display: flex;
     flex-direction: column;
