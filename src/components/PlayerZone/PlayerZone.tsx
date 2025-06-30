@@ -357,8 +357,14 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     const size = isFreeformBattlefield ? freeformCardSizes[playerId] : undefined;
     
     const cardStyle = (size && card.x !== undefined && card.y !== undefined)
-        ? { position: 'absolute' as const, left: `${card.x}px`, top: `${card.y}px`, width: `${size}px`, height: `${size * 1.4}px` }
-        : {};
+      ? {
+          position: 'absolute' as const,
+          top: `${card.y}px`,
+          width: `${size}px`,
+          height: `${size * 1.4}px`,
+          ...(isFlipped ? { right: `${card.x}px` } : { left: `${card.x}px` })
+        }
+      : {};
     
     const finalBoardRotation = isFlipped ? !isViewRotated : false;
 
