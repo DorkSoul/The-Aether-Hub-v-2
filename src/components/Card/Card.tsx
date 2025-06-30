@@ -131,7 +131,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
 
     return (
         <div className="card">
-            <img src={imageUrl || ''} alt={name} />
+            {imageUrl && <img src={imageUrl} alt={name} />}
             {modifiedStats && (
                 <div className="pt-overlay" onClick={onCounterOverlayClick}>
                     <svg viewBox="0 0 50 20" preserveAspectRatio="xMidYMid meet">
