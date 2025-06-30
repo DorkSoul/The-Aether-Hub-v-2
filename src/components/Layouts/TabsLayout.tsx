@@ -1,6 +1,6 @@
 // src/components/Layouts/TabsLayout.tsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
@@ -12,12 +12,11 @@ interface TabsLayoutProps {
   freeformCardSizes: {[playerId: string]: number};
   handHeights: {[playerId: string]: number};
   heldCounter: string | null;
-  setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
-  onPlayerCounterApply: (playerId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
+  onCounterSelect: (counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -35,13 +34,12 @@ interface TabsLayoutProps {
   stackPanel: React.ReactNode;
   cardSize: number;
   hoveredStackCardId: string | null;
-  onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
-  onResetMana: (playerId: string) => void;
   isTopRotated: boolean;
   resetKey: number;
+  globalActions: React.ReactNode;
 }
 
-const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onCounterApply, onCustomCounterApply, onPlayerCounterApply, onCounterRemove, onRemoveAllCounters, isTopRotated, resetKey, ...interactionProps }) => {
+const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, isTopRotated, resetKey, globalActions, ...interactionProps }) => {
   const localPlayer = playerStates[0];
   const opponents = playerStates.slice(1);
   const activeOpponent = opponents.find(p => p.id === activeOpponentId);
@@ -85,15 +83,6 @@ const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHa
             handHeight={handHeights[activeOpponent.id]}
             onHandResize={(deltaY) => onHandResize(activeOpponent.id, deltaY)}
             hoveredStackCardId={hoveredStackCardId}
-            onUpdateMana={onUpdateMana}
-            onResetMana={onResetMana}
-            heldCounter={heldCounter}
-            setHeldCounter={setHeldCounter}
-            onCounterApply={onCounterApply}
-            onCustomCounterApply={onCustomCounterApply}
-            onPlayerCounterApply={onPlayerCounterApply}
-            onCounterRemove={onCounterRemove}
-            onRemoveAllCounters={onRemoveAllCounters}
             {...interactionProps}
           />
         ) : (
@@ -104,7 +93,7 @@ const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHa
         {stackPanel}
       </div>
       <div className="global-actions-bar" onMouseDown={handleMouseDown}>
-        {/* Global buttons can be added here */}
+        {globalActions}
       </div>
       <div className="bottom-section" style={{ height: `calc(100% - ${topSectionHeight}% - 34px)` }}>
         <PlayerZone
@@ -115,15 +104,6 @@ const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHa
           handHeight={handHeights[localPlayer.id]}
           onHandResize={(deltaY) => onHandResize(localPlayer.id, deltaY)}
           hoveredStackCardId={hoveredStackCardId}
-          onUpdateMana={onUpdateMana}
-          onResetMana={onResetMana}
-          heldCounter={heldCounter}
-          setHeldCounter={setHeldCounter}
-          onCounterApply={onCounterApply}
-          onCustomCounterApply={onCustomCounterApply}
-          onPlayerCounterApply={onPlayerCounterApply}
-          onCounterRemove={onCounterRemove}
-          onRemoveAllCounters={onRemoveAllCounters}
           {...interactionProps}
         />
         {cardPreview}

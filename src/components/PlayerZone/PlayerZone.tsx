@@ -1,42 +1,11 @@
 // src/components/PlayerZone/PlayerZone.tsx
 
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation } from '../../types';
 import Card from '../Card/Card';
 import cardBackUrl from '../../assets/card_back.png';
-import { WhiteManaIcon, BlueManaIcon, BlackManaIcon, RedManaIcon, GreenManaIcon, ColorlessManaIcon, PlusIcon, MinusIcon, CloseIcon } from '../Icons/icons';
-import ContextMenu from '../ContextMenu/ContextMenu';
+import { PlusIcon, MinusIcon } from '../Icons/icons';
 import './PlayerZone.css';
-
-interface ManaCounterProps {
-  type: ManaType;
-  count: number;
-  onClick: () => void;
-  onContextMenu: (e: React.MouseEvent) => void;
-}
-
-const ManaCounter: React.FC<ManaCounterProps> = ({ type, count, onClick, onContextMenu }) => {
-  const Icon = {
-    white: WhiteManaIcon,
-    blue: BlueManaIcon,
-    black: BlackManaIcon,
-    red: RedManaIcon,
-    green: GreenManaIcon,
-    colorless: ColorlessManaIcon,
-  }[type];
-
-  return (
-    <div
-      className="mana-counter"
-      title={`${count} ${type} mana`}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
-    >
-      <Icon />
-      <span className="mana-count">{count}</span>
-    </div>
-  );
-};
 
 interface GameCardRendererProps {
   card: CardType;
@@ -122,12 +91,11 @@ interface PlayerZoneProps {
   freeformCardSizes: {[playerId: string]: number};
   handHeight: number;
   heldCounter: string | null;
-  setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
-  onPlayerCounterApply: (playerId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
+  onCounterSelect: (counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -143,8 +111,6 @@ interface PlayerZoneProps {
   onCardHover: (card: CardType | null) => void;
   cardSize: number;
   hoveredStackCardId: string | null;
-  onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
-  onResetMana: (playerId: string) => void;
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -169,15 +135,12 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   dropTarget,
   onCardHover,
   hoveredStackCardId,
-  onUpdateMana,
-  onResetMana,
   heldCounter,
-  setHeldCounter,
   onCounterApply,
   onCustomCounterApply,
-  onPlayerCounterApply,
   onCounterRemove,
   onRemoveAllCounters,
+  onCounterSelect
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -187,8 +150,6 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   const commandZoneRef = useRef<HTMLDivElement>(null);
   const [handWidth, setHandWidth] = useState(0);
   const [commandZoneCardWidth, setCommandZoneCardWidth] = useState(0);
-  const [xyCounterMenu, setXYCounterMenu] = useState<{ x: number, y: number } | null>(null);
-  const [abilitiesMenu, setAbilitiesMenu] = useState<{ x: number, y: number } | null>(null);
 
   const numCommanders = playerState.commandZone.length;
 
@@ -202,43 +163,6 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
       return () => resizeObserver.disconnect();
     }
   }, [numCommanders, playAreaLayout]);
-
-  const handleXYCounterClick = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setXYCounterMenu({ x: event.clientX, y: event.clientY });
-  };
-
-  const handleAbilitiesClick = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setAbilitiesMenu({ x: event.clientX, y: event.clientY });
-  };
-
-  const handleCustomCounterClick = () => {
-    const customCounterName = prompt("Enter counter name:");
-    if (customCounterName) {
-        setHeldCounter(customCounterName);
-    }
-  };
-
-  const xyCounterOptions = [
-    { label: '+1/+1', action: () => setHeldCounter('+1/+1') },
-    { label: '-1/-1', action: () => setHeldCounter('-1/-1') },
-    { label: '+1/0', action: () => setHeldCounter('+1/0') },
-    { label: '-1/0', action: () => setHeldCounter('-1/0') },
-    { label: '0/+1', action: () => setHeldCounter('0/+1') },
-    { label: '0/-1', action: () => setHeldCounter('0/-1') },
-  ];
-
-  const abilities = [
-      'deathtouch', 'defender', 'double strike', 'first strike', 'flying', 'goad', 
-      'haste', 'hexproof', 'indestructible', 'lifelink', 'menace', 'reach', 
-      'shroud', 'trample', 'vigilance'
-  ].sort();
-
-  const abilityOptions = abilities.map(ability => ({
-      label: ability.charAt(0).toUpperCase() + ability.slice(1),
-      action: () => setHeldCounter(ability),
-  }));
 
   useEffect(() => {
     if (handRef.current) {
@@ -380,7 +304,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
         onCustomCounterApply={onCustomCounterApply}
         onCounterRemove={onCounterRemove}
         onRemoveAllCounters={onRemoveAllCounters}
-        onCounterSelect={setHeldCounter}
+        onCounterSelect={onCounterSelect}
         onCardTap={onCardTap}
         onCardFlip={onCardFlip}
         onCardContextMenu={onCardContextMenu}
@@ -505,38 +429,10 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   return (
     <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
       <div className="player-header">
-        <div className="mana-pool">
-          {(Object.keys(playerState.mana) as ManaType[]).map(manaType => (
-            <ManaCounter
-              key={manaType}
-              type={manaType}
-              count={playerState.mana[manaType]}
-              onClick={() => onUpdateMana(playerId, manaType, 1)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                onUpdateMana(playerId, manaType, -1);
-              }}
-            />
-          ))}
-          <button onClick={() => onResetMana(playerId)} className="reset-mana-btn" title="Reset all mana to 0">
-              <CloseIcon />
-          </button>
-        </div>
-        <h3 onClick={() => heldCounter && onPlayerCounterApply(playerId, heldCounter)}>
+        <h3>
             {playerState.name}: {playerState.life} Life
             {playerCounters && <span className="player-counters"> ({playerCounters})</span>}
         </h3>
-        <div className="counter-buttons">
-            <button className="counter-btn" onClick={handleXYCounterClick} title="±X/±Y Counters">
-              ±X/±Y
-            </button>
-            <button className="counter-btn" onClick={handleAbilitiesClick} title="Ability Counters">
-              Abilities
-            </button>
-            <button className="counter-btn" onClick={handleCustomCounterClick} title="Custom Counters">
-              Custom
-            </button>
-        </div>
         {playAreaLayout === 'freeform' && (
           <div className="freeform-controls">
             <button onClick={() => onUpdateFreeformCardSize(playerId, -10)} title="Decrease Card Size"><MinusIcon /></button>
@@ -602,7 +498,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
                       heldCounter={heldCounter}
                       onCounterApply={onCounterApply}
                       onCustomCounterApply={onCustomCounterApply}
-                      onCounterSelect={setHeldCounter}
+                      onCounterSelect={onCounterSelect}
                       onCounterRemove={onCounterRemove}
                       onRemoveAllCounters={onRemoveAllCounters}
                       onCardTap={onCardTap}
@@ -618,34 +514,6 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
             </div>
         ))}
       </div>
-      {xyCounterMenu && (
-        <ContextMenu
-          x={xyCounterMenu.x}
-          y={xyCounterMenu.y}
-          onClose={() => setXYCounterMenu(null)}
-          options={xyCounterOptions.map(opt => ({
-            ...opt,
-            action: () => {
-              opt.action();
-              setXYCounterMenu(null);
-            }
-          }))}
-        />
-      )}
-      {abilitiesMenu && (
-        <ContextMenu
-          x={abilitiesMenu.x}
-          y={abilitiesMenu.y}
-          onClose={() => setAbilitiesMenu(null)}
-          options={abilityOptions.map(opt => ({
-            ...opt,
-            action: () => {
-              opt.action();
-              setAbilitiesMenu(null);
-            }
-          }))}
-        />
-      )}
     </div>
   );
 };

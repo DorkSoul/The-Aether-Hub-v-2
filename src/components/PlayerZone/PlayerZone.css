@@ -45,68 +45,6 @@
   user-select: none;
 }
 
-.mana-pool {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  position: absolute;
-  left: 5px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.player-zone.flipped .mana-pool {
-    left: auto;
-    right: 5px;
-}
-
-.mana-counter {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background-color: rgba(0,0,0,0.5);
-  padding: 1px 4px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.mana-counter svg {
-  width: 14px;
-  height: 14px;
-}
-
-.mana-counter .mana-count {
-  font-size: 14px;
-  font-weight: bold;
-  color: white;
-  min-width: 1ch;
-  text-align: center;
-  user-select: none;
-}
-
-.reset-mana-btn {
-  background-color: rgba(0, 0, 0, 0.5);
-  border: none;
-  padding: 4px;
-  margin-left: 5px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  border-radius: 10px;
-}
-
-.reset-mana-btn svg {
-    width: 12px;
-    height: 12px;
-}
-
-.reset-mana-btn:hover {
-    background-color: rgba(255, 0, 0, 0.4);
-}
-
 .freeform-controls {
     position: absolute;
     right: 5px;
@@ -166,7 +104,7 @@
     color: #888;
     text-transform: uppercase;
     text-align: center;
-    font-size: clamp(10px, 1.2vw, 14px);
+    font-size: clamp(4px, 1.2vw, 10px);
     line-height: 1.1;
     word-break: break-word;
 }
@@ -336,34 +274,6 @@
 .battlefield-freeform .card-flipper {
     position: absolute;
     margin: 0;
-}
-
-.counter-buttons {
-  position: absolute;
-  left: 75%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 5px;
-}
-
-.counter-btn {
-  background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid #666;
-  color: #fff;
-  padding: 2px 8px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.counter-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.player-zone.flipped .counter-buttons {
-    left: 25%;
 }
 
 .player-counters {

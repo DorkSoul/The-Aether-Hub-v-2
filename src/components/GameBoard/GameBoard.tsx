@@ -9,6 +9,7 @@ import SplitLayout from '../Layouts/SplitLayout';
 import ContextMenu from '../ContextMenu/ContextMenu';
 import ScryModal from '../ScryModal/ScryModal';
 import HeldCounter from '../HeldCounter/HeldCounter';
+import GlobalActionBar from '../GlobalActionBar/GlobalActionBar';
 import './GameBoard.css';
 
 interface GameBoardProps {
@@ -783,12 +784,11 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       playAreaLayout: settings.playAreaLayout,
       freeformCardSizes,
       heldCounter,
-      setHeldCounter,
       onCounterApply: handleApplyCounter,
       onCustomCounterApply: handleCustomCounterApply,
-      onPlayerCounterApply: handlePlayerCounterApply,
       onCounterRemove: handleCounterRemove,
       onRemoveAllCounters: handleRemoveAllCounters,
+      onCounterSelect: setHeldCounter,
       onCardTap: handleCardTap,
       onCardFlip: handleCardFlip,
       onCardContextMenu: handleCardContextMenu,
@@ -803,9 +803,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onCardHover: onCardHover,
       cardSize,
       hoveredStackCardId,
-      onUpdateMana: handleUpdateMana,
-      onResetMana: handleResetMana,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleUpdateMana, handleResetMana, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply]);
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
@@ -816,6 +814,17 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   if (!playerStates) {
     return <div className="game-loading"><h2>Could not initialize players.</h2></div>;
   }
+
+  const globalActionBar = playerStates[0] && (
+      <GlobalActionBar
+          playerState={playerStates[0]}
+          onUpdateMana={handleUpdateMana}
+          onResetMana={handleResetMana}
+          onPlayerCounterApply={handlePlayerCounterApply}
+          heldCounter={heldCounter}
+          setHeldCounter={setHeldCounter}
+      />
+  );
     
   return (
     <div className="game-board">
@@ -832,6 +841,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           onHandResize={handleHandResize}
           isTopRotated={isTopRotated}
           resetKey={resetKey}
+          globalActions={globalActionBar}
           {...interactionProps}
         />
       ) : (
@@ -843,6 +853,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           onHandResize={handleHandResize}
           isTopRotated={isTopRotated}
           resetKey={resetKey}
+          globalActions={globalActionBar}
           {...interactionProps}
         />
       )}

@@ -1,6 +1,6 @@
 // src/components/Layouts/SplitLayout.tsx
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import type { PlayerState, Card as CardType, CardLocation, ManaType } from '../../types';
+import type { PlayerState, Card as CardType, CardLocation } from '../../types';
 import PlayerZone from '../PlayerZone/PlayerZone';
 import './Layouts.css';
 
@@ -11,12 +11,11 @@ interface SplitLayoutProps {
   freeformCardSizes: {[playerId: string]: number};
   handHeights: {[playerId: string]: number};
   heldCounter: string | null;
-  setHeldCounter: (counter: string | null) => void;
   onCounterApply: (cardInstanceId: string, counterType: string) => void;
   onCustomCounterApply: (cardInstanceId: string, counterType: string) => void;
-  onPlayerCounterApply: (playerId: string, counterType: string) => void;
   onCounterRemove: (cardInstanceId: string, counterType: string) => void;
   onRemoveAllCounters: (cardInstanceId: string, counterType: string) => void;
+  onCounterSelect: (counterType: string) => void;
   onCardTap: (cardInstanceId: string) => void;
   onCardFlip: (cardInstanceId: string) => void;
   onCardContextMenu: (event: React.MouseEvent, card: CardType) => void;
@@ -34,17 +33,16 @@ interface SplitLayoutProps {
   stackPanel: React.ReactNode;
   cardSize: number;
   hoveredStackCardId: string | null;
-  onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
-  onResetMana: (playerId: string) => void;
   isTopRotated: boolean;
   resetKey: number;
+  globalActions: React.ReactNode;
 }
 
 const ResizableSection: React.FC<{
     players: PlayerState[];
     isFlipped: boolean;
     isViewRotated: boolean;
-    commonProps: Omit<SplitLayoutProps, 'playerStates' | 'cardPreview' | 'stackPanel' | 'isTopRotated' | 'resetKey'>;
+    commonProps: Omit<SplitLayoutProps, 'playerStates' | 'cardPreview' | 'stackPanel' | 'isTopRotated' | 'resetKey' | 'globalActions'>;
     resetKey: number;
 }> = ({ players, isFlipped, isViewRotated, commonProps, resetKey }) => {
     const [widths, setWidths] = useState<number[]>([]);
@@ -117,12 +115,11 @@ const ResizableSection: React.FC<{
                             playAreaLayout={commonProps.playAreaLayout}
                             freeformCardSizes={commonProps.freeformCardSizes}
                             heldCounter={commonProps.heldCounter}
-                            setHeldCounter={commonProps.setHeldCounter}
                             onCounterApply={commonProps.onCounterApply}
                             onCustomCounterApply={commonProps.onCustomCounterApply}
-                            onPlayerCounterApply={commonProps.onPlayerCounterApply}
                             onCounterRemove={commonProps.onCounterRemove}
                             onRemoveAllCounters={commonProps.onRemoveAllCounters}
+                            onCounterSelect={commonProps.onCounterSelect}
                             onCardTap={commonProps.onCardTap}
                             onCardFlip={commonProps.onCardFlip}
                             onCardContextMenu={commonProps.onCardContextMenu}
@@ -137,8 +134,6 @@ const ResizableSection: React.FC<{
                             onCardHover={commonProps.onCardHover}
                             cardSize={commonProps.cardSize}
                             hoveredStackCardId={commonProps.hoveredStackCardId}
-                            onUpdateMana={commonProps.onUpdateMana}
-                            onResetMana={commonProps.onResetMana}
                         />
                     </div>
                     {i < players.length - 1 && (
@@ -183,7 +178,7 @@ const SplitLayout: React.FC<SplitLayoutProps> = (props) => {
   const topPlayers = props.playerStates.filter((_, index) => index % 2 !== 0);
   const bottomPlayers = props.playerStates.filter((_, index) => index % 2 === 0);
 
-  const { playerStates, cardPreview, stackPanel, isTopRotated, resetKey, ...commonProps } = props;
+  const { playerStates, cardPreview, stackPanel, isTopRotated, resetKey, globalActions, ...commonProps } = props;
 
   return (
     <div className="game-layout-split" ref={layoutRef}>
@@ -192,7 +187,7 @@ const SplitLayout: React.FC<SplitLayoutProps> = (props) => {
         {stackPanel}
       </div>
       <div className="global-actions-bar" onMouseDown={handleVerticalMouseDown}>
-        {/* Global buttons can be added here */}
+        {globalActions}
       </div>
       <div className="bottom-players" style={{ height: `calc(100% - ${topSectionHeight}% - 34px)` }}>
         <ResizableSection players={bottomPlayers} isFlipped={false} isViewRotated={false} commonProps={commonProps} resetKey={resetKey} />
