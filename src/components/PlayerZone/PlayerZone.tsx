@@ -3,6 +3,7 @@
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import type { PlayerState, Card as CardType, CardLocation } from '../../types';
 import Card from '../Card/Card';
+import PlayerCounterDisplay from '../PlayerCounterDisplay/PlayerCounterDisplay';
 import cardBackUrl from '../../assets/card_back.png';
 import { PlusIcon, MinusIcon } from '../Icons/icons';
 import './PlayerZone.css';
@@ -111,6 +112,10 @@ interface PlayerZoneProps {
   onCardHover: (card: CardType | null) => void;
   cardSize: number;
   hoveredStackCardId: string | null;
+  onPlayerCounterApply: (playerId: string, counterType: string) => void;
+  onPlayerCounterRemove: (playerId: string, counterType: string) => void;
+  onRemoveAllPlayerCounters: (playerId: string, counterType: string) => void;
+  setHeldCounter: (counter: string | null) => void;
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -140,7 +145,11 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   onCustomCounterApply,
   onCounterRemove,
   onRemoveAllCounters,
-  onCounterSelect
+  onCounterSelect,
+  onPlayerCounterApply,
+  onPlayerCounterRemove,
+  onRemoveAllPlayerCounters,
+  setHeldCounter
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -150,6 +159,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   const commandZoneRef = useRef<HTMLDivElement>(null);
   const [handWidth, setHandWidth] = useState(0);
   const [commandZoneCardWidth, setCommandZoneCardWidth] = useState(0);
+  const [playerCounterDisplayPos, setPlayerCounterDisplayPos] = useState<{ x: number, y: number } | null>(null);
 
   const numCommanders = playerState.commandZone.length;
 
@@ -338,6 +348,24 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     const offset = commandZoneCardWidth * (numCommanders - 1);
     commandZoneStyle.left = `-${offset}px`;
   }
+  
+  const handleHeaderClick = (e: React.MouseEvent<HTMLHeadingElement>) => {
+    if (heldCounter) {
+      onPlayerCounterApply(playerId, heldCounter);
+    }
+  };
+
+  const handleCountersClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (playerState.counters && Object.keys(playerState.counters).length > 0) {
+      if (playerCounterDisplayPos) {
+        setPlayerCounterDisplayPos(null);
+      } else {
+        setPlayerCounterDisplayPos({ x: e.clientX, y: e.clientY });
+      }
+    }
+  };
 
   const commandZoneJsx = (
       <div {...getZoneProps({ zone: 'commandZone' })} title="Command Zone" style={commandZoneStyle} ref={commandZoneRef}>
@@ -423,15 +451,22 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     ? [libraryZoneJsx, graveyardZoneJsx, exileZoneJsx, commandZoneJsx] 
     : [commandZoneJsx, exileZoneJsx, graveyardZoneJsx, libraryZoneJsx];
 
-  const playerCounters = playerState.counters ? Object.entries(playerState.counters).map(([type, amount]) => `${type}: ${amount}`).join(', ') : '';
-
+  const playerCounters = playerState.counters ? Object.entries(playerState.counters).filter(([, amount]) => amount > 0).map(([type, amount]) => `${type}: ${amount}`).join(', ') : '';
 
   return (
     <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
       <div className="player-header">
-        <h3>
+        <h3 onClick={handleHeaderClick} title={heldCounter ? `Give ${heldCounter} counter` : ''}>
             {playerState.name}: {playerState.life} Life
-            {playerCounters && <span className="player-counters"> ({playerCounters})</span>}
+            {playerCounters && (
+              <span 
+                className="player-counters clickable" 
+                onClick={handleCountersClick} 
+                title="Edit Counters"
+              >
+                {' '}({playerCounters})
+              </span>
+            )}
         </h3>
         {playAreaLayout === 'freeform' && (
           <div className="freeform-controls">
@@ -514,6 +549,19 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
             </div>
         ))}
       </div>
+      {playerCounterDisplayPos && playerState.counters && (
+          <PlayerCounterDisplay
+              counters={playerState.counters}
+              playerId={playerId}
+              x={playerCounterDisplayPos.x}
+              y={playerCounterDisplayPos.y}
+              onClose={() => setPlayerCounterDisplayPos(null)}
+              onPlayerCounterApply={onPlayerCounterApply}
+              onPlayerCounterRemove={onPlayerCounterRemove}
+              onRemoveAllPlayerCounters={onRemoveAllPlayerCounters}
+              onCounterSelect={onCounterSelect}
+          />
+      )}
     </div>
   );
 };

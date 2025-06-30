@@ -37,6 +37,10 @@ interface TabsLayoutProps {
   isTopRotated: boolean;
   resetKey: number;
   globalActions: React.ReactNode;
+  onPlayerCounterApply: (playerId: string, counterType: string) => void;
+  onPlayerCounterRemove: (playerId: string, counterType: string) => void;
+  onRemoveAllPlayerCounters: (playerId: string, counterType: string) => void;
+  setHeldCounter: (counter: string | null) => void;
 }
 
 const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, isTopRotated, resetKey, globalActions, ...interactionProps }) => {

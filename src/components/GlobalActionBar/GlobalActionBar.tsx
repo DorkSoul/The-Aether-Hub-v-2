@@ -39,12 +39,11 @@ interface GlobalActionBarProps {
     playerState: PlayerState;
     onUpdateMana: (playerId: string, manaType: ManaType, delta: number) => void;
     onResetMana: (playerId: string) => void;
-    onPlayerCounterApply: (playerId: string, counterType: string) => void;
     heldCounter: string | null;
     setHeldCounter: (counter: string | null) => void;
 }
 
-const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdateMana, onResetMana, onPlayerCounterApply, heldCounter, setHeldCounter }) => {
+const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdateMana, onResetMana, heldCounter, setHeldCounter }) => {
     const [xyCounterMenu, setXYCounterMenu] = useState<{ x: number, y: number } | null>(null);
     const [abilitiesMenu, setAbilitiesMenu] = useState<{ x: number, y: number } | null>(null);
 

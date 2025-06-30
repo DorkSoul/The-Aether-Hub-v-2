@@ -282,3 +282,12 @@
     color: #ccc;
     margin-left: 8px;
 }
+
+.player-counters.clickable {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.player-counters.clickable:hover {
+    color: #646cff;
+}

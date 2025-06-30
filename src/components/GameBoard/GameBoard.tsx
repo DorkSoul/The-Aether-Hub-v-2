@@ -48,7 +48,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   const [cardContextMenu, setCardContextMenu] = useState<{ x: number, y: number, card: CardType } | null>(null);
   const [scryState, setScryState] = useState<{ playerId: string; cards: CardType[] } | null>(null);
   const [freeformCardSizes, setFreeformCardSizes] = useState<{[playerId: string]: number}>({});
-  const [handHeights, setHandHeights] = useState<{ [playerId: string]: number }>({});
+  const [handHeights, setHandHeights] = useState<{ [key: string]: number }>({});
   const [heldCounter, setHeldCounter] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const prevPlayAreaLayout = React.useRef(settings.playAreaLayout);
@@ -527,7 +527,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     });
   }, [updateCardState]);
 
-  const handlePlayerCounterApply = (playerId: string, counterType: string) => {
+  const handlePlayerCounterApply = useCallback((playerId: string, counterType: string) => {
     setPlayerStates(currentStates => {
         if (!currentStates) return null;
         return currentStates.map(pState => {
@@ -539,7 +539,39 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             return pState;
         });
     });
-  };
+  }, []);
+
+  const handlePlayerCounterRemove = useCallback((playerId: string, counterType: string) => {
+    setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+        return currentStates.map(pState => {
+            if (pState.id === playerId) {
+                const newCounters = { ...(pState.counters || {}) };
+                if (newCounters[counterType] > 1) {
+                    newCounters[counterType] -= 1;
+                } else {
+                    delete newCounters[counterType];
+                }
+                return { ...pState, counters: newCounters };
+            }
+            return pState;
+        });
+    });
+  }, []);
+
+  const handleRemoveAllPlayerCounters = useCallback((playerId: string, counterType: string) => {
+    setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+        return currentStates.map(pState => {
+            if (pState.id === playerId) {
+                const newCounters = { ...(pState.counters || {}) };
+                delete newCounters[counterType];
+                return { ...pState, counters: newCounters };
+            }
+            return pState;
+        });
+    });
+  }, []);
 
   const handleCounterRemove = (cardInstanceId: string, counterType: string) => {
     updateCardState(cardInstanceId, card => {
@@ -825,7 +857,11 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onCardHover: onCardHover,
       cardSize,
       hoveredStackCardId,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters]);
+      onPlayerCounterApply: handlePlayerCounterApply,
+      onPlayerCounterRemove: handlePlayerCounterRemove,
+      onRemoveAllPlayerCounters: handleRemoveAllPlayerCounters,
+      setHeldCounter,
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply, handlePlayerCounterRemove, handleRemoveAllPlayerCounters]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
@@ -842,7 +878,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           playerState={playerStates[0]}
           onUpdateMana={handleUpdateMana}
           onResetMana={handleResetMana}
-          onPlayerCounterApply={handlePlayerCounterApply}
           heldCounter={heldCounter}
           setHeldCounter={setHeldCounter}
       />

@@ -1,0 +1,78 @@
+/* src/components/PlayerCounterDisplay/PlayerCounterDisplay.css */
+.player-counter-display {
+    position: fixed;
+    background-color: #3e4452;
+    color: white;
+    border-radius: 8px;
+    border: 1px solid #555;
+    padding: 5px;
+    display: table;
+    z-index: 1001; /* Make sure it's above other elements */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    min-width: 200px;
+    border-collapse: collapse;
+    opacity: 0;
+    transition: opacity 0.05s linear;
+}
+
+.player-counter-display .counter-row {
+    display: table-row;
+    border-bottom: 1px solid #555;
+}
+
+.player-counter-display .counter-row:last-child {
+    border-bottom: none;
+}
+
+.player-counter-display .counter-row.header-row {
+    font-weight: bold;
+    border-bottom: 2px solid #777;
+}
+
+.player-counter-display .counter-row > * {
+    display: table-cell;
+    text-align: center;
+    padding: 5px;
+    position: relative;
+}
+
+.player-counter-display .counter-row > *:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    right: 0;
+    height: 70%;
+    width: 1px;
+    background-color: #555;
+}
+
+.player-counter-display .counter-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.player-counter-display .counter-row button {
+    background: none;
+    border: 1px solid white;
+    color: white;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.player-counter-display .counter-row button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.player-counter-display .counter-type.clickable {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.player-counter-display .counter-type.clickable:hover {
+    color: #646cff;
+}

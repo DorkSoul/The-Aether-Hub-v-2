@@ -36,6 +36,10 @@ interface SplitLayoutProps {
   isTopRotated: boolean;
   resetKey: number;
   globalActions: React.ReactNode;
+  onPlayerCounterApply: (playerId: string, counterType: string) => void;
+  onPlayerCounterRemove: (playerId: string, counterType: string) => void;
+  onRemoveAllPlayerCounters: (playerId: string, counterType: string) => void;
+  setHeldCounter: (counter: string | null) => void;
 }
 
 const ResizableSection: React.FC<{
@@ -134,6 +138,10 @@ const ResizableSection: React.FC<{
                             onCardHover={commonProps.onCardHover}
                             cardSize={commonProps.cardSize}
                             hoveredStackCardId={commonProps.hoveredStackCardId}
+                            onPlayerCounterApply={commonProps.onPlayerCounterApply}
+                            onPlayerCounterRemove={commonProps.onPlayerCounterRemove}
+                            onRemoveAllPlayerCounters={commonProps.onRemoveAllPlayerCounters}
+                            setHeldCounter={commonProps.setHeldCounter}
                         />
                     </div>
                     {i < players.length - 1 && (
