@@ -2,7 +2,7 @@
 .game-layout-1vAll, .game-layout-split {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 75px);
+  height: calc(100vh - 45px);
 }
 
 .top-section, .bottom-section,
@@ -18,12 +18,21 @@
     flex-direction: row;
 }
 
-.layout-divider {
-    height: 2px;
-    background-color: #555;
-    cursor: ns-resize;
-    flex-shrink: 0;
+/* This is the new bar you requested */
+.global-actions-bar {
+  height: 34px; /* Total height including borders */
+  background-color: #1a1a1a;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-top: 2px solid #555;
+  border-bottom: 2px solid #555;
+  cursor: ns-resize;
+  box-sizing: border-box;
 }
+
 
 .layout-divider-horizontal {
     width: 2px;

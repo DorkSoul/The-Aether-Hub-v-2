@@ -103,8 +103,10 @@ const LayoutOne: React.FC<LayoutOneProps> = ({ playerStates, imagesDirectoryHand
         )}
         {stackPanel}
       </div>
-      <div className="layout-divider" onMouseDown={handleMouseDown}></div>
-      <div className="bottom-section" style={{ height: `calc(100% - ${topSectionHeight}% - 2px)` }}>
+      <div className="global-actions-bar" onMouseDown={handleMouseDown}>
+        {/* Global buttons can be added here */}
+      </div>
+      <div className="bottom-section" style={{ height: `calc(100% - ${topSectionHeight}% - 34px)` }}>
         <PlayerZone
           playerState={localPlayer}
           isFlipped={false}

@@ -191,8 +191,10 @@ const LayoutTwo: React.FC<LayoutTwoProps> = (props) => {
         <ResizableSection players={topPlayers} isFlipped={true} isViewRotated={isTopRotated} commonProps={commonProps} resetKey={resetKey} />
         {stackPanel}
       </div>
-      <div className="layout-divider" onMouseDown={handleVerticalMouseDown}></div>
-      <div className="bottom-players" style={{ height: `calc(100% - ${topSectionHeight}% - 2px)` }}>
+      <div className="global-actions-bar" onMouseDown={handleVerticalMouseDown}>
+        {/* Global buttons can be added here */}
+      </div>
+      <div className="bottom-players" style={{ height: `calc(100% - ${topSectionHeight}% - 34px)` }}>
         <ResizableSection players={bottomPlayers} isFlipped={false} isViewRotated={false} commonProps={commonProps} resetKey={resetKey} />
         {cardPreview}
       </div>

@@ -2,7 +2,7 @@
 .game-board {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 75px);
+  height: calc(100vh - 45px);
   width: 100%;
   margin: 0;
 }

@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
-import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon, RotateIcon } from './components/Icons/icons';
+import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon, RotateIcon, QuitIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize, savePreviewWidth, getPreviewWidth } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
 import type { GameSettings, GameState, Card as CardType, StackItem } from './types';
@@ -617,7 +617,7 @@ function App() {
         <div className="header-left">
           <nav className="main-nav">
             <button onClick={() => setView('decks')} disabled={view === 'decks'}>
-              Deckbuilder
+              Decks
             </button>
             <button onClick={() => {
               if (gameSettings) {
@@ -631,8 +631,8 @@ function App() {
             </button>
             {view === 'game' && (
               <>
-                <button onClick={handleSaveGame} title="Save Game"> Save Game</button>
-                <button onClick={handleQuitGame}>Quit Game</button>
+                <button onClick={handleSaveGame} title="Save Game"><SaveIcon /></button>
+                <button onClick={handleQuitGame} title="Quit Game"><QuitIcon /></button>
                 <button
                   onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === '1vAll' ? 'split' : '1vAll'}) : s)}
                   title="Toggle Game Layout"
@@ -643,7 +643,7 @@ function App() {
                   onClick={() => setGameSettings(s => s ? ({...s, playAreaLayout: s.playAreaLayout === 'rows' ? 'freeform' : 'rows'}) : s)}
                   title="Toggle Play Area Layout"
                 >
-                  Play Area
+                  Area
                 </button>
               </>
             )}
@@ -666,9 +666,8 @@ function App() {
         </div>
         
         <div className="app-title">
-          <h2>The Aether Hub</h2>
+          {view !== 'game' && <h2>The Aether Hub</h2>}
           {view === 'decks' && activeDeckName && <h3>{activeDeckName} {activeDeckCardCount > 0 && `(${activeDeckCardCount} cards)`}</h3>}
-          {view === 'game' && gameSettings && <h3 className="game-player-count">{gameSettings.players.length}-Player Game</h3>}
         </div>
 
         <div className="header-right">
