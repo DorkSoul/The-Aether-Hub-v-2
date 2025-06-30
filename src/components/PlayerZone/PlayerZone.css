@@ -187,7 +187,7 @@
     border: none;
 }
 
-.command-zone .cards-container {
+.commandZone-zone .cards-container {
     display: flex;
     gap: 2px;
     align-items: center;
@@ -216,7 +216,7 @@
     aspect-ratio: 63 / 88;
 }
 
-.command-zone .card-flipper {
+.commandZone-zone .card-flipper {
     flex: 1 1 0;
     width: 0;
     height: auto;

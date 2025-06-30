@@ -68,7 +68,10 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
     clone.style.left = '-9999px';
     document.body.appendChild(clone);
 
-    event.dataTransfer.setDragImage(clone, event.nativeEvent.offsetX, event.nativeEvent.offsetY);
+    const rect = nodeToDrag.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
+    event.dataTransfer.setDragImage(clone, offsetX, offsetY);
     
     (nodeToDrag as HTMLElement).style.opacity = '0';
 
@@ -76,8 +79,7 @@ const GameCardRenderer = React.memo<GameCardRendererProps>(({ card, location, on
         document.body.removeChild(clone);
     });
 
-    const rect = nodeToDrag.getBoundingClientRect();
-    const offset = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const offset = { x: offsetX, y: offsetY };
     onCardDragStart(card, location, offset);
   }, [card, location, onCardDragStart]);
 
@@ -178,9 +180,24 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   const isResizing = useRef(false);
   const lastY = useRef(0);
   const handRef = useRef<HTMLDivElement>(null);
+  const commandZoneRef = useRef<HTMLDivElement>(null);
   const [handWidth, setHandWidth] = useState(0);
+  const [commandZoneCardWidth, setCommandZoneCardWidth] = useState(0);
   const [xyCounterMenu, setXYCounterMenu] = useState<{ x: number, y: number } | null>(null);
   const [abilitiesMenu, setAbilitiesMenu] = useState<{ x: number, y: number } | null>(null);
+
+  const numCommanders = playerState.commandZone.length;
+
+  useEffect(() => {
+    const commandZoneElement = commandZoneRef.current;
+    if (commandZoneElement && numCommanders > 0) {
+      const resizeObserver = new ResizeObserver(() => {
+        setCommandZoneCardWidth(commandZoneElement.offsetWidth / numCommanders);
+      });
+      resizeObserver.observe(commandZoneElement);
+      return () => resizeObserver.disconnect();
+    }
+  }, [numCommanders]);
 
   const handleXYCounterClick = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -376,11 +393,17 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     };
   };
 
-  const numCommanders = playerState.commandZone.length;
-  const commandZoneAspectRatio = `${63 * Math.max(1, numCommanders)} / 88`;
+  const commandZoneStyle: React.CSSProperties = {
+    aspectRatio: `${63 * Math.max(1, numCommanders)} / 88`,
+  };
+
+  if (isFlipped && numCommanders > 1) {
+    const offset = commandZoneCardWidth * (numCommanders - 1);
+    commandZoneStyle.left = `-${offset}px`;
+  }
 
   const commandZoneJsx = (
-      <div {...getZoneProps({ zone: 'commandZone' })} title="Command Zone" style={{ aspectRatio: commandZoneAspectRatio }}>
+      <div {...getZoneProps({ zone: 'commandZone' })} title="Command Zone" style={commandZoneStyle} ref={commandZoneRef}>
         <div className="cards-container">
             {playerState.commandZone.length > 0 ?
                 playerState.commandZone.map((card) => renderGameCard(card, { zone: 'commandZone' })) :
@@ -426,15 +449,19 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
           clone.style.position = 'absolute';
           clone.style.left = '-9999px';
           document.body.appendChild(clone);
-          e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+          
+          const rect = e.currentTarget.getBoundingClientRect();
+          const offsetX = e.clientX - rect.left;
+          const offsetY = e.clientY - rect.top;
+          e.dataTransfer.setDragImage(clone, offsetX, offsetY);
           
           (nodeToDrag as HTMLElement).style.opacity = '0';
 
           requestAnimationFrame(() => {
               document.body.removeChild(clone);
           });
-          const rect = e.currentTarget.getBoundingClientRect();
-          const offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          
+          const offset = { x: offsetX, y: offsetY };
           onLibraryDragStart({ playerId, zone: 'library' }, offset);
         }}
         onDragEnd={(e) => {
