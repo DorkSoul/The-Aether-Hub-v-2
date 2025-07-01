@@ -34,8 +34,20 @@ interface FilePickerOptions {
     suggestedName?: string;
 }
 
+interface IElectronFS {
+    getDecks: () => Promise<any[]>;
+    getDeckContent: (fileName: string) => Promise<string>;
+    saveDeck: (fileName: string, content: string) => Promise<void>;
+    getSaves: () => Promise<string[]>;
+    saveGame: (fileName: string, content: string) => Promise<void>;
+    loadGame: (fileName: string) => Promise<string>;
+}
+
 interface Window {
   showDirectoryPicker(options?: any): Promise<FileSystemDirectoryHandle>;
   showOpenFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
   showSaveFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle>;
+  electron: {
+    fs: IElectronFS;
+  };
 }

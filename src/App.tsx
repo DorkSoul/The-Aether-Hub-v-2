@@ -409,6 +409,10 @@ function App() {
 
   useEffect(() => {
     const loadSavedHandles = async () => {
+      // This function is now simplified as we are using a default "data" folder
+      // In a real Electron app, you would get the path from the main process
+      // and use it to access the file system.
+      // For now, we simulate this by checking for a saved handle.
       const savedRootHandle = await getDirectoryHandle('root');
       if (savedRootHandle) {
         setRootDirectoryHandle(savedRootHandle);
@@ -418,6 +422,9 @@ function App() {
         setDecksDirectoryHandle(decksHandle);
         setImagesDirectoryHandle(imagesHandle);
         setSavesDirectoryHandle(savesHandle);
+      } else {
+        // Automatically set up the data folder
+        handleSelectAppFolder();
       }
     };
     loadSavedHandles();
@@ -433,7 +440,10 @@ function App() {
 
   const handleSelectAppFolder = async () => {
     try {
-      const rootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      // In an Electron app, you would receive the root path from the main process
+      // and create handles from there. Here, we'll use the directory picker
+      // as a fallback for the browser-based version.
+      const rootHandle = await window.showDirectoryPicker({ id: "data", mode: 'readwrite' });
       setRootDirectoryHandle(rootHandle);
       const decksHandle = await rootHandle.getDirectoryHandle('decks', { create: true });
       const imagesHandle = await rootHandle.getDirectoryHandle('images', { create: true });

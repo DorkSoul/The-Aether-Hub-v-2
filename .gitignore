@@ -75,6 +75,7 @@ coverage.xml
 
 # User-specific content and generated files from your project
 # This includes downloaded card images and user-created decks.
+/data/
 /decks/
 /deck_cache/
 /assets/card_images/
