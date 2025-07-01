@@ -503,7 +503,7 @@ function App() {
         const nextPlayerIndex = (currentPlayerIndex + 1) % gameSettings.players.length;
         setCurrentPlayerIndex(nextPlayerIndex);
         const nextPlayerName = gameSettings.players[nextPlayerIndex].name;
-        setTurnNotification(`It is now ${nextPlayerName}'s turn.`);
+        setTurnNotification(`${nextPlayerName}'s turn.`);
         setTimeout(() => {
             setTurnNotification('');
         }, 3000);
