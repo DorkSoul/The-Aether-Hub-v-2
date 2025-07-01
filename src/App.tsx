@@ -16,7 +16,7 @@ import P2PControls from './components/P2PControls/P2PControls';
 import { useP2P } from './hooks/useP2P';
 import './App.css';
 
-type View = 'decks' | 'game-setup' | 'game';
+type View = 'decks' | 'game-setup' | 'game' | 'loading';
 
 interface StackPanelProps {
   stack: StackItem[];
@@ -117,7 +117,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, o
 };
 
 function App() {
-  const [view, setView] = useState<View>('game-setup');
+  const [view, setView] = useState<View>('loading');
   const [rootDirectoryHandle, setRootDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
@@ -414,17 +414,24 @@ function App() {
 
   useEffect(() => {
     const loadSavedHandles = async () => {
-      const savedRootHandle = await getDirectoryHandle('root');
-      if (savedRootHandle) {
-        setRootDirectoryHandle(savedRootHandle);
-        const decksHandle = await savedRootHandle.getDirectoryHandle('decks', { create: true });
-        const imagesHandle = await savedRootHandle.getDirectoryHandle('images', { create: true });
-        const savesHandle = await savedRootHandle.getDirectoryHandle('saves', { create: true });
-        setDecksDirectoryHandle(decksHandle);
-        setImagesDirectoryHandle(imagesHandle);
-        setSavesDirectoryHandle(savesHandle);
-      } else {
-        handleSelectAppFolder();
+      try {
+        const savedRootHandle = await getDirectoryHandle('root');
+        if (savedRootHandle) {
+          setRootDirectoryHandle(savedRootHandle);
+          const decksHandle = await savedRootHandle.getDirectoryHandle('decks', { create: true });
+          const imagesHandle = await savedRootHandle.getDirectoryHandle('images', { create: true });
+          const savesHandle = await savedRootHandle.getDirectoryHandle('saves', { create: true });
+          setDecksDirectoryHandle(decksHandle);
+          setImagesDirectoryHandle(imagesHandle);
+          setSavesDirectoryHandle(savesHandle);
+          setView('game-setup');
+        } else {
+          // If no handle is found, stay on the loading/prompting view
+          setView('loading'); 
+        }
+      } catch (err) {
+        console.error("Error loading saved handles:", err);
+        setView('loading'); // Stay on loading/prompt screen on error
       }
     };
     loadSavedHandles();
@@ -451,6 +458,7 @@ function App() {
       await saveDirectoryHandle('root', rootHandle);
       setActiveDeckName('');
       setActiveDeckCardCount(0);
+      setView('game-setup'); // Move to the setup view after successful selection
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         console.info("User cancelled the folder selection dialog.");
@@ -665,6 +673,16 @@ function App() {
 
   const renderView = () => {
     switch (view) {
+      case 'loading':
+        return (
+          <div className="game-loading">
+            <h2>Welcome to The Aether Hub</h2>
+            <p>Please select a folder to store your decks, saves, and card images.</p>
+            <button onClick={handleSelectAppFolder} style={{padding: '1rem 2rem', fontSize: '1.2rem', marginTop: '1rem'}}>
+              Select App Folder
+            </button>
+          </div>
+        );
       case 'game-setup':
         return (
           <div className="game-setup-container">

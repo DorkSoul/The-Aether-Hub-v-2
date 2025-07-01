@@ -68,6 +68,14 @@ export async function getAndCacheCardImageUrl(
     const filename = generateImageFilename(card, faceIndex);
 
     try {
+        // Re-verify permissions before trying to use the handle.
+        const permission = await directoryHandle.queryPermission({ mode: 'readwrite' });
+        if (permission !== 'granted') {
+            // If we don't have permission, just return the online URL.
+            // You could also re-prompt for permission here if desired.
+            return scryfallUrl;
+        }
+
         const fileHandle = await directoryHandle.getFileHandle(filename);
         const file = await fileHandle.getFile();
         return URL.createObjectURL(file);
@@ -89,6 +97,7 @@ export async function getAndCacheCardImageUrl(
         }
         
         console.error("Error accessing the file system:", e);
-        throw e;
+        // If there's any other error, fall back to the online URL.
+        return scryfallUrl;
     }
 }

@@ -1,6 +1,7 @@
 // src/hooks/useP2P.ts
 import { useState, useEffect, useRef } from 'react';
-import Peer, { DataConnection } from 'peerjs';
+import Peer from 'peerjs';
+import type { DataConnection } from 'peerjs';
 import type { GameState } from '../types';
 
 export const useP2P = (
