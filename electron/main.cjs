@@ -8,7 +8,7 @@ function createWindow() {
     width: 1280,
     height: 720,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: false,
       nodeIntegration: true,
     },
@@ -19,7 +19,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     // Open the DevTools.
-    // mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
   } else {
     // In production, load the built index.html file.
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));

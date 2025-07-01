@@ -12,6 +12,8 @@ import Tabs from './components/Tabs/Tabs';
 import Card from './components/Card/Card';
 import ContextMenu from './components/ContextMenu/ContextMenu';
 import { TextWithMana } from './components/TextWithMana/TextWithMana';
+import P2PControls from './components/P2PControls/P2PControls';
+import { useP2P } from './hooks/useP2P';
 import './App.css';
 
 type View = 'decks' | 'game-setup' | 'game';
@@ -152,6 +154,9 @@ function App() {
   const [orderMenu, setOrderMenu] = useState<{ x: number, y: number, players: PlayerConfig[] } | null>(null);
   const draggedItemIndex = useRef<number | null>(null);
   const dragOverItemIndex = useRef<number | null>(null);
+  const [isHost, setIsHost] = useState(false);
+  const [hostId, setHostId] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   const handleOrderDragStart = (index: number) => {
     draggedItemIndex.current = index;
@@ -409,10 +414,6 @@ function App() {
 
   useEffect(() => {
     const loadSavedHandles = async () => {
-      // This function is now simplified as we are using a default "data" folder
-      // In a real Electron app, you would get the path from the main process
-      // and use it to access the file system.
-      // For now, we simulate this by checking for a saved handle.
       const savedRootHandle = await getDirectoryHandle('root');
       if (savedRootHandle) {
         setRootDirectoryHandle(savedRootHandle);
@@ -423,7 +424,6 @@ function App() {
         setImagesDirectoryHandle(imagesHandle);
         setSavesDirectoryHandle(savesHandle);
       } else {
-        // Automatically set up the data folder
         handleSelectAppFolder();
       }
     };
@@ -440,9 +440,6 @@ function App() {
 
   const handleSelectAppFolder = async () => {
     try {
-      // In an Electron app, you would receive the root path from the main process
-      // and create handles from there. Here, we'll use the directory picker
-      // as a fallback for the browser-based version.
       const rootHandle = await window.showDirectoryPicker({ id: "data", mode: 'readwrite' });
       setRootDirectoryHandle(rootHandle);
       const decksHandle = await rootHandle.getDirectoryHandle('decks', { create: true });
@@ -475,6 +472,21 @@ function App() {
     setActiveDeckCardCount(cardCount);
   }, []);
 
+  const handleGameStateReceived = useCallback((gameState: GameState) => {
+    // Logic to handle incoming game state from the host
+    console.log('Received game state:', gameState);
+    setLoadedGameState(gameState);
+    setGameSettings(gameState.gameSettings);
+    setActiveOpponentId(gameState.activeOpponentId);
+    if (gameState.isTopRotated !== undefined) {
+      setIsTopRotated(gameState.isTopRotated);
+    }
+    setView('game');
+    setIsConnected(true);
+  }, []);
+
+  const { peerId, broadcastGameState } = useP2P(isHost, hostId, handleGameStateReceived);
+  
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings);
     setCurrentPlayerIndex(0);
@@ -483,6 +495,23 @@ function App() {
       setActiveOpponentId(settings.players[1].id);
     }
     setView('game');
+
+    // This part is crucial for the host to send the initial state
+    if (isHost) {
+      // This is a simplified GameState. You need a full implementation
+      // to create the initial player states based on deck files etc.
+      // This logic should probably live within the GameSetup or be triggered from there.
+      const gameState: GameState = {
+        playerStates: [], // This needs to be properly populated before broadcasting
+        gameSettings: settings,
+        activeOpponentId: settings.players.length > 1 ? settings.players[1].id : null,
+        isTopRotated,
+      };
+      // You would call a function here to initialize playerStates fully
+      // and then broadcast. For now, this is a placeholder.
+      console.log("Broadcasting initial game state (placeholder):", gameState);
+      // broadcastGameState(gameState);
+    }
   };
 
   const handleLoadGame = (gameState: GameState) => {
@@ -637,7 +666,28 @@ function App() {
   const renderView = () => {
     switch (view) {
       case 'game-setup':
-        return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} onLoadGame={handleLoadGame} savesDirectoryHandle={savesDirectoryHandle} />;
+        return (
+          <div className="game-setup-container">
+            <GameSetup
+              decksDirectoryHandle={decksDirectoryHandle}
+              onStartGame={handleStartGame}
+              onLoadGame={handleLoadGame}
+              savesDirectoryHandle={savesDirectoryHandle}
+            />
+            <P2PControls
+              peerId={peerId}
+              onHost={() => {
+                setIsHost(true);
+                setHostId(null);
+              }}
+              onJoin={(id) => {
+                setIsHost(false);
+                setHostId(id);
+              }}
+              isConnected={isConnected}
+            />
+          </div>
+        );
       case 'game':
         if (gameSettings) {
           return (
