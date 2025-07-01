@@ -162,6 +162,7 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   const [handWidth, setHandWidth] = useState(0);
   const [commandZoneCardWidth, setCommandZoneCardWidth] = useState(0);
   const [playerCounterDisplayPos, setPlayerCounterDisplayPos] = useState<{ x: number, y: number } | null>(null);
+  const lifeUpdateInterval = useRef<number | null>(null);
 
   const numCommanders = playerState.commandZone.length;
 
@@ -351,20 +352,46 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     commandZoneStyle.left = `-${offset}px`;
   }
   
-  const handleHeaderClick = (e: React.MouseEvent<HTMLHeadingElement>) => {
-    if (heldCounter) {
-      onPlayerCounterApply(playerId, heldCounter);
-    } else {
-      onUpdateLife(playerId, 1);
+  const stopLifeUpdate = () => {
+    if (lifeUpdateInterval.current) {
+      clearInterval(lifeUpdateInterval.current);
+      lifeUpdateInterval.current = null;
     }
+  };
+
+  const handleLifeMouseDown = (e: React.MouseEvent<HTMLHeadingElement>) => {
+    if (heldCounter) {
+        if (e.button === 0) { // Left click
+            onPlayerCounterApply(playerId, heldCounter);
+        }
+        return;
+    }
+    
+    const isLeftClick = e.button === 0;
+    const isRightClick = e.button === 2;
+
+    if (isLeftClick) {
+        onUpdateLife(playerId, 1);
+        lifeUpdateInterval.current = window.setInterval(() => {
+            onUpdateLife(playerId, 1);
+        }, 150);
+    } else if (isRightClick) {
+        e.preventDefault();
+        onUpdateLife(playerId, -1);
+        lifeUpdateInterval.current = window.setInterval(() => {
+            onUpdateLife(playerId, -1);
+        }, 150);
+    }
+  };
+
+  const handleLifeMouseUpOrLeave = () => {
+    stopLifeUpdate();
   };
 
   const handleHeaderContextMenu = (e: React.MouseEvent<HTMLHeadingElement>) => {
       e.preventDefault();
-      if(heldCounter) {
+       if(heldCounter) {
           setHeldCounter(null);
-      } else {
-          onUpdateLife(playerId, -1);
       }
   };
 
@@ -470,9 +497,11 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
     <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
       <div className="player-header">
         <h3 
-            onClick={handleHeaderClick} 
-            onContextMenu={handleHeaderContextMenu} 
-            title={heldCounter ? `Give ${heldCounter} counter` : 'Left-click to gain life, Right-click to lose life'}
+            onMouseDown={handleLifeMouseDown}
+            onMouseUp={handleLifeMouseUpOrLeave}
+            onMouseLeave={handleLifeMouseUpOrLeave}
+            onContextMenu={handleHeaderContextMenu}
+            title={heldCounter ? `Give ${heldCounter} counter` : 'Hold left-click to gain life, Hold right-click to lose life'}
         >
             {playerState.name}: {playerState.life} Life
             {playerCounters && (
