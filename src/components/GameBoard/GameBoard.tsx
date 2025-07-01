@@ -320,6 +320,23 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     };
   }, [heldCounter]);
 
+  const handleUntapAll = useCallback(() => {
+    setPlayerStates(currentStates => {
+        if (!currentStates) return null;
+
+        const playerToUntapId = currentStates[0].id;
+
+        return currentStates.map(pState => {
+            if (pState.id === playerToUntapId) {
+                const newBattlefield = pState.battlefield.map(row =>
+                    row.map(card => ({ ...card, isTapped: false }))
+                );
+                return { ...pState, battlefield: newBattlefield };
+            }
+            return pState;
+        });
+    });
+}, []);
 
   const handleDragStart = useCallback((item: DraggedItem) => {
     setDraggedItem(item);
@@ -893,6 +910,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           onResetMana={handleResetMana}
           heldCounter={heldCounter}
           setHeldCounter={setHeldCounter}
+          onUntapAll={handleUntapAll}
       />
   );
     

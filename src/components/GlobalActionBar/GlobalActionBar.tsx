@@ -41,9 +41,10 @@ interface GlobalActionBarProps {
     onResetMana: (playerId: string) => void;
     heldCounter: string | null;
     setHeldCounter: (counter: string | null) => void;
+    onUntapAll: () => void;
 }
 
-const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdateMana, onResetMana, heldCounter, setHeldCounter }) => {
+const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onUntapAll }) => {
     const [xyCounterMenu, setXYCounterMenu] = useState<{ x: number, y: number } | null>(null);
     const [abilitiesMenu, setAbilitiesMenu] = useState<{ x: number, y: number } | null>(null);
 
@@ -86,6 +87,7 @@ const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdate
 
     return (
         <div className="global-action-bar-content">
+            <button onClick={onUntapAll} className="counter-btn">Untap</button>
             <div className="mana-pool">
               {(Object.keys(playerState.mana) as ManaType[]).map(manaType => (
                 <ManaCounter
