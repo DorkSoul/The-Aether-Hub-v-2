@@ -40,6 +40,7 @@ interface SplitLayoutProps {
   onPlayerCounterRemove: (playerId: string, counterType: string) => void;
   onRemoveAllPlayerCounters: (playerId: string, counterType: string) => void;
   setHeldCounter: (counter: string | null) => void;
+  onUpdateLife: (playerId: string, delta: number) => void;
 }
 
 const ResizableSection: React.FC<{
@@ -142,6 +143,7 @@ const ResizableSection: React.FC<{
                             onPlayerCounterRemove={commonProps.onPlayerCounterRemove}
                             onRemoveAllPlayerCounters={commonProps.onRemoveAllPlayerCounters}
                             setHeldCounter={commonProps.setHeldCounter}
+                            onUpdateLife={commonProps.onUpdateLife}
                         />
                     </div>
                     {i < players.length - 1 && (

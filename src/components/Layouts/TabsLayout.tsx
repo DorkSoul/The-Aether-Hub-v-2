@@ -41,6 +41,7 @@ interface TabsLayoutProps {
   onPlayerCounterRemove: (playerId: string, counterType: string) => void;
   onRemoveAllPlayerCounters: (playerId: string, counterType: string) => void;
   setHeldCounter: (counter: string | null) => void;
+  onUpdateLife: (playerId: string, delta: number) => void;
 }
 
 const TabsLayout: React.FC<TabsLayoutProps> = ({ playerStates, imagesDirectoryHandle, activeOpponentId, handHeights, onHandResize, cardPreview, stackPanel, hoveredStackCardId, isTopRotated, resetKey, globalActions, ...interactionProps }) => {

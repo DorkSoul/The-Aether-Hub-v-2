@@ -116,6 +116,7 @@ interface PlayerZoneProps {
   onPlayerCounterRemove: (playerId: string, counterType: string) => void;
   onRemoveAllPlayerCounters: (playerId: string, counterType: string) => void;
   setHeldCounter: (counter: string | null) => void;
+  onUpdateLife: (playerId: string, delta: number) => void;
 }
 
 const PlayerZone: React.FC<PlayerZoneProps> = ({ 
@@ -149,7 +150,8 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   onPlayerCounterApply,
   onPlayerCounterRemove,
   onRemoveAllPlayerCounters,
-  setHeldCounter
+  setHeldCounter,
+  onUpdateLife
 }) => {
   const playerZoneClasses = `player-zone ${isFlipped ? 'flipped' : ''}`;
   const playerId = playerState.id;
@@ -352,7 +354,18 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   const handleHeaderClick = (e: React.MouseEvent<HTMLHeadingElement>) => {
     if (heldCounter) {
       onPlayerCounterApply(playerId, heldCounter);
+    } else {
+      onUpdateLife(playerId, 1);
     }
+  };
+
+  const handleHeaderContextMenu = (e: React.MouseEvent<HTMLHeadingElement>) => {
+      e.preventDefault();
+      if(heldCounter) {
+          setHeldCounter(null);
+      } else {
+          onUpdateLife(playerId, -1);
+      }
   };
 
   const handleCountersClick = (e: React.MouseEvent<HTMLSpanElement>) => {
@@ -456,12 +469,21 @@ const PlayerZone: React.FC<PlayerZoneProps> = ({
   return (
     <div className={playerZoneClasses} style={{ '--player-color': playerState.color } as React.CSSProperties}>
       <div className="player-header">
-        <h3 onClick={handleHeaderClick} title={heldCounter ? `Give ${heldCounter} counter` : ''}>
+        <h3 
+            onClick={handleHeaderClick} 
+            onContextMenu={handleHeaderContextMenu} 
+            title={heldCounter ? `Give ${heldCounter} counter` : 'Left-click to gain life, Right-click to lose life'}
+        >
             {playerState.name}: {playerState.life} Life
             {playerCounters && (
               <span 
                 className="player-counters clickable" 
                 onClick={handleCountersClick} 
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCountersClick(e);
+                }}
                 title="Edit Counters"
               >
                 {' '}({playerCounters})

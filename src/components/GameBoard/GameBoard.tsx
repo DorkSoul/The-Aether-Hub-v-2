@@ -810,6 +810,18 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     });
   }, []);
 
+  const handleUpdateLife = useCallback((playerId: string, delta: number) => {
+    setPlayerStates(currentStates => {
+      if (!currentStates) return null;
+      return currentStates.map(pState => {
+        if (pState.id === playerId) {
+          return { ...pState, life: pState.life + delta };
+        }
+        return pState;
+      });
+    });
+  }, []);
+
   const handleResetMana = useCallback((playerId: string) => {
     setPlayerStates(currentStates => {
       if (!currentStates) return null;
@@ -861,7 +873,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onPlayerCounterRemove: handlePlayerCounterRemove,
       onRemoveAllPlayerCounters: handleRemoveAllPlayerCounters,
       setHeldCounter,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply, handlePlayerCounterRemove, handleRemoveAllPlayerCounters]);
+      onUpdateLife: handleUpdateLife,
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply, handlePlayerCounterRemove, handleRemoveAllPlayerCounters, handleUpdateLife]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
