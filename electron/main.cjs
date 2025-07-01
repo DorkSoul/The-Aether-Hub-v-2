@@ -12,6 +12,7 @@ function createWindow() {
       contextIsolation: false,
       nodeIntegration: true,
     },
+    autoHideMenuBar: true
   });
 
   // Load the app.
