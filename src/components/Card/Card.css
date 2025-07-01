@@ -18,13 +18,31 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: #1a1a1a;
-  border: 1px dashed #555;
+  background-color: rgba(128, 128, 128, 0.5); /* Grey transparent */
   text-align: center;
   padding: 5px;
   box-sizing: border-box;
   font-size: 0.8em;
-  color: #aaa;
+  color: #fff;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+}
+
+.card-placeholder .dotted-border {
+  border: 2px dashed #fff;
+  width: 90%;
+  height: 90%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  padding: 5px;
+}
+
+.card-placeholder.error .dotted-border {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
 }
 
 .card-flipper {

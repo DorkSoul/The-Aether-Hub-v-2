@@ -93,9 +93,32 @@ interface SingleCardViewProps {
   onCounterOverlayClick: (e: React.MouseEvent) => void;
   onCustomCounterOverlayClick: (e: React.MouseEvent) => void;
   cardWidth?: number;
+  isLoading: boolean;
+  error: string | null;
 }
 
-const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, toughness, counters, customCounters, onCounterOverlayClick, onCustomCounterOverlayClick, cardWidth }) => {
+const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, toughness, counters, customCounters, onCounterOverlayClick, onCustomCounterOverlayClick, cardWidth, isLoading, error }) => {
+    
+    if (isLoading) {
+        return (
+            <div className="card-placeholder">
+                <div className="dotted-border">
+                    Loading...
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="card-placeholder error">
+                <div className="dotted-border">
+                    Error loading {name}:<br/>{error}
+                </div>
+            </div>
+        );
+    }
+    
     const calculateModifiedStats = () => {
         if (power === undefined || toughness === undefined) return null;
 
@@ -131,7 +154,7 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
 
     return (
         <div className="card">
-            {imageUrl && <img src={imageUrl} alt={name} />}
+            {imageUrl ? <img src={imageUrl} alt={name} /> : <div className="card-placeholder">{name}</div>}
             {modifiedStats && (
                 <div className="pt-overlay" onClick={onCounterOverlayClick}>
                     <svg viewBox="0 0 50 20" preserveAspectRatio="xMidYMid meet">
@@ -178,6 +201,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
   const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
   const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isPinged, setIsPinged] = useState(false);
   const [showCounterDisplay, setShowCounterDisplay] = useState(false);
   const [showCustomCounterDisplay, setShowCustomCounterDisplay] = useState(false);
@@ -214,34 +238,43 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     const loadedUrls: string[] = [];
 
     const loadImages = async () => {
-      if (!isMounted) return;
-      setIsLoading(true);
-      
-      const frontUrl = await getAndCacheCardImageUrl(card, imageDirectoryHandle, 0);
-      if (isMounted) setFrontImageUrl(frontUrl);
-      if (frontUrl?.startsWith('blob:')) loadedUrls.push(frontUrl);
+        if (!isMounted) return;
+        setIsLoading(true);
+        setError(null);
 
-      if (isFlippable) {
-        const backCardSource = card.layout === 'meld' ? card.meld_result_card : card;
-        const faceIndexForBack = card.layout === 'meld' ? 0 : 1;
-        
-        if (backCardSource) {
-          const backUrl = await getAndCacheCardImageUrl(backCardSource, imageDirectoryHandle, faceIndexForBack);
-          if (isMounted) setBackImageUrl(backUrl);
-          if (backUrl?.startsWith('blob:')) loadedUrls.push(backUrl);
+        try {
+            const frontUrl = await getAndCacheCardImageUrl(card, imageDirectoryHandle, 0);
+            if (isMounted) setFrontImageUrl(frontUrl);
+            if (frontUrl?.startsWith('blob:')) loadedUrls.push(frontUrl);
+
+            if (isFlippable) {
+                const backCardSource = card.layout === 'meld' && card.meld_result_card ? card.meld_result_card : card;
+                const faceIndexForBack = card.layout === 'meld' ? 0 : 1;
+
+                if (backCardSource) {
+                    const backUrl = await getAndCacheCardImageUrl(backCardSource, imageDirectoryHandle, faceIndexForBack);
+                    if (isMounted) setBackImageUrl(backUrl);
+                    if (backUrl?.startsWith('blob:')) loadedUrls.push(backUrl);
+                }
+            }
+        } catch (err) {
+            if (isMounted) {
+                setError(err instanceof Error ? err.message : 'Unknown error');
+            }
+        } finally {
+            if (isMounted) setIsLoading(false);
         }
-      }
-      
-      if(isMounted) setIsLoading(false);
     };
 
     loadImages();
 
     return () => {
       isMounted = false;
-      loadedUrls.forEach(url => URL.revokeObjectURL(url));
+      loadedUrls.forEach(url => {
+          if (url) URL.revokeObjectURL(url);
+      });
     };
-  }, [card.id, card.layout, imageDirectoryHandle]);
+  }, [card.id, card.layout, card.meld_result_card, imageDirectoryHandle, isFlippable]);
 
   const handlePrimaryAction = () => { 
     if (onTap) {
@@ -339,14 +372,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     ref: cardRef,
   };
   
-  if (isLoading) {
-    return (
-      <div {...baseDivProps}>
-        <SingleCardView name={card.name} imageUrl={null} onCounterOverlayClick={(e) => { e.stopPropagation(); setShowCounterDisplay(true);}} onCustomCounterOverlayClick={(e) => { e.stopPropagation(); setShowCustomCounterDisplay(true);}} cardWidth={cardWidth}/>
-      </div>
-    );
-  }
-
   const { power, toughness, counters, customCounters } = card;
   const hasCounters = counters && Object.keys(counters).length > 0;
   const hasCustomCounters = customCounters && Object.keys(customCounters).length > 0;
@@ -372,12 +397,17 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
       counters,
       customCounters,
       cardWidth,
+      isLoading,
+      error,
   };
 
 
   if (isFlippable) {
     const frontName = card.card_faces?.[0]?.name || card.name;
-    const backName = (card.layout === 'meld' ? card.meld_result_card?.name : card.card_faces?.[1]?.name) || 'Card Back';
+    const backName = (card.layout === 'meld' && card.meld_result_card) ? card.meld_result_card.name : (card.card_faces?.[1]?.name || 'Card Back');
+    
+    const backPower = (card.layout === 'meld' && card.meld_result_card) ? card.meld_result_card.power : card.card_faces?.[1]?.power;
+    const backToughness = (card.layout === 'meld' && card.meld_result_card) ? card.meld_result_card.toughness : card.card_faces?.[1]?.toughness;
 
     return (
       <div 
@@ -389,7 +419,7 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
             <SingleCardView name={frontName} imageUrl={frontImageUrl} power={card.card_faces?.[0]?.power || power} toughness={card.card_faces?.[0]?.toughness || toughness} {...singleCardViewProps}/>
           </div>
           <div className="card-back">
-            <SingleCardView name={backName} imageUrl={backImageUrl} power={card.card_faces?.[1]?.power} toughness={card.card_faces?.[1]?.toughness} {...singleCardViewProps}/>
+            <SingleCardView name={backName} imageUrl={backImageUrl} power={backPower} toughness={backToughness} {...singleCardViewProps}/>
           </div>
         </div>
         {showCounterDisplay && hasCounters && onCounterApply && onCounterRemove && onRemoveAllCounters && onCounterSelect &&(

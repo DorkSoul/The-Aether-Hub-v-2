@@ -12,7 +12,7 @@ function generateImageFilename(card: Card, faceIndex: number = 0): string {
     let name: string;
     const DFC_LAYOUTS = ['transform', 'modal_dfc', 'double_faced_token', 'art_series', 'reversible_card'];
 
-    if (DFC_LAYOUTS.includes(card.layout || '') && card.card_faces && card.card_faces[faceIndex]) {
+    if ((DFC_LAYOUTS.includes(card.layout || '') || card.layout === 'meld') && card.card_faces && card.card_faces[faceIndex]) {
         name = card.card_faces[faceIndex].name;
     } else {
         name = card.name;
@@ -51,12 +51,18 @@ export async function getAndCacheCardImageUrl(
         const face = card.card_faces[faceIndex];
         scryfallUrl = face.image_uris?.png || face.image_uris?.large || '';
     } 
+    else if (card.layout === 'meld' && faceIndex === 1 && card.meld_result_card) {
+        scryfallUrl = card.meld_result_card.image_uris?.png || card.meld_result_card.image_uris?.large || '';
+    }
     else {
         scryfallUrl = card.image_uris?.png || card.image_uris?.large || '';
     }
 
-    if (!directoryHandle || !scryfallUrl) {
-        return scryfallUrl || '';
+    if (!scryfallUrl) {
+        throw new Error("Image URI not found.");
+    }
+    if (!directoryHandle) {
+        return scryfallUrl;
     }
 
     const filename = generateImageFilename(card, faceIndex);
@@ -77,12 +83,12 @@ export async function getAndCacheCardImageUrl(
                 
                 return URL.createObjectURL(imageBlob);
             } catch (cacheError) {
-                console.error(`Failed to cache image for ${card.name}. Falling back to remote URL.`, cacheError);
-                return scryfallUrl;
+                console.error(`Failed to cache image for ${card.name}.`);
+                throw cacheError;
             }
         }
         
         console.error("Error accessing the file system:", e);
-        return scryfallUrl;
+        throw e;
     }
 }

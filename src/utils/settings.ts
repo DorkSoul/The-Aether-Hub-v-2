@@ -17,9 +17,8 @@ const TOP_ROTATED_KEY = 'isTopRotated';
  * @param key The key to identify the handle (e.g., 'root', 'decks' or 'images').
  * @param handle The directory handle to save.
  */
-export async function saveDirectoryHandle(key: 'root' | 'decks' | 'images', handle: FileSystemDirectoryHandle): Promise<void> {
-    const dbKey = key === 'root' ? ROOT_HANDLE_KEY : (key === 'decks' ? DECK_HANDLE_KEY : IMAGE_HANDLE_KEY);
-    await saveSettingToDB(dbKey, handle);
+export async function saveDirectoryHandle(key: 'root', handle: FileSystemDirectoryHandle): Promise<void> {
+    await saveSettingToDB(ROOT_HANDLE_KEY, handle);
 }
 
 /**
@@ -27,8 +26,8 @@ export async function saveDirectoryHandle(key: 'root' | 'decks' | 'images', hand
  * @param key The key to identify the handle.
  * @returns A promise that resolves to the handle or null if not found.
  */
-export async function getDirectoryHandle(key: 'root' | 'decks' | 'images'): Promise<FileSystemDirectoryHandle | null> {
-    const dbKey = key === 'root' ? ROOT_HANDLE_KEY : (key === 'decks' ? DECK_HANDLE_KEY : IMAGE_HANDLE_KEY);
+export async function getDirectoryHandle(key: 'root'): Promise<FileSystemDirectoryHandle | null> {
+    const dbKey = ROOT_HANDLE_KEY;
     try {
         const handle = await getSettingFromDB<FileSystemDirectoryHandle>(dbKey);
         // It's good practice to verify permission, as it may have been revoked.

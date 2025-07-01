@@ -7,6 +7,7 @@ import './GameSetup.css';
 
 interface GameSetupProps {
   decksDirectoryHandle: FileSystemDirectoryHandle | null;
+  savesDirectoryHandle: FileSystemDirectoryHandle | null;
   onStartGame: (settings: GameSettings) => void;
   onLoadGame: (gameState: GameState) => void;
 }
@@ -54,7 +55,7 @@ const hslToHex = (h: number, s: number, l: number): string => {
   return `#${f(0)}${f(8)}${f(4)}`;
 };
 
-const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame, onLoadGame }) => {
+const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirectoryHandle, onStartGame, onLoadGame }) => {
   const [players, setPlayers] = useState<PlayerConfig[]>([
     { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000' },
     { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff' },
@@ -113,8 +114,8 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
     setPlayers(players.map(p => (p.id === id ? { ...p, [field]: value } : p)));
   };
   
-  const handleLoadGame = async () => {
-      const gameState = await loadGameState();
+  const handleLoadGameClick = async () => {
+      const gameState = await loadGameState(savesDirectoryHandle);
       if (gameState) {
           onLoadGame(gameState);
       }
@@ -143,7 +144,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, onStartGame
             <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
                 Start New Game
             </button>
-            <button onClick={handleLoadGame} className="start-game-btn">
+            <button onClick={handleLoadGameClick} className="start-game-btn">
                 Load Game
             </button>
         </div>

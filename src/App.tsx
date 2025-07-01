@@ -5,7 +5,7 @@ import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
 import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon, RotateIcon, QuitIcon } from './components/Icons/icons';
-import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize, savePreviewWidth, getPreviewWidth, saveTopRotated, getTopRotated } from './utils/settings';
+import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getPreviewWidth, saveTopRotated, getTopRotated, savePreviewWidth } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
 import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig } from './types';
 import Tabs from './components/Tabs/Tabs';
@@ -119,8 +119,9 @@ function App() {
   const [rootDirectoryHandle, setRootDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [decksDirectoryHandle, setDecksDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [imagesDirectoryHandle, setImagesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [savesDirectoryHandle, setSavesDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [cardSize, setCardSize] = useState(() => getCardSize(150));
+  const [cardSize, setCardSize] = useState(() => 150);
   const [activeDeckName, setActiveDeckName] = useState('');
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
@@ -409,11 +410,15 @@ function App() {
   useEffect(() => {
     const loadSavedHandles = async () => {
       const savedRootHandle = await getDirectoryHandle('root');
-      if (savedRootHandle) setRootDirectoryHandle(savedRootHandle);
-      const savedDecksHandle = await getDirectoryHandle('decks');
-      if (savedDecksHandle) setDecksDirectoryHandle(savedDecksHandle);
-      const savedImagesHandle = await getDirectoryHandle('images');
-      if (savedImagesHandle) setImagesDirectoryHandle(savedImagesHandle);
+      if (savedRootHandle) {
+        setRootDirectoryHandle(savedRootHandle);
+        const decksHandle = await savedRootHandle.getDirectoryHandle('decks', { create: true });
+        const imagesHandle = await savedRootHandle.getDirectoryHandle('images', { create: true });
+        const savesHandle = await savedRootHandle.getDirectoryHandle('saves', { create: true });
+        setDecksDirectoryHandle(decksHandle);
+        setImagesDirectoryHandle(imagesHandle);
+        setSavesDirectoryHandle(savesHandle);
+      }
     };
     loadSavedHandles();
   }, []);
@@ -432,11 +437,11 @@ function App() {
       setRootDirectoryHandle(rootHandle);
       const decksHandle = await rootHandle.getDirectoryHandle('decks', { create: true });
       const imagesHandle = await rootHandle.getDirectoryHandle('images', { create: true });
+      const savesHandle = await rootHandle.getDirectoryHandle('saves', { create: true });
       setDecksDirectoryHandle(decksHandle);
       setImagesDirectoryHandle(imagesHandle);
+      setSavesDirectoryHandle(savesHandle);
       await saveDirectoryHandle('root', rootHandle);
-      await saveDirectoryHandle('decks', decksHandle);
-      await saveDirectoryHandle('images', imagesHandle);
       setActiveDeckName('');
       setActiveDeckCardCount(0);
     } catch (err) {
@@ -486,9 +491,9 @@ function App() {
   const handleSaveGame = async () => {
       if (gameBoardRef.current) {
           const currentState = gameBoardRef.current.getGameState();
-          if (currentState) {
+          if (currentState && savesDirectoryHandle) {
               try {
-                  await saveGameState(currentState);
+                  await saveGameState(currentState, savesDirectoryHandle);
                   alert('Game saved successfully!');
               } catch (err) {
                   console.error("Failed to save game:", err);
@@ -622,7 +627,7 @@ function App() {
   const renderView = () => {
     switch (view) {
       case 'game-setup':
-        return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} onLoadGame={handleLoadGame} />;
+        return <GameSetup decksDirectoryHandle={decksDirectoryHandle} onStartGame={handleStartGame} onLoadGame={handleLoadGame} savesDirectoryHandle={savesDirectoryHandle} />;
       case 'game':
         if (gameSettings) {
           return (

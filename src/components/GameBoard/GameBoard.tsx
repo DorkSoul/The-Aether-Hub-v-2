@@ -177,6 +177,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
 
               const newCard: CardType = {
                   ...fullCardData,
+                  ...cardStub,
                   instanceId: newInstanceId,
                   isTapped: false,
                   isFlipped: false,
