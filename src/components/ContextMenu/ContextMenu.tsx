@@ -6,7 +6,14 @@ import './ContextMenu.css';
 interface ContextMenuProps {
   x: number;
   y: number;
-  options: { label: string; action: () => void; }[];
+  options: { 
+      label: string; 
+      action: () => void; 
+      draggable?: boolean;
+      onDragStart?: () => void;
+      onDragEnter?: () => void;
+      onDragEnd?: () => void;
+  }[];
   onClose: () => void;
 }
 
@@ -63,7 +70,15 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, options, onClose }) => 
       <div className="context-menu" style={menuStyle} ref={menuRef} onClick={(e) => e.stopPropagation()}>
         <ul>
           {options.map((option, index) => (
-            <li key={index} onClick={() => { option.action(); onClose(); }}>
+            <li 
+              key={index} 
+              onClick={() => { option.action(); onClose(); }}
+              draggable={option.draggable}
+              onDragStart={option.onDragStart}
+              onDragEnter={option.onDragEnter}
+              onDragEnd={option.onDragEnd}
+              onDragOver={(e) => e.preventDefault()}
+            >
               <TextWithMana text={option.label} />
             </li>
           ))}

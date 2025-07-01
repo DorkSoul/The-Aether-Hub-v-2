@@ -131,4 +131,5 @@ export interface GameState {
     gameSettings: GameSettings;
     handHeights?: { [playerId: string]: number };
     freeformCardSizes?: { [playerId: string]: number };
+    isTopRotated?: boolean;
 }

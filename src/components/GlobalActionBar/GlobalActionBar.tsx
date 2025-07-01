@@ -42,9 +42,11 @@ interface GlobalActionBarProps {
     heldCounter: string | null;
     setHeldCounter: (counter: string | null) => void;
     onUntapAll: () => void;
+    currentPlayerName: string;
+    onEndTurn: () => void;
 }
 
-const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onUntapAll }) => {
+const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdateMana, onResetMana, heldCounter, setHeldCounter, onUntapAll, currentPlayerName, onEndTurn }) => {
     const [xyCounterMenu, setXYCounterMenu] = useState<{ x: number, y: number } | null>(null);
     const [abilitiesMenu, setAbilitiesMenu] = useState<{ x: number, y: number } | null>(null);
 
@@ -87,35 +89,48 @@ const GlobalActionBar: React.FC<GlobalActionBarProps> = ({ playerState, onUpdate
 
     return (
         <div className="global-action-bar-content">
-            <button onClick={onUntapAll} className="counter-btn">Untap</button>
-            <div className="mana-pool">
-              {(Object.keys(playerState.mana) as ManaType[]).map(manaType => (
-                <ManaCounter
-                  key={manaType}
-                  type={manaType}
-                  count={playerState.mana[manaType]}
-                  onClick={() => onUpdateMana(playerState.id, manaType, 1)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    onUpdateMana(playerState.id, manaType, -1);
-                  }}
-                />
-              ))}
-              <button onClick={() => onResetMana(playerState.id)} className="reset-mana-btn" title="Reset all mana to 0">
-                  <CloseIcon />
-              </button>
+            <div className="action-bar-group left">
+                <div className="mana-pool">
+                  {(Object.keys(playerState.mana) as ManaType[]).map(manaType => (
+                    <ManaCounter
+                      key={manaType}
+                      type={manaType}
+                      count={playerState.mana[manaType]}
+                      onClick={() => onUpdateMana(playerState.id, manaType, 1)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        onUpdateMana(playerState.id, manaType, -1);
+                      }}
+                    />
+                  ))}
+                  <button onClick={() => onResetMana(playerState.id)} className="reset-mana-btn" title="Reset all mana to 0">
+                      <CloseIcon />
+                  </button>
+                </div>
             </div>
-            <div className="counter-buttons">
-                <button className="counter-btn" onClick={handleXYCounterClick} title="±X/±Y Counters">
-                  ±X/±Y
-                </button>
-                <button className="counter-btn" onClick={handleAbilitiesClick} title="Ability Counters">
-                  Abilities
-                </button>
-                <button className="counter-btn" onClick={handleCustomCounterClick} title="Custom Counters">
-                  Custom
-                </button>
+
+            <div className="action-bar-group center">
+                <button onClick={onUntapAll} className="counter-btn">Untap</button>
+                <div className="player-turn-indicator">
+                    {currentPlayerName}'s Turn
+                </div>
+                <button className="counter-btn end-turn-btn" onClick={onEndTurn}>End Turn</button>
             </div>
+
+            <div className="action-bar-group right">
+                <div className="counter-buttons">
+                    <button className="counter-btn" onClick={handleXYCounterClick} title="±X/±Y Counters">
+                      ±X/±Y
+                    </button>
+                    <button className="counter-btn" onClick={handleAbilitiesClick} title="Ability Counters">
+                      Abilities
+                    </button>
+                    <button className="counter-btn" onClick={handleCustomCounterClick} title="Custom Counters">
+                      Custom
+                    </button>
+                </div>
+            </div>
+
             {xyCounterMenu && (
             <ContextMenu
               x={xyCounterMenu.x}

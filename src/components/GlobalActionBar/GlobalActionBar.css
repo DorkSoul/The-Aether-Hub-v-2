@@ -2,11 +2,30 @@
 .global-action-bar-content {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 2rem;
+    justify-content: space-around;
     width: 100%;
-    padding: 0 20px;
+    padding: 0 40px;
+    box-sizing: border-box;
 }
+
+.action-bar-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.action-bar-group.left {
+    justify-content: flex-start;
+}
+
+.action-bar-group.center {
+    gap: 1.5rem;
+}
+
+.action-bar-group.right {
+    justify-content: flex-end;
+}
+
 
 .mana-pool {
   display: flex;
@@ -85,4 +104,11 @@
     font-size: 0.9rem;
     color: #ccc;
     margin-left: 8px;
+}
+
+.player-turn-indicator {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: bold;
+    white-space: nowrap;
 }

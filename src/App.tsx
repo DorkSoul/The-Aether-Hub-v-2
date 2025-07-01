@@ -5,11 +5,12 @@ import Decks from './components/Decks/Decks';
 import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
 import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon, RotateIcon, QuitIcon } from './components/Icons/icons';
-import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize, savePreviewWidth, getPreviewWidth } from './utils/settings';
+import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getCardSize, savePreviewWidth, getPreviewWidth, saveTopRotated, getTopRotated } from './utils/settings';
 import { saveGameState } from './utils/gameUtils';
-import type { GameSettings, GameState, Card as CardType, StackItem } from './types';
+import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig } from './types';
 import Tabs from './components/Tabs/Tabs';
 import Card from './components/Card/Card';
+import ContextMenu from './components/ContextMenu/ContextMenu';
 import { TextWithMana } from './components/TextWithMana/TextWithMana';
 import './App.css';
 
@@ -141,10 +142,39 @@ function App() {
   const [stackPopoutContainer, setStackPopoutContainer] = useState<HTMLElement | null>(null);
   const [stackWidth, setStackWidth] = useState(300);
   const isResizingStack = useRef(false);
-  const [isTopRotated, setIsTopRotated] = useState(false);
+  const [isTopRotated, setIsTopRotated] = useState(() => getTopRotated(false));
   
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
   const [showFullscreenNotification, setShowFullscreenNotification] = useState(false);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [turnNotification, setTurnNotification] = useState('');
+  const [orderMenu, setOrderMenu] = useState<{ x: number, y: number, players: PlayerConfig[] } | null>(null);
+  const draggedItemIndex = useRef<number | null>(null);
+  const dragOverItemIndex = useRef<number | null>(null);
+
+  const handleOrderDragStart = (index: number) => {
+    draggedItemIndex.current = index;
+  };
+
+  const handleOrderDragEnter = (index: number) => {
+      dragOverItemIndex.current = index;
+  };
+  
+  const handleOrderDrop = () => {
+    if (orderMenu && draggedItemIndex.current !== null && dragOverItemIndex.current !== null) {
+      const newPlayerOrder = [...orderMenu.players];
+      const draggedItem = newPlayerOrder.splice(draggedItemIndex.current, 1)[0];
+      newPlayerOrder.splice(dragOverItemIndex.current, 0, draggedItem);
+      
+      setOrderMenu(prev => prev ? { ...prev, players: newPlayerOrder } : null);
+
+      if(gameSettings){
+        setGameSettings(prevSettings => prevSettings ? {...prevSettings, players: newPlayerOrder} : null);
+      }
+    }
+    draggedItemIndex.current = null;
+    dragOverItemIndex.current = null;
+  };
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -392,6 +422,10 @@ function App() {
     saveCardSize(cardSize);
   }, [cardSize]);
 
+  useEffect(() => {
+    saveTopRotated(isTopRotated);
+  }, [isTopRotated]);
+
   const handleSelectAppFolder = async () => {
     try {
       const rootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
@@ -428,6 +462,7 @@ function App() {
 
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings);
+    setCurrentPlayerIndex(0);
     setLoadedGameState(null);
     if (settings.layout === 'tabs' && settings.players.length > 1) {
       setActiveOpponentId(settings.players[1].id);
@@ -442,6 +477,9 @@ function App() {
       setLoadedGameState(gameState);
       setGameSettings(gameState.gameSettings);
       setActiveOpponentId(gameState.activeOpponentId);
+      if(gameState.isTopRotated !== undefined) {
+        setIsTopRotated(gameState.isTopRotated);
+      }
       setView('game');
   };
   
@@ -458,6 +496,18 @@ function App() {
               }
           }
       }
+  };
+
+  const handleEndTurn = () => {
+    if (gameSettings) {
+        const nextPlayerIndex = (currentPlayerIndex + 1) % gameSettings.players.length;
+        setCurrentPlayerIndex(nextPlayerIndex);
+        const nextPlayerName = gameSettings.players[nextPlayerIndex].name;
+        setTurnNotification(`It is now ${nextPlayerName}'s turn.`);
+        setTimeout(() => {
+            setTurnNotification('');
+        }, 3000);
+    }
   };
 
   const handleResetLayouts = () => {
@@ -495,6 +545,12 @@ function App() {
 
   const handleStackItemLeave = () => {
     setHoveredStackCardId(null);
+  };
+
+  const handleOrderButtonClick = (event: React.MouseEvent) => {
+      if(gameSettings){
+        setOrderMenu({ x: event.clientX, y: event.clientY, players: gameSettings.players });
+      }
   };
 
   const cardPreviewContent = previewCard ? (
@@ -586,6 +642,8 @@ function App() {
               onAddToStack={handleAddToStack}
               hoveredStackCardId={hoveredStackCardId}
               isTopRotated={isTopRotated}
+              currentPlayerName={gameSettings.players[currentPlayerIndex]?.name || 'Player 1'}
+              onEndTurn={handleEndTurn}
             />
           );
         }
@@ -616,6 +674,9 @@ function App() {
     <div className="App">
        <div className={`fullscreen-notification ${showFullscreenNotification ? 'visible' : ''}`}>
         <p>Press ESC to exit fullscreen</p>
+      </div>
+      <div className={`turn-notification ${turnNotification ? 'visible' : ''}`}>
+        {turnNotification}
       </div>
 
       <header className="app-header">
@@ -676,6 +737,7 @@ function App() {
             )}
             {view === 'game' && (
               <>
+                <button onClick={handleOrderButtonClick} title="Set Turn Order">Order</button>
                 <button
                   className="game-layout-button"
                   onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === 'tabs' ? 'split' : 'tabs'}) : s)}
@@ -713,6 +775,25 @@ function App() {
           {renderView()}
         </div>
       </main>
+
+      {orderMenu && gameSettings && (
+          <ContextMenu
+              x={orderMenu.x}
+              y={orderMenu.y}
+              onClose={() => setOrderMenu(null)}
+              options={orderMenu.players.map((player, index) => ({
+                  label: player.name,
+                  action: () => {
+                      setCurrentPlayerIndex(index);
+                      setOrderMenu(null);
+                  },
+                  draggable: true,
+                  onDragStart: () => handleOrderDragStart(index),
+                  onDragEnter: () => handleOrderDragEnter(index),
+                  onDragEnd: handleOrderDrop,
+              }))}
+          />
+      )}
 
       {popoutContainer && createPortal(
         <div className='card-preview-content' style={{width: '100%', height: '100%', padding: '1rem', boxSizing: 'border-box' }}>

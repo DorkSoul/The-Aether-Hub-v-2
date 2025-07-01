@@ -10,6 +10,7 @@ const LAYOUT_KEY = 'gameLayout';
 const HAND_HEIGHTS_KEY = 'handHeights';
 const FREEFORM_SIZES_KEY = 'freeformCardSizes';
 const PREVIEW_WIDTH_KEY = 'previewWidth';
+const TOP_ROTATED_KEY = 'isTopRotated';
 
 /**
  * Saves a FileSystemDirectoryHandle to IndexedDB.
@@ -134,4 +135,22 @@ export function savePreviewWidth(width: number): void {
 export function getPreviewWidth(defaultValue: number): number {
     const savedValue = localStorage.getItem(PREVIEW_WIDTH_KEY);
     return savedValue ? parseInt(savedValue, 10) : defaultValue;
+}
+
+/**
+ * Saves the top rotation preference to LocalStorage.
+ * @param isRotated The boolean value to save.
+ */
+export function saveTopRotated(isRotated: boolean): void {
+    localStorage.setItem(TOP_ROTATED_KEY, JSON.stringify(isRotated));
+}
+
+/**
+ * Retrieves the top rotation preference from LocalStorage.
+ * @param defaultValue The default value to return if none is saved.
+ * @returns The saved rotation state or the default value.
+ */
+export function getTopRotated(defaultValue: boolean): boolean {
+    const savedValue = localStorage.getItem(TOP_ROTATED_KEY);
+    return savedValue ? JSON.parse(savedValue) : defaultValue;
 }

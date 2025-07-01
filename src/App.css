@@ -355,3 +355,26 @@
 .fullscreen-notification.visible {
   opacity: 1;
 }
+
+.turn-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 1.5rem 3rem;
+  border-radius: 12px;
+  z-index: 10000;
+  font-size: 1.5rem;
+  font-weight: bold;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+}
+
+.turn-notification.visible {
+  opacity: 1;
+  visibility: visible;
+}

@@ -26,6 +26,8 @@ interface GameBoardProps {
     onAddToStack: (abilityText: string, card: CardType) => void;
     hoveredStackCardId: string | null;
     isTopRotated: boolean;
+    currentPlayerName: string;
+    onEndTurn: () => void;
 }
 
 export interface GameBoardHandle {
@@ -37,7 +39,7 @@ const shuffleDeck = (deck: CardType[]): CardType[] => {
   return [...deck].sort(() => Math.random() - 0.5);
 };
 
-const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize, onAddToStack, hoveredStackCardId, isTopRotated }, ref) => {
+const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize, onAddToStack, hoveredStackCardId, isTopRotated, currentPlayerName, onEndTurn }, ref) => {
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,6 +65,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
               activeOpponentId,
               handHeights,
               freeformCardSizes,
+              isTopRotated,
           };
       },
       resetLayouts: () => {
@@ -891,7 +894,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onRemoveAllPlayerCounters: handleRemoveAllPlayerCounters,
       setHeldCounter,
       onUpdateLife: handleUpdateLife,
-  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply, handlePlayerCounterRemove, handleRemoveAllPlayerCounters, handleUpdateLife]);
+      onHandResize: handleHandResize,
+  }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply, handlePlayerCounterRemove, handleRemoveAllPlayerCounters, handleUpdateLife, handleHandResize]);
   
   if (isLoading) {
     return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
@@ -911,6 +915,8 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           heldCounter={heldCounter}
           setHeldCounter={setHeldCounter}
           onUntapAll={handleUntapAll}
+          currentPlayerName={currentPlayerName}
+          onEndTurn={onEndTurn}
       />
   );
     
@@ -926,7 +932,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           cardPreview={cardPreview}
           stackPanel={stackPanel}
           handHeights={handHeights}
-          onHandResize={handleHandResize}
           isTopRotated={isTopRotated}
           resetKey={resetKey}
           globalActions={globalActionBar}
@@ -938,7 +943,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
           cardPreview={cardPreview}
           stackPanel={stackPanel}
           handHeights={handHeights}
-          onHandResize={handleHandResize}
           isTopRotated={isTopRotated}
           resetKey={resetKey}
           globalActions={globalActionBar}
