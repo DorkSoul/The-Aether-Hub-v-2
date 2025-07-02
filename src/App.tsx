@@ -499,8 +499,15 @@ function App() {
     setView('game');
     setIsConnected(true);
   }, []);
+  
+  const handleDisconnect = () => {
+    disconnect();
+    setIsHost(false);
+    setHostId(null);
+    setIsConnected(false);
+  };
 
-  const { peerId, broadcastGameState } = useP2P(isHost, hostId, handleGameStateReceived);
+  const { peerId, broadcastGameState, connectedPeers, disconnect, kickPeer } = useP2P(isHost, hostId, handleGameStateReceived);
   
   const handleStartGame = async (settings: GameSettings) => {
     setGameSettings(settings);
@@ -772,11 +779,9 @@ function App() {
           <div className="game-setup-container">
             <GameSetup
               decksDirectoryHandle={decksDirectoryHandle}
+              savesDirectoryHandle={savesDirectoryHandle}
               onStartGame={handleStartGame}
               onLoadGame={handleLoadGame}
-              savesDirectoryHandle={savesDirectoryHandle}
-            />
-            <P2PControls
               peerId={peerId}
               onHost={() => {
                 setIsHost(true);
@@ -786,7 +791,11 @@ function App() {
                 setIsHost(false);
                 setHostId(id);
               }}
+              onLeave={handleDisconnect}
+              onKick={kickPeer}
               isConnected={isConnected}
+              isHost={isHost}
+              connectedPeers={connectedPeers}
             />
           </div>
         );

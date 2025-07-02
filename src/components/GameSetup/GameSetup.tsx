@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import type { PlayerConfig, GameSettings, GameState } from '../../types';
 import PlayerSetupRow from '../PlayerSetupRow/PlayerSetupRow';
 import { loadGameState } from '../../utils/gameUtils';
+import P2PControls from '../P2PControls/P2PControls';
 import './GameSetup.css';
 
 interface GameSetupProps {
@@ -10,6 +11,14 @@ interface GameSetupProps {
   savesDirectoryHandle: FileSystemDirectoryHandle | null;
   onStartGame: (settings: GameSettings) => void;
   onLoadGame: (gameState: GameState) => void;
+  peerId: string | null;
+  onHost: () => void;
+  onJoin: (hostId: string) => void;
+  onLeave: () => void;
+  onKick: (peerId: string) => void;
+  isConnected: boolean;
+  isHost: boolean;
+  connectedPeers: string[];
 }
 
 // Helper function to convert HEX to HSL color values
@@ -55,7 +64,7 @@ const hslToHex = (h: number, s: number, l: number): string => {
   return `#${f(0)}${f(8)}${f(4)}`;
 };
 
-const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirectoryHandle, onStartGame, onLoadGame }) => {
+const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirectoryHandle, onStartGame, onLoadGame, peerId, onHost, onJoin, onLeave, onKick, isConnected, isHost, connectedPeers }) => {
   const [players, setPlayers] = useState<PlayerConfig[]>([
     { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000' },
     { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff' },
@@ -146,14 +155,24 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirect
   
   return (
     <div className="game-setup">
-        <div className="game-setup-actions">
-            <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
-                Start New Game
-            </button>
-            <button onClick={handleLoadGameClick} className="start-game-btn">
-                Load Game
-            </button>
-        </div>
+      <P2PControls
+        peerId={peerId}
+        onHost={onHost}
+        onJoin={onJoin}
+        onLeave={onLeave}
+        onKick={onKick}
+        isConnected={isConnected}
+        isHost={isHost}
+        connectedPeers={connectedPeers}
+      />
+      <div className="game-setup-actions">
+        <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
+          Start New Game
+        </button>
+        <button onClick={handleLoadGameClick} className="start-game-btn">
+          Load Game
+        </button>
+      </div>
 
       <h2>New Game Setup</h2>
       
