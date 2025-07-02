@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import type { Card as CardType } from '../../types';
 import { getAndCacheCardImageUrl } from '../../utils/imageCaching';
 import { UpArrowIcon, DownArrowIcon, RemoveIcon } from '../Icons/icons';
+import ScaledImage from '../ScaledImage/ScaledImage'; // Corrected import path
 import './Card.css';
 
 interface CardProps {
@@ -99,26 +100,6 @@ interface SingleCardViewProps {
 
 const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, toughness, counters, customCounters, onCounterOverlayClick, onCustomCounterOverlayClick, cardWidth, isLoading, error }) => {
     
-    if (isLoading) {
-        return (
-            <div className="card-placeholder">
-                <div className="dotted-border">
-                    Loading...
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="card-placeholder error">
-                <div className="dotted-border">
-                    Error loading {name}:<br/>{error}
-                </div>
-            </div>
-        );
-    }
-    
     const calculateModifiedStats = () => {
         if (power === undefined || toughness === undefined) return null;
 
@@ -152,9 +133,31 @@ const SingleCardView: React.FC<SingleCardViewProps> = ({ name, imageUrl, power, 
     const customCounterNames = hasCustomCounters ? Object.keys(customCounters).join(', ') : '';
     const baseFontSize = cardWidth ? cardWidth / 18 : 8;
 
+    if (isLoading) {
+        return (
+            <div className="card-placeholder">
+                <div className="dotted-border">
+                    Loading...
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="card-placeholder error">
+                <div className="dotted-border">
+                    Error loading {name}:<br/>{error}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="card">
-            {imageUrl ? <img src={imageUrl} alt={name} /> : <div className="card-placeholder">{name}</div>}
+            {imageUrl && cardWidth ? (
+                <ScaledImage imageUrl={imageUrl} width={cardWidth * 2} height={cardWidth * 1.4 * 2} />
+            ) : <div className="card-placeholder">{name}</div>}
             {modifiedStats && (
                 <div className="pt-overlay" onClick={onCounterOverlayClick}>
                     <svg viewBox="0 0 50 20" preserveAspectRatio="xMidYMid meet">
