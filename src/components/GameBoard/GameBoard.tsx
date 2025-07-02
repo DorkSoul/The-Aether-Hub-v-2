@@ -16,6 +16,8 @@ interface GameBoardProps {
     imagesDirectoryHandle: FileSystemDirectoryHandle | null;
     settings: GameSettings;
     initialState?: GameState | null;
+    playerStates: PlayerState[];
+    setPlayerStates: React.Dispatch<React.SetStateAction<PlayerState[] | null>>;
     activeOpponentId: string | null;
     onOpponentChange: (id: string | null) => void;
     onCardHover: (card: CardType | null) => void;
@@ -35,15 +37,7 @@ export interface GameBoardHandle {
     resetLayouts: () => void;
 }
 
-const shuffleDeck = (deck: CardType[]): CardType[] => {
-  return [...deck].sort(() => Math.random() - 0.5);
-};
-
-const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize, onAddToStack, hoveredStackCardId, isTopRotated, currentPlayerName, onEndTurn }, ref) => {
-  const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [loadingMessage, setLoadingMessage] = useState('Initializing game...');
+const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectoryHandle, settings, initialState, playerStates, setPlayerStates, activeOpponentId, onOpponentChange, onCardHover, previewCard, cardPreview, stackPanel, cardSize, onAddToStack, hoveredStackCardId, isTopRotated, currentPlayerName, onEndTurn }, ref) => {
   const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null);
   const [dropTarget, setDropTarget] = useState<CardLocation | null>(null);
   const [libraryContextMenu, setLibraryContextMenu] = useState<{ x: number, y: number, playerId: string } | null>(null);
@@ -107,146 +101,29 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
   }, [playerStates, previewCard, onCardHover]);
 
   useEffect(() => {
-    const setupGame = async () => {
-      setIsLoading(true);
-      setError('');
-      
-      if (initialState) {
-          setLoadingMessage('Loading saved game...');
-          const validatedStates = initialState.playerStates.map(pState => ({
-              ...pState,
-              mana: pState.mana || { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
-              counters: pState.counters || {},
-              hand: pState.hand.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
-              library: pState.library.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
-              graveyard: pState.graveyard.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
-              exile: pState.exile.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
-              commandZone: pState.commandZone.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}})),
-              battlefield: pState.battlefield.map(row => row.map(c => ({...c, instanceId: c.instanceId || crypto.randomUUID(), counters: c.counters || {}, customCounters: c.customCounters || {}}))),
-          }));
-          setPlayerStates(validatedStates);
-          
-          const defaultHandHeights = getHandHeights({});
-          const initialHandHeights = initialState.handHeights || validatedStates.reduce((acc, p, i) => ({ ...acc, [p.id]: defaultHandHeights[i] || 150 }), {});
-          setHandHeights(initialHandHeights);
+    if (initialState) {
+        const defaultHandHeights = getHandHeights({});
+        const initialHandHeights = initialState.handHeights || playerStates.reduce((acc, p, i) => ({ ...acc, [p.id]: defaultHandHeights[i] || 150 }), {});
+        setHandHeights(initialHandHeights);
 
-          const defaultFreeformSizes = getFreeformSizes({});
-          const initialFreeformSizes = initialState.freeformCardSizes || validatedStates.reduce((acc, p, i) => ({ ...acc, [p.id]: defaultFreeformSizes[i] || 140 }), {});
-          setFreeformCardSizes(initialFreeformSizes);
-          
-          setIsLoading(false);
-          return;
-      }
-
-      try {
-        setLoadingMessage('Reading deck files...');
-        const deckFilePromises = settings.players.map(p => {
-            if (!p.deckFile) throw new Error(`Player ${p.name} has no deck file.`);
-            return p.deckFile.getFile().then(file => file.text().then(text => JSON.parse(text)));
-        });
-        const parsedDecks: { name: string; cards: CardType[]; commanders?: string[] }[] = await Promise.all(deckFilePromises);
-
-        const allCardIds = new Set<string>();
-        parsedDecks.forEach(deck => {
-          deck.cards.forEach(card => allCardIds.add(card.id));
-        });
-
-        setLoadingMessage(`Loading ${allCardIds.size} cards from local cache...`);
-        const cachedCards = await getCardsFromDB(Array.from(allCardIds));
-        const cardDataMap = new Map(cachedCards.map(c => [c.id, c]));
-
-        const missingCardIds = Array.from(allCardIds).filter(id => !cardDataMap.has(id));
-        if (missingCardIds.length > 0) {
-          console.warn(`Could not find ${missingCardIds.length} cards in the local DB. Game may be incomplete.`);
-        }
-
-        setLoadingMessage('Shuffling decks and drawing hands...');
-        const initialPlayerStates: PlayerState[] = settings.players.map((playerConfig, index) => {
-          const deckData = parsedDecks[index];
-          
-          const oldIdToNewIdMap = new Map<string, string>();
-
-          const allPlayerCards: CardType[] = deckData.cards.map((cardStub): CardType | null => {
-              const fullCardData = cardDataMap.get(cardStub.id);
-              if (!fullCardData) return null;
-
-              const newInstanceId = crypto.randomUUID();
-              if (cardStub.instanceId) {
-                  oldIdToNewIdMap.set(cardStub.instanceId, newInstanceId);
-              }
-
-              const newCard: CardType = {
-                  ...fullCardData,
-                  ...cardStub,
-                  instanceId: newInstanceId,
-                  isTapped: false,
-                  isFlipped: false,
-                  counters: {},
-                  customCounters: {},
-              };
-              return newCard;
-          }).filter((c): c is CardType => c !== null); 
-
-          const commanderInstanceIds = new Set(
-              (deckData.commanders || []).map(oldId => oldIdToNewIdMap.get(oldId)).filter(Boolean)
-          );
-
-          const commanders: CardType[] = [];
-          const mainDeck: CardType[] = [];
-
-          allPlayerCards.forEach(card => {
-              if (card.instanceId && commanderInstanceIds.has(card.instanceId)) {
-                  commanders.push(card);
-              } else {
-                  mainDeck.push(card);
-              }
-          });
-
-          const shuffledLibrary = shuffleDeck(mainDeck);
-          const initialHand = shuffledLibrary.slice(0, 7);
-          const library = shuffledLibrary.slice(7);
-
-          return {
-            id: playerConfig.id,
-            name: playerConfig.name,
-            color: playerConfig.color,
-            life: 40,
-            mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
-            counters: {},
-            hand: initialHand,
-            library: library,
-            graveyard: [],
-            exile: [],
-            commandZone: commanders,
-            battlefield: [[], [], [], []],
-          };
-        });
-
-        setPlayerStates(initialPlayerStates);
-        
+        const defaultFreeformSizes = getFreeformSizes({});
+        const initialFreeformSizes = initialState.freeformCardSizes || playerStates.reduce((acc, p, i) => ({ ...acc, [p.id]: defaultFreeformSizes[i] || 140 }), {});
+        setFreeformCardSizes(initialFreeformSizes);
+    } else {
         const persistentHandHeights = getHandHeights({});
         const persistentFreeformSizes = getFreeformSizes({});
         const initialHandHeights: { [key: string]: number } = {};
         const initialFreeformSizes: { [key: string]: number } = {};
 
-        initialPlayerStates.forEach((player, index) => {
+        playerStates.forEach((player, index) => {
             initialHandHeights[player.id] = persistentHandHeights[index] || 150;
             initialFreeformSizes[player.id] = persistentFreeformSizes[index] || 140;
         });
 
         setHandHeights(initialHandHeights);
         setFreeformCardSizes(initialFreeformSizes);
-
-      } catch (err) {
-        console.error("Failed to initialize game:", err);
-        setError(err instanceof Error ? err.message : "An unknown error occurred during game setup.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    setupGame();
-  }, [settings.players, initialState]);
+    }
+  }, [initialState, playerStates]);
   
   useEffect(() => {
     if (prevPlayAreaLayout.current !== settings.playAreaLayout) {
@@ -279,7 +156,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       });
     }
     prevPlayAreaLayout.current = settings.playAreaLayout;
-  }, [settings.playAreaLayout, freeformCardSizes]);
+  }, [settings.playAreaLayout, freeformCardSizes, setPlayerStates]);
   
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -340,7 +217,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             return pState;
         });
     });
-}, []);
+}, [setPlayerStates]);
 
   const handleDragStart = useCallback((item: DraggedItem) => {
     setDraggedItem(item);
@@ -512,7 +389,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
 
     setDraggedItem(null);
     setDropTarget(null);
-}, [draggedItem, settings.playAreaLayout, playerStates, activeOpponentId, freeformCardSizes]);
+}, [draggedItem, settings.playAreaLayout, playerStates, activeOpponentId, freeformCardSizes, setPlayerStates]);
   
   const updateCardState = useCallback((cardInstanceId: string, update: (card: CardType) => CardType) => {
       setPlayerStates(currentStates => {
@@ -530,7 +407,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
               };
           });
       });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleApplyCounter = (cardInstanceId: string, counterType: string) => {
     updateCardState(cardInstanceId, card => {
@@ -560,7 +437,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             return pState;
         });
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handlePlayerCounterRemove = useCallback((playerId: string, counterType: string) => {
     setPlayerStates(currentStates => {
@@ -578,7 +455,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             return pState;
         });
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleRemoveAllPlayerCounters = useCallback((playerId: string, counterType: string) => {
     setPlayerStates(currentStates => {
@@ -592,7 +469,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
             return pState;
         });
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleCounterRemove = (cardInstanceId: string, counterType: string) => {
     updateCardState(cardInstanceId, card => {
@@ -693,7 +570,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         newPlayerStates[playerIndex] = newPlayerState;
         return newPlayerStates;
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleScry = useCallback((playerId: string, count: number) => {
     setPlayerStates(currentStates => {
@@ -715,7 +592,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         newPlayerStates[playerIndex] = updatedPlayer;
         return newPlayerStates;
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleCloseScry = useCallback((toTop: CardType[], toBottom: CardType[]) => {
     if (!scryState) return;
@@ -736,7 +613,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
     });
 
     setScryState(null);
-  }, [scryState]);
+  }, [scryState, setPlayerStates]);
 
   const handleLibraryContextMenu = useCallback((event: React.MouseEvent, playerId: string) => {
       event.preventDefault();
@@ -829,7 +706,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         return pState;
       });
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleUpdateLife = useCallback((playerId: string, delta: number) => {
     setPlayerStates(currentStates => {
@@ -841,7 +718,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         return pState;
       });
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleResetMana = useCallback((playerId: string) => {
     setPlayerStates(currentStates => {
@@ -856,7 +733,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
         return pState;
       });
     });
-  }, []);
+  }, [setPlayerStates]);
 
   const handleCardDragStart = useCallback((card: CardType, source: CardLocation, offset: {x: number, y: number}) => {
     handleDragStart({ type: 'card', card, source, offset });
@@ -898,12 +775,6 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({ imagesDirectory
       onHandResize: handleHandResize,
   }), [imagesDirectoryHandle, settings.playAreaLayout, freeformCardSizes, heldCounter, setHeldCounter, handleCardTap, handleCardFlip, handleCardContextMenu, handleLibraryContextMenu, handleUpdateFreeformCardSize, handleCardDragStart, handleLibraryDragStart, handleDrop, handleDragOver, handleDragLeave, dropTarget, onCardHover, cardSize, hoveredStackCardId, handleApplyCounter, handleCustomCounterApply, handleRemoveAllCounters, handlePlayerCounterApply, handlePlayerCounterRemove, handleRemoveAllPlayerCounters, handleUpdateLife, handleHandResize]);
   
-  if (isLoading) {
-    return <div className="game-loading"><h2>{loadingMessage}</h2></div>;
-  }
-  if (error) {
-    return <div className="game-loading error-message"><h2>Error</h2><p>{error}</p></div>;
-  }
   if (!playerStates) {
     return <div className="game-loading"><h2>Could not initialize players.</h2></div>;
   }

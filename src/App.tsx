@@ -6,8 +6,9 @@ import GameSetup from './components/GameSetup/GameSetup';
 import GameBoard, { type GameBoardHandle } from './components/GameBoard/GameBoard';
 import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, EnterFullscreenIcon, ExitFullscreenIcon, RotateIcon, QuitIcon } from './components/Icons/icons';
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getPreviewWidth, saveTopRotated, getTopRotated, savePreviewWidth } from './utils/settings';
-import { saveGameState } from './utils/gameUtils';
-import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig } from './types';
+import { saveGameState, loadGameState } from './utils/gameUtils';
+import { getCardsFromDB } from './utils/db';
+import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig, PlayerState } from './types';
 import Tabs from './components/Tabs/Tabs';
 import Card from './components/Card/Card';
 import ContextMenu from './components/ContextMenu/ContextMenu';
@@ -116,6 +117,10 @@ const CardPreview: React.FC<CardPreviewProps> = ({ card, imageDirectoryHandle, o
   );
 };
 
+const shuffleDeck = (deck: CardType[]): CardType[] => {
+  return [...deck].sort(() => Math.random() - 0.5);
+};
+
 function App() {
   const [view, setView] = useState<View>('loading');
   const [rootDirectoryHandle, setRootDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
@@ -127,6 +132,7 @@ function App() {
   const [activeDeckName, setActiveDeckName] = useState('');
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
+  const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [activeOpponentId, setActiveOpponentId] = useState<string | null>(null);
   const [loadedGameState, setLoadedGameState] = useState<GameState | null>(null);
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
@@ -485,6 +491,7 @@ function App() {
     console.log('Received game state:', gameState);
     setLoadedGameState(gameState);
     setGameSettings(gameState.gameSettings);
+    setPlayerStates(gameState.playerStates);
     setActiveOpponentId(gameState.activeOpponentId);
     if (gameState.isTopRotated !== undefined) {
       setIsTopRotated(gameState.isTopRotated);
@@ -495,30 +502,103 @@ function App() {
 
   const { peerId, broadcastGameState } = useP2P(isHost, hostId, handleGameStateReceived);
   
-  const handleStartGame = (settings: GameSettings) => {
+  const handleStartGame = async (settings: GameSettings) => {
     setGameSettings(settings);
     setCurrentPlayerIndex(0);
     setLoadedGameState(null);
-    if (settings.layout === 'tabs' && settings.players.length > 1) {
-      setActiveOpponentId(settings.players[1].id);
-    }
-    setView('game');
-
-    // This part is crucial for the host to send the initial state
-    if (isHost) {
-      // This is a simplified GameState. You need a full implementation
-      // to create the initial player states based on deck files etc.
-      // This logic should probably live within the GameSetup or be triggered from there.
-      const gameState: GameState = {
-        playerStates: [], // This needs to be properly populated before broadcasting
-        gameSettings: settings,
-        activeOpponentId: settings.players.length > 1 ? settings.players[1].id : null,
-        isTopRotated,
-      };
-      // You would call a function here to initialize playerStates fully
-      // and then broadcast. For now, this is a placeholder.
-      console.log("Broadcasting initial game state (placeholder):", gameState);
-      // broadcastGameState(gameState);
+  
+    try {
+      const deckFilePromises = settings.players.map(p => {
+        if (!p.deckFile) throw new Error(`Player ${p.name} has no deck file.`);
+        return p.deckFile.getFile().then(file => file.text().then(text => JSON.parse(text)));
+      });
+      const parsedDecks: { name: string; cards: CardType[]; commanders?: string[] }[] = await Promise.all(deckFilePromises);
+  
+      const allCardIds = new Set<string>();
+      parsedDecks.forEach(deck => {
+        deck.cards.forEach(card => allCardIds.add(card.id));
+      });
+  
+      const cachedCards = await getCardsFromDB(Array.from(allCardIds));
+      const cardDataMap = new Map(cachedCards.map(c => [c.id, c]));
+  
+      const initialPlayerStates: PlayerState[] = settings.players.map((playerConfig, index) => {
+        const deckData = JSON.parse(JSON.stringify(parsedDecks[index]));
+        const oldIdToNewIdMap = new Map<string, string>();
+  
+        const allPlayerCards: CardType[] = deckData.cards.map((cardStub: CardType): CardType | null => {
+          const fullCardData = cardDataMap.get(cardStub.id);
+          if (!fullCardData) return null;
+  
+          const newInstanceId = crypto.randomUUID();
+          if (cardStub.instanceId) {
+            oldIdToNewIdMap.set(cardStub.instanceId, newInstanceId);
+          }
+  
+          return {
+            ...fullCardData,
+            ...cardStub,
+            instanceId: newInstanceId,
+            isTapped: false,
+            isFlipped: false,
+            counters: {},
+            customCounters: {},
+          };
+        }).filter((c: CardType | null): c is CardType => c !== null);
+  
+        const commanderInstanceIds = new Set(
+          (deckData.commanders || []).map((oldId: string) => oldIdToNewIdMap.get(oldId)).filter(Boolean)
+        );
+  
+        const commanders: CardType[] = [];
+        const mainDeck: CardType[] = [];
+  
+        allPlayerCards.forEach(card => {
+          if (card.instanceId && commanderInstanceIds.has(card.instanceId)) {
+            commanders.push(card);
+          } else {
+            mainDeck.push(card);
+          }
+        });
+  
+        const shuffledLibrary = shuffleDeck(mainDeck);
+        const initialHand = shuffledLibrary.slice(0, 7);
+        const library = shuffledLibrary.slice(7);
+  
+        return {
+          id: playerConfig.id,
+          name: playerConfig.name,
+          color: playerConfig.color,
+          life: 40,
+          mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
+          counters: {},
+          hand: initialHand,
+          library: library,
+          graveyard: [],
+          exile: [],
+          commandZone: commanders,
+          battlefield: [[], [], [], []],
+        };
+      });
+  
+      setPlayerStates(initialPlayerStates);
+  
+      if (settings.layout === 'tabs' && settings.players.length > 1) {
+        setActiveOpponentId(settings.players[1].id);
+      }
+      setView('game');
+  
+      if (isHost) {
+        const gameState: GameState = {
+          playerStates: initialPlayerStates,
+          gameSettings: settings,
+          activeOpponentId: settings.players.length > 1 ? settings.players[1].id : null,
+          isTopRotated,
+        };
+        broadcastGameState(gameState);
+      }
+    } catch (error) {
+      console.error("Failed to start game:", error);
     }
   };
 
@@ -527,6 +607,7 @@ function App() {
         gameState.gameSettings.playAreaLayout = 'rows';
       }
       setLoadedGameState(gameState);
+      setPlayerStates(gameState.playerStates);
       setGameSettings(gameState.gameSettings);
       setActiveOpponentId(gameState.activeOpponentId);
       if(gameState.isTopRotated !== undefined) {
@@ -536,18 +617,16 @@ function App() {
   };
   
   const handleSaveGame = async () => {
-      if (gameBoardRef.current) {
-          const currentState = gameBoardRef.current.getGameState();
-          if (currentState && savesDirectoryHandle) {
-              try {
-                  await saveGameState(currentState, savesDirectoryHandle);
-                  alert('Game saved successfully!');
-              } catch (err) {
-                  console.error("Failed to save game:", err);
-                  alert(`Could not save game. Error: ${err instanceof Error ? err.message : 'Unknown'}`);
-              }
-          }
-      }
+    const gameState = gameBoardRef.current?.getGameState();
+    if (gameState && savesDirectoryHandle) {
+        try {
+            await saveGameState(gameState, savesDirectoryHandle);
+            alert('Game saved successfully!');
+        } catch (err) {
+            console.error("Failed to save game:", err);
+            alert(`Could not save game. Error: ${err instanceof Error ? err.message : 'Unknown'}`);
+        }
+    }
   };
 
   const handleEndTurn = () => {
@@ -570,6 +649,7 @@ function App() {
   
   const handleQuitGame = () => {
     setGameSettings(null);
+    setPlayerStates(null);
     setLoadedGameState(null);
     setActiveOpponentId(null);
     setStack([]);
@@ -707,7 +787,7 @@ function App() {
           </div>
         );
       case 'game':
-        if (gameSettings) {
+        if (gameSettings && playerStates) {
           return (
             <GameBoard 
               ref={gameBoardRef}
@@ -715,6 +795,8 @@ function App() {
               imagesDirectoryHandle={imagesDirectoryHandle} 
               settings={gameSettings}
               initialState={loadedGameState}
+              playerStates={playerStates}
+              setPlayerStates={setPlayerStates}
               activeOpponentId={activeOpponentId}
               onOpponentChange={setActiveOpponentId}
               onCardHover={handleCardHover}
