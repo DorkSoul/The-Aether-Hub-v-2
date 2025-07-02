@@ -75,6 +75,7 @@ const Decks: React.FC<DecksProps> = ({
   const [notification, setNotification] = useState('');
   const [cardContextMenu, setCardContextMenu] = useState<CardContextMenuState | null>(null);
   const [deckContextMenu, setDeckContextMenu] = useState<DeckContextMenuState | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<DeckInfo | null>(null);
   
   const refreshDeckList = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
       const newDecks: DeckInfo[] = [];
@@ -486,30 +487,35 @@ const Decks: React.FC<DecksProps> = ({
       return baseOptions;
   }
 
-  const handleDeleteDeck = async () => {
-    if (!deckContextMenu || !decksDirectoryHandle) return;
-    const { deckInfo } = deckContextMenu;
+  const handleDeleteDeckRequest = () => {
+    if (!deckContextMenu) return;
+    setDeleteConfirmation(deckContextMenu.deckInfo);
+    setDeckContextMenu(null);
+  };
 
-    if (window.confirm(`Are you sure you want to delete the deck "${deckInfo.name}"?`)) {
-        try {
-            await decksDirectoryHandle.removeEntry(deckInfo.fileHandle.name);
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmation || !decksDirectoryHandle) return;
+    
+    try {
+        await decksDirectoryHandle.removeEntry(deleteConfirmation.fileHandle.name);
 
-            setNotification(`Deck "${deckInfo.name}" deleted.`);
-            setTimeout(() => setNotification(''), 3000);
+        setNotification(`Deck "${deleteConfirmation.name}" deleted.`);
+        setTimeout(() => setNotification(''), 3000);
 
-            if (activeDeckFile?.name === deckInfo.fileHandle.name) {
-                setActiveDeckFile(null);
-                setGroupedCards({});
-                setCommanders([]);
-                onDeckLoaded('', 0);
-            }
-            
-            await refreshDeckList(decksDirectoryHandle);
-
-        } catch (err) {
-            console.error("Error deleting deck:", err);
-            setError("Could not delete the deck file.");
+        if (activeDeckFile?.name === deleteConfirmation.fileHandle.name) {
+            setActiveDeckFile(null);
+            setGroupedCards({});
+            setCommanders([]);
+            onDeckLoaded('', 0);
         }
+        
+        await refreshDeckList(decksDirectoryHandle);
+
+    } catch (err) {
+        console.error("Error deleting deck:", err);
+        setError("Could not delete the deck file.");
+    } finally {
+        setDeleteConfirmation(null);
     }
   };
 
@@ -647,6 +653,18 @@ const Decks: React.FC<DecksProps> = ({
   return (
     <>
       <DeckImportModal isOpen={isImportModalOpen} onClose={onCloseImportModal} onSave={handleSaveDeck} />
+      {deleteConfirmation && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <h2>Delete Deck</h2>
+            <p>Are you sure you want to delete the deck "{deleteConfirmation.name}"?</p>
+            <div className="modal-actions">
+              <button onClick={handleConfirmDelete}>Delete</button>
+              <button onClick={() => setDeleteConfirmation(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       {cardContextMenu && (
           <ContextMenu
               x={cardContextMenu.x}
@@ -664,7 +682,7 @@ const Decks: React.FC<DecksProps> = ({
                   { label: 'Rename', action: handleRenameDeck },
                   { label: 'Duplicate', action: handleDuplicateDeck },
                   { label: 'Add Card from URL...', action: handleAddCardByUrl },
-                  { label: 'Delete', action: handleDeleteDeck },
+                  { label: 'Delete', action: handleDeleteDeckRequest },
               ]}
           />
       )}

@@ -1,4 +1,4 @@
-// src/components/DeckImportModal.tsx
+// src/components/DeckImportModal/DeckImportModal.tsx
 import React, { useState, useEffect } from 'react';
 import './DeckImportModal.css';
 
