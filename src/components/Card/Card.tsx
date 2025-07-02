@@ -238,8 +238,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
 
   useEffect(() => {
     let isMounted = true;
-    const loadedUrls: string[] = [];
-
     const loadImages = async () => {
         if (!isMounted) return;
         setIsLoading(true);
@@ -248,7 +246,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
         try {
             const frontUrl = await getAndCacheCardImageUrl(card, imageDirectoryHandle, 0);
             if (isMounted) setFrontImageUrl(frontUrl);
-            if (frontUrl?.startsWith('blob:')) loadedUrls.push(frontUrl);
 
             if (isFlippable) {
                 const backCardSource = card.layout === 'meld' && card.meld_result_card ? card.meld_result_card : card;
@@ -257,7 +254,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
                 if (backCardSource) {
                     const backUrl = await getAndCacheCardImageUrl(backCardSource, imageDirectoryHandle, faceIndexForBack);
                     if (isMounted) setBackImageUrl(backUrl);
-                    if (backUrl?.startsWith('blob:')) loadedUrls.push(backUrl);
                 }
             }
         } catch (err) {
@@ -273,9 +269,6 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
 
     return () => {
       isMounted = false;
-      loadedUrls.forEach(url => {
-          if (url) URL.revokeObjectURL(url);
-      });
     };
   }, [card.id, card.layout, card.meld_result_card, imageDirectoryHandle, isFlippable]);
 
