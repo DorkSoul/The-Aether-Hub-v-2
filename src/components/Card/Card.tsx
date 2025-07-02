@@ -1,6 +1,6 @@
 // src/components/Card/Card.tsx
 
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useCallback } from 'react';
 import type { Card as CardType } from '../../types';
 import { getAndCacheCardImageUrl } from '../../utils/imageCaching';
 import { UpArrowIcon, DownArrowIcon, RemoveIcon } from '../Icons/icons';
@@ -212,6 +212,19 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
   const customCounterDisplayRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [actualCardWidth, setActualCardWidth] = useState<number | undefined>(undefined);
+  const pingTimeoutRef = useRef<number | null>(null);
+
+  const triggerPing = useCallback(() => {
+    if (pingTimeoutRef.current) {
+      clearTimeout(pingTimeoutRef.current);
+    }
+    setIsPinged(true);
+    pingTimeoutRef.current = window.setTimeout(() => {
+      setIsPinged(false);
+      pingTimeoutRef.current = null;
+    }, 1800); // 3 animations * 0.6s
+  }, []);
+
 
   useEffect(() => {
     const cardElement = cardRef.current;
@@ -304,15 +317,12 @@ const Card: React.FC<CardProps> = ({ card, imageDirectoryHandle, onContextMenu, 
     if (e.button === 1) { 
         e.preventDefault();
         e.stopPropagation();
-        setIsPinged(true);
-        setTimeout(() => {
-            setIsPinged(false);
-        }, 1800); 
+        triggerPing();
     }
   };
   
   const isOverlayActive = showCounterDisplay || showCustomCounterDisplay;
-  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isBoardRotated ? 'board-rotated' : ''} ${isHighlighted || isPinged ? 'highlight-attention' : ''} ${isOverlayActive ? 'overlay-active' : ''}`;
+  const flipperClasses = `card-flipper ${isTapped ? 'tapped' : ''} ${isBoardRotated ? 'board-rotated' : ''} ${isHighlighted ? 'highlight-attention' : ''} ${isPinged ? 'manual-ping' : ''} ${isOverlayActive ? 'overlay-active' : ''}`;
   
   let title = card.name;
   if (onTap || onFlip) {

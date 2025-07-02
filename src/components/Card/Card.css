@@ -117,7 +117,12 @@
 
 .card-flipper.highlight-attention {
   border-radius: 10px;
-  animation: flash-blue 0.6s ease-in-out 5;
+  animation: flash-blue 0.6s ease-in-out infinite;
+}
+
+.card-flipper.manual-ping {
+    border-radius: 10px;
+    animation: flash-blue 0.6s ease-in-out 3;
 }
 
 .pt-overlay {

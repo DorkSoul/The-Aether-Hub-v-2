@@ -1,14 +1,98 @@
-/* src/components/GameBoard/GameBoard.css */
-.game-board {
+/* src/components/GameSetup.css */
+.game-setup {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 45px);
-  width: 100%;
-  margin: 0;
+  gap: 2rem;
 }
 
-button {
-  padding: 10px 20px;
-  font-size: 16px;
+.game-setup-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #555;
+}
+
+.setup-section {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.player-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-color-input {
+  height: 40px;
+  width: 40px;
+  padding: 0;
+  border: none;
+  background: none;
   cursor: pointer;
+}
+
+.player-name-input {
+  flex-grow: 1;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.player-deck-select {
+  flex-grow: 2;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background-color: #1a1a1a;
+}
+
+.remove-player-btn {
+  font-weight: bold;
+}
+
+.start-game-btn {
+  flex: 1;
+  padding: 1rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+
+.layout-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.layout-options button {
+    flex: 1;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border: 2px solid #555;
+    background-color: #333;
+    color: #ccc;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.layout-options button.active {
+    background-color: #646cff;
+    border-color: #8c92ff;
+    color: white;
+}
+
+.layout-options button:not(.active):hover {
+    background-color: #444;
 }

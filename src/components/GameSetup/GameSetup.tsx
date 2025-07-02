@@ -74,6 +74,12 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirect
         }
       }
       setDeckFiles(files);
+      if (files.length > 0) {
+        setPlayers(prevPlayers => prevPlayers.map(p => ({
+          ...p,
+          deckFile: p.deckFile || files[0],
+        })))
+      }
     };
     loadDecks();
   }, [decksDirectoryHandle]);
@@ -102,7 +108,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirect
       // Generate a bright, non-pastel color and convert to HEX
       const vibrantColor = hslToHex(newHue, 90, 55); // High saturation, mid-range lightness
 
-      setPlayers([...players, { id: newPlayerId, name: `Player ${newPlayerId}`, deckFile: null, color: vibrantColor }]);
+      setPlayers([...players, { id: newPlayerId, name: `Player ${newPlayerId}`, deckFile: deckFiles.length > 0 ? deckFiles[0] : null, color: vibrantColor }]);
     }
   };
 

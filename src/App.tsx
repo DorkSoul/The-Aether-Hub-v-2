@@ -668,6 +668,10 @@ function App() {
   };
 
   const handleRemoveFromStack = (stackItemId: string) => {
+    const itemToRemove = stack.find(item => item.id === stackItemId);
+    if (itemToRemove && itemToRemove.cardInstanceId === hoveredStackCardId) {
+        setHoveredStackCardId(null);
+    }
     setStack(prevStack => prevStack.filter(item => item.id !== stackItemId));
   };
 
@@ -905,7 +909,16 @@ function App() {
                 <button onClick={handleOrderButtonClick} title="Set Turn Order">Order</button>
                 <button
                   className="game-layout-button"
-                  onClick={() => setGameSettings(s => s ? ({...s, layout: s.layout === 'tabs' ? 'split' : 'tabs'}) : s)}
+                  onClick={() => {
+                    setGameSettings(s => {
+                      if (!s) return s;
+                      const newLayout = s.layout === 'tabs' ? 'split' : 'tabs';
+                      if (newLayout === 'tabs' && s.players.length > 1 && !activeOpponentId) {
+                        setActiveOpponentId(s.players[1].id);
+                      }
+                      return { ...s, layout: newLayout };
+                    });
+                  }}
                   title="Toggle Game Layout"
                 >
                   Layout

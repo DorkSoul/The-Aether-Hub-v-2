@@ -63,8 +63,6 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         className="player-deck-select"
         required
       >
-        {/* Conditionally render the placeholder */}
-        {!player.deckFile && <option value="" disabled>Select a deck</option>}
         {deckInfos.map(info => (
           <option key={info.fileHandle.name} value={info.fileHandle.name}>
             {info.displayName}

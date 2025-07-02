@@ -50,6 +50,7 @@ const DeckImportModal: React.FC<DeckImportModalProps> = ({ isOpen, onClose, onSa
           value={decklist}
           onChange={(e) => setDecklist(e.target.value)}
           className="modal-textarea"
+          rows={15}
         />
         <div className="modal-actions">
           <button onClick={handleSave}>Save</button>
