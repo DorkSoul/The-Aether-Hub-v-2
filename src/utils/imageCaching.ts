@@ -1,6 +1,35 @@
 // src/utils/imageCaching.ts
 import type { Card } from '../types';
-import { queueImageDownload } from './imageDownloader'; 
+import { queueImageDownload } from './imageDownloader';
+
+// A simple queue to serialize file system write operations.
+const writeQueue = new (class {
+    private queue: (() => Promise<any>)[] = [];
+    private isProcessing = false;
+
+    add<T>(task: () => Promise<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.queue.push(() => task().then(resolve).catch(reject));
+            this.process();
+        });
+    }
+
+    private async process() {
+        if (this.isProcessing || this.queue.length === 0) {
+            return;
+        }
+        this.isProcessing = true;
+        const task = this.queue.shift()!;
+        try {
+            await task();
+        } catch (e) {
+            console.error("Error in file write queue:", e);
+        } finally {
+            this.isProcessing = false;
+            this.process();
+        }
+    }
+})();
 
 /**
  * Generates a sanitized, consistent filename for a card or a specific face.
@@ -68,36 +97,42 @@ export async function getAndCacheCardImageUrl(
     const filename = generateImageFilename(card, faceIndex);
 
     try {
-        // Re-verify permissions before trying to use the handle.
-        const permission = await directoryHandle.queryPermission({ mode: 'readwrite' });
-        if (permission !== 'granted') {
-            // If we don't have permission, just return the online URL.
-            // You could also re-prompt for permission here if desired.
-            return scryfallUrl;
+        // First, check for permission
+        if ((await directoryHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+            if ((await directoryHandle.requestPermission({ mode: 'readwrite' })) !== 'granted') {
+                console.warn('Permission denied for image caching. Serving images from online.');
+                return scryfallUrl;
+            }
         }
 
+        // Try to get the file handle. If it exists, return the object URL.
         const fileHandle = await directoryHandle.getFileHandle(filename);
         const file = await fileHandle.getFile();
         return URL.createObjectURL(file);
     } catch (e) {
+        // If the file is not found, download, cache, and then return it.
         if (e instanceof DOMException && e.name === 'NotFoundError') {
             try {
                 const imageBlob = await queueImageDownload(scryfallUrl);
 
-                const newFileHandle = await directoryHandle.getFileHandle(filename, { create: true });
-                const writable = await newFileHandle.createWritable();
-                await writable.write(imageBlob);
-                await writable.close();
+                // Use the write queue to prevent concurrent write errors
+                await writeQueue.add(async () => {
+                    const newFileHandle = await directoryHandle.getFileHandle(filename, { create: true });
+                    const writable = await newFileHandle.createWritable();
+                    await writable.write(imageBlob);
+                    await writable.close();
+                });
                 
                 return URL.createObjectURL(imageBlob);
             } catch (cacheError) {
-                console.error(`Failed to cache image for ${card.name}.`);
-                throw cacheError;
+                console.error(`Failed to cache image for ${card.name}:`, cacheError);
+                // Fallback to online URL on caching failure
+                return scryfallUrl;
             }
         }
         
-        console.error("Error accessing the file system:", e);
-        // If there's any other error, fall back to the online URL.
+        // For other errors, log them and fall back to the online URL.
+        console.error(`Error accessing the file system for ${card.name}:`, e);
         return scryfallUrl;
     }
 }
