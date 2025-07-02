@@ -420,6 +420,7 @@ const Decks: React.FC<DecksProps> = ({
                 setGroupedCards(groupCardsByType(allCards));
                 await saveDeck(commanders, allCards);
             }
+            await saveCardsToDB([newCardData]);
 
         } catch (err) {
             console.error("Error replacing card face:", err);
@@ -477,6 +478,7 @@ const Decks: React.FC<DecksProps> = ({
                 setGroupedCards(groupCardsByType(allCards));
                 await saveDeck(commanders, allCards);
             }
+            await saveCardsToDB([backCardData]);
 
         } catch (err) {
             console.error("Error adding back face:", err);
@@ -661,6 +663,7 @@ const Decks: React.FC<DecksProps> = ({
             const writable = await deckInfo.fileHandle.createWritable();
             await writable.write(deckJsonString);
             await writable.close();
+            await saveCardsToDB([newCardData]);
 
             setNotification(`Card "${newCardData.name}" added to "${deckInfo.name}".`);
             setTimeout(() => setNotification(''), 3000);
