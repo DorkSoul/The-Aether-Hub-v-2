@@ -8,6 +8,7 @@ import DeckImportModal from '../DeckImportModal/DeckImportModal';
 import Card from '../Card/Card';
 import ContextMenu from '../ContextMenu/ContextMenu';
 import { saveCardsToDB } from '../../utils/db';
+import InputDialog from '../InputDialog/InputDialog';
 import './Decks.css';
 
 interface DecksProps {
@@ -55,7 +56,7 @@ const createCardFace = (card: CardType): CardFace => {
     };
 };
 
-const Decks: React.FC<DecksProps> = ({ 
+const Decks: React.FC<DecksProps> = ({
   decksDirectoryHandle,
   imagesDirectoryHandle,
   isImportModalOpen,
@@ -76,8 +77,15 @@ const Decks: React.FC<DecksProps> = ({
   const [cardContextMenu, setCardContextMenu] = useState<CardContextMenuState | null>(null);
   const [deckContextMenu, setDeckContextMenu] = useState<DeckContextMenuState | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeckInfo | null>(null);
-  
-  const refreshDeckList = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
+  const [inputDialogState, setInputDialogState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: (value: string) => void;
+  } | null>(null);
+
+  const refreshDeckList = useCallback(async (dirHandle: FileSystemDirectoryHandle | null) => {
+      if (!dirHandle) return;
       const newDecks: DeckInfo[] = [];
       for await (const entry of dirHandle.values()) {
           if (entry.kind === 'file' && entry.name.endsWith('.json')) {
@@ -125,11 +133,16 @@ const Decks: React.FC<DecksProps> = ({
           const writable = await activeDeckFile.createWritable();
           await writable.write(deckJsonString);
           await writable.close();
-          
+
           setNotification('Deck saved successfully!');
-          await refreshDeckList(decksDirectoryHandle);
+          // Update card count in the UI without a full refresh
+          setDecks(currentDecks => currentDecks.map(deck =>
+            deck.fileHandle.name === activeDeckFile.name
+              ? { ...deck, cardCount: allCards.length }
+              : deck
+          ));
           onDeckLoaded(deckDataToSave.name, allCards.length);
-          
+
           setTimeout(() => setNotification(''), 3000);
       } catch (err) {
           console.error("Failed to save deck:", err);
@@ -150,10 +163,10 @@ const Decks: React.FC<DecksProps> = ({
 
       setLoadingMessage(`Fetching ${uniqueIdentifiers.length} unique cards...`);
       const fetchedCards: CardType[] = await getCardsFromNames(uniqueIdentifiers);
-      
+
       setLoadingMessage('Saving cards to local database...');
       await saveCardsToDB(fetchedCards);
-      
+
       const meldResultUrisToFetch = new Set<string>();
       fetchedCards.forEach(card => {
         if (card.layout === 'meld' && card.all_parts) {
@@ -183,7 +196,7 @@ const Decks: React.FC<DecksProps> = ({
             }
         });
       }
-      
+
       const cardApiDataBySetAndNumber = new Map<string, CardType>();
       const cardApiDataByName = new Map<string, CardType>();
       fetchedCards.forEach(card => {
@@ -203,10 +216,10 @@ const Decks: React.FC<DecksProps> = ({
       if (fullDeckCards.length !== decklistIdentifiers.length) {
         setError("Warning: Some cards could not be found and were not included in the saved deck.");
       }
-      
+
       setLoadingMessage('Saving deck file...');
       const cardsWithInstanceIds = fullDeckCards.map(card => ({ ...card, instanceId: crypto.randomUUID() }));
-      
+
       const importedCommanders: CardType[] = [];
       const importedCommanderIds: string[] = [];
       const mainDeckCards = cardsWithInstanceIds;
@@ -221,7 +234,7 @@ const Decks: React.FC<DecksProps> = ({
       await writable.close();
 
       await refreshDeckList(decksDirectoryHandle);
-      
+
       setCommanders(importedCommanders);
       setGroupedCards(groupCardsByType(mainDeckCards));
       setActiveDeckFile(fileHandle);
@@ -287,7 +300,7 @@ const Decks: React.FC<DecksProps> = ({
     event.preventDefault();
     setCardContextMenu({ x: event.clientX, y: event.clientY, card, cardIndex, isCommander });
   };
-  
+
   const handleDeckRightClick = (event: React.MouseEvent, deckInfo: DeckInfo) => {
       event.preventDefault();
       setDeckContextMenu({ x: event.clientX, y: event.clientY, deckInfo });
@@ -322,7 +335,7 @@ const Decks: React.FC<DecksProps> = ({
         await saveDeck(newCommanders, newMainDeck);
     }
   };
-  
+
   const handleAddCard = () => {
       if (!cardContextMenu) return;
       const { card, cardIndex, isCommander } = cardContextMenu;
@@ -346,7 +359,7 @@ const Decks: React.FC<DecksProps> = ({
   const handleRemoveCard = () => {
       if (!cardContextMenu) return;
       const { cardIndex, isCommander } = cardContextMenu;
-      
+
       if (isCommander) {
           const newCommanders = commanders.filter((_, i) => i !== cardIndex);
           setCommanders(newCommanders);
@@ -358,105 +371,123 @@ const Decks: React.FC<DecksProps> = ({
           saveDeck(commanders, newMainDeck);
       }
   };
-  
-  const handleReplaceCard = async (faceToReplace: 0 | 1) => {
-      if (!cardContextMenu) return;
-      const { card: originalCard, cardIndex, isCommander } = cardContextMenu;
 
-      const url = prompt(`Enter Scryfall URL for the new ${faceToReplace === 0 ? 'front' : 'back'} face:`);
-      if (!url) return;
+  const handleReplaceCard = (faceToReplace: 0 | 1) => {
+    if (!cardContextMenu) return;
 
-      setIsLoading(true);
-      setLoadingMessage('Fetching replacement card...');
-      try {
-          const newCardData = await getCardByUrl(url);
-          if (!newCardData) throw new Error("Card not found at URL.");
-          
-          const newFace = createCardFace(newCardData);
-          const modifiedCard = { ...originalCard };
-          const existingFaces = originalCard.card_faces ? [...originalCard.card_faces] : [createCardFace(originalCard)];
-          
-          existingFaces[faceToReplace] = newFace;
-          modifiedCard.card_faces = existingFaces;
+    setInputDialogState({
+      isOpen: true,
+      title: `Replace ${faceToReplace === 0 ? 'Front' : 'Back'} Face`,
+      message: 'Enter Scryfall URL for the new face:',
+      onConfirm: async (url: string) => {
+        if (!url || !cardContextMenu) {
+          setInputDialogState(null);
+          return;
+        };
+        const { card: originalCard, cardIndex, isCommander } = cardContextMenu;
 
-          if (faceToReplace === 0) {
-              modifiedCard.name = `${newFace.name} // ${modifiedCard.card_faces[1]?.name || 'Back'}`;
-              modifiedCard.type_line = newFace.type_line;
-          } else {
-              modifiedCard.name = `${modifiedCard.card_faces[0]?.name || 'Front'} // ${newFace.name}`;
-          }
-          
-          modifiedCard.id = crypto.randomUUID();
-          modifiedCard.is_custom = true;
-          modifiedCard.layout = 'transform';
-          
-          if(isCommander) {
-              const newCommanders = [...commanders];
-              newCommanders[cardIndex] = modifiedCard;
-              setCommanders(newCommanders);
-              await saveDeck(newCommanders, Object.values(groupedCards).flat());
-          } else {
-              const allCards = Object.values(groupedCards).flat();
-              allCards[cardIndex] = modifiedCard;
-              setGroupedCards(groupCardsByType(allCards));
-              await saveDeck(commanders, allCards);
-          }
+        setIsLoading(true);
+        setLoadingMessage('Fetching replacement card...');
+        try {
+            const newCardData = await getCardByUrl(url);
+            if (!newCardData) throw new Error("Card not found at URL.");
 
-      } catch (err) {
-          console.error("Error replacing card face:", err);
-          setError(err instanceof Error ? err.message : "An error occurred.");
-      } finally {
-          setIsLoading(false);
-          setLoadingMessage('');
+            const newFace = createCardFace(newCardData);
+            const modifiedCard = { ...originalCard };
+            const existingFaces = modifiedCard.card_faces ? [...modifiedCard.card_faces] : [createCardFace(originalCard)];
+
+            existingFaces[faceToReplace] = newFace;
+            modifiedCard.card_faces = existingFaces;
+
+            if (faceToReplace === 0) {
+                modifiedCard.name = `${newFace.name} // ${modifiedCard.card_faces[1]?.name || 'Back'}`;
+                modifiedCard.type_line = newFace.type_line;
+            } else {
+                modifiedCard.name = `${modifiedCard.card_faces[0]?.name || 'Front'} // ${newFace.name}`;
+            }
+
+            modifiedCard.is_custom = true;
+            modifiedCard.layout = 'transform';
+
+            if(isCommander) {
+                const newCommanders = [...commanders];
+                newCommanders[cardIndex] = modifiedCard;
+                setCommanders(newCommanders);
+                await saveDeck(newCommanders, Object.values(groupedCards).flat());
+            } else {
+                const allCards = Object.values(groupedCards).flat();
+                allCards[cardIndex] = modifiedCard;
+                setGroupedCards(groupCardsByType(allCards));
+                await saveDeck(commanders, allCards);
+            }
+
+        } catch (err) {
+            console.error("Error replacing card face:", err);
+            setError(err instanceof Error ? err.message : "An error occurred.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setInputDialogState(null);
+        }
       }
+    });
   };
 
-  const handleAddBackFace = async () => {
-      if (!cardContextMenu) return;
-      const { card: frontCard, cardIndex, isCommander } = cardContextMenu;
+  const handleAddBackFace = () => {
+    if (!cardContextMenu) return;
 
-      const url = prompt("Enter Scryfall URL for the new back face:");
-      if (!url) return;
-      
-      setIsLoading(true);
-      setLoadingMessage('Fetching back face card...');
-      try {
-          const backCardData = await getCardByUrl(url);
-          if (!backCardData) throw new Error("Card not found at URL.");
+    setInputDialogState({
+      isOpen: true,
+      title: 'Add Back Face',
+      message: 'Enter Scryfall URL for the new back face:',
+      onConfirm: async (url: string) => {
+        if (!url || !cardContextMenu) {
+            setInputDialogState(null);
+            return;
+        }
+        const { card: frontCard, cardIndex, isCommander } = cardContextMenu;
 
-          const frontFace = createCardFace(frontCard);
-          const backFace = createCardFace(backCardData);
+        setIsLoading(true);
+        setLoadingMessage('Fetching back face card...');
+        try {
+            const backCardData = await getCardByUrl(url);
+            if (!backCardData) throw new Error("Card not found at URL.");
 
-          const newDfc: CardType = {
-              ...frontCard,
-              id: crypto.randomUUID(),
-              layout: 'transform',
-              is_custom: true,
-              name: `${frontFace.name} // ${backFace.name}`,
-              type_line: `${frontFace.type_line} // ${backFace.type_line}`,
-              image_uris: undefined,
-              card_faces: [frontFace, backFace],
-          };
-          
-          if(isCommander) {
-              const newCommanders = [...commanders];
-              newCommanders[cardIndex] = newDfc;
-              setCommanders(newCommanders);
-              await saveDeck(newCommanders, Object.values(groupedCards).flat());
-          } else {
-              const allCards = Object.values(groupedCards).flat();
-              allCards[cardIndex] = newDfc;
-              setGroupedCards(groupCardsByType(allCards));
-              await saveDeck(commanders, allCards);
-          }
+            const frontFace = createCardFace(frontCard);
+            const backFace = createCardFace(backCardData);
 
-      } catch (err) {
-          console.error("Error adding back face:", err);
-          setError(err instanceof Error ? err.message : "An error occurred.");
-      } finally {
-          setIsLoading(false);
-          setLoadingMessage('');
+            const newDfc: CardType = {
+                ...frontCard,
+                layout: 'transform',
+                is_custom: true,
+                name: `${frontFace.name} // ${backFace.name}`,
+                type_line: `${frontFace.type_line} // ${backFace.type_line}`,
+                image_uris: undefined,
+                card_faces: [frontFace, backFace],
+            };
+
+            if(isCommander) {
+                const newCommanders = [...commanders];
+                newCommanders[cardIndex] = newDfc;
+                setCommanders(newCommanders);
+                await saveDeck(newCommanders, Object.values(groupedCards).flat());
+            } else {
+                const allCards = Object.values(groupedCards).flat();
+                allCards[cardIndex] = newDfc;
+                setGroupedCards(groupCardsByType(allCards));
+                await saveDeck(commanders, allCards);
+            }
+
+        } catch (err) {
+            console.error("Error adding back face:", err);
+            setError(err instanceof Error ? err.message : "An error occurred.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setInputDialogState(null);
+        }
       }
+    });
   };
 
   const buildCardContextMenuOptions = (context: CardContextMenuState) => {
@@ -495,7 +526,7 @@ const Decks: React.FC<DecksProps> = ({
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirmation || !decksDirectoryHandle) return;
-    
+
     try {
         await decksDirectoryHandle.removeEntry(deleteConfirmation.fileHandle.name);
 
@@ -508,7 +539,7 @@ const Decks: React.FC<DecksProps> = ({
             setCommanders([]);
             onDeckLoaded('', 0);
         }
-        
+
         await refreshDeckList(decksDirectoryHandle);
 
     } catch (err) {
@@ -528,7 +559,7 @@ const Decks: React.FC<DecksProps> = ({
 
       try {
           setNotification('Duplicating deck...');
-          
+
           const file = await deckInfo.fileHandle.getFile();
           const text = await file.text();
           const deckData = JSON.parse(text);
@@ -570,14 +601,14 @@ const Decks: React.FC<DecksProps> = ({
         deckData.name = newDeckName;
         const newDeckJsonString = JSON.stringify(deckData, null, 2);
         const newFileName = `${newDeckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-        
+
         const newFileHandle = await decksDirectoryHandle.getFileHandle(newFileName, { create: true });
         const writable = await newFileHandle.createWritable();
         await writable.write(newDeckJsonString);
         await writable.close();
 
         await decksDirectoryHandle.removeEntry(originalFileHandle.name);
-        
+
         if (activeDeckFile?.name === originalFileHandle.name) {
             setActiveDeckFile(newFileHandle);
             onDeckLoaded(newDeckName, deckData.cards.length);
@@ -593,59 +624,69 @@ const Decks: React.FC<DecksProps> = ({
     }
   };
 
-  const handleAddCardByUrl = async () => {
-    if (!deckContextMenu || !decksDirectoryHandle) return;
+  const handleAddCardByUrl = () => {
+    if (!deckContextMenu) return;
     const { deckInfo } = deckContextMenu;
 
-    const url = prompt(`Enter Scryfall URL of the card to add to "${deckInfo.name}":`);
-    if (!url) return;
+    setInputDialogState({
+      isOpen: true,
+      title: `Add Card to ${deckInfo.name}`,
+      message: 'Enter Scryfall URL of the card to add:',
+      onConfirm: async (url: string) => {
+        if (!url || !decksDirectoryHandle) {
+            setInputDialogState(null);
+            return;
+        };
 
-    setIsLoading(true);
-    setLoadingMessage('Fetching card data...');
-    try {
-        const newCardData = await getCardByUrl(url);
-        if (!newCardData) {
-            throw new Error("Card not found at the provided URL.");
+        setIsLoading(true);
+        setLoadingMessage('Fetching card data...');
+        try {
+            const newCardData = await getCardByUrl(url);
+            if (!newCardData) {
+                throw new Error("Card not found at the provided URL.");
+            }
+
+            setLoadingMessage('Adding card to deck file...');
+
+            const file = await deckInfo.fileHandle.getFile();
+            const text = await file.text();
+            const deckData: { name: string; cards: CardType[]; commanders?: string[] } = JSON.parse(text);
+
+            const newCardWithInstanceId = { ...newCardData, instanceId: crypto.randomUUID() };
+            const updatedCards = [...deckData.cards, newCardWithInstanceId];
+
+            const deckDataToSave = { ...deckData, cards: updatedCards };
+            const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
+
+            const writable = await deckInfo.fileHandle.createWritable();
+            await writable.write(deckJsonString);
+            await writable.close();
+
+            setNotification(`Card "${newCardData.name}" added to "${deckInfo.name}".`);
+            setTimeout(() => setNotification(''), 3000);
+
+            await refreshDeckList(decksDirectoryHandle);
+
+            if (activeDeckFile?.name === deckInfo.fileHandle.name) {
+                const commanderInstanceIds = new Set(deckDataToSave.commanders || []);
+                const loadedCommanders = updatedCards.filter(c => c.instanceId && commanderInstanceIds.has(c.instanceId));
+                const mainDeckCards = updatedCards.filter(c => !c.instanceId || !commanderInstanceIds.has(c.instanceId));
+
+                setCommanders(loadedCommanders);
+                setGroupedCards(groupCardsByType(mainDeckCards));
+                onDeckLoaded(deckDataToSave.name, updatedCards.length);
+            }
+
+        } catch (err) {
+            console.error("Error adding card from URL:", err);
+            setError(err instanceof Error ? err.message : "An error occurred while adding the card.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setInputDialogState(null);
         }
-
-        setLoadingMessage('Adding card to deck file...');
-        
-        const file = await deckInfo.fileHandle.getFile();
-        const text = await file.text();
-        const deckData: { name: string; cards: CardType[]; commanders?: string[] } = JSON.parse(text);
-
-        const newCardWithInstanceId = { ...newCardData, instanceId: crypto.randomUUID() };
-        const updatedCards = [...deckData.cards, newCardWithInstanceId];
-        
-        const deckDataToSave = { ...deckData, cards: updatedCards };
-        const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
-
-        const writable = await deckInfo.fileHandle.createWritable();
-        await writable.write(deckJsonString);
-        await writable.close();
-
-        setNotification(`Card "${newCardData.name}" added to "${deckInfo.name}".`);
-        setTimeout(() => setNotification(''), 3000);
-
-        await refreshDeckList(decksDirectoryHandle);
-
-        if (activeDeckFile?.name === deckInfo.fileHandle.name) {
-            const commanderInstanceIds = new Set(deckDataToSave.commanders || []);
-            const loadedCommanders = updatedCards.filter(c => c.instanceId && commanderInstanceIds.has(c.instanceId));
-            const mainDeckCards = updatedCards.filter(c => !c.instanceId || !commanderInstanceIds.has(c.instanceId));
-            
-            setCommanders(loadedCommanders);
-            setGroupedCards(groupCardsByType(mainDeckCards));
-            onDeckLoaded(deckDataToSave.name, updatedCards.length);
-        }
-
-    } catch (err) {
-        console.error("Error adding card from URL:", err);
-        setError(err instanceof Error ? err.message : "An error occurred while adding the card.");
-    } finally {
-        setIsLoading(false);
-        setLoadingMessage('');
-    }
+      }
+    });
   };
 
   let cardCounter = 0;
@@ -653,6 +694,15 @@ const Decks: React.FC<DecksProps> = ({
   return (
     <>
       <DeckImportModal isOpen={isImportModalOpen} onClose={onCloseImportModal} onSave={handleSaveDeck} />
+      {inputDialogState && (
+        <InputDialog
+            isOpen={inputDialogState.isOpen}
+            title={inputDialogState.title}
+            message={inputDialogState.message}
+            onConfirm={inputDialogState.onConfirm}
+            onClose={() => setInputDialogState(null)}
+        />
+      )}
       {deleteConfirmation && (
         <div className="modal-backdrop">
           <div className="modal-content">
@@ -698,9 +748,9 @@ const Decks: React.FC<DecksProps> = ({
             <div className="deck-list-pane">
               <h3>Decks</h3>
               <ul>{decks.map(deck => (
-                  <li 
-                    key={deck.fileHandle.name} 
-                    onClick={() => handleDeckSelected(deck)} 
+                  <li
+                    key={deck.fileHandle.name}
+                    onClick={() => handleDeckSelected(deck)}
                     onContextMenu={(e) => handleDeckRightClick(e, deck)}
                     className="list-item"
                     title={deck.name}
@@ -713,7 +763,7 @@ const Decks: React.FC<DecksProps> = ({
               {notification && <p className="notification-message">{notification}</p>}
               {isLoading && <h2>{loadingMessage}</h2>}
               {error && <p className="error-message">{error}</p>}
-              
+
               {!isLoading && commanders.length > 0 && (
                   <div className="card-type-section">
                       <h3 className="section-header" onClick={() => toggleSection('Commanders')}>
