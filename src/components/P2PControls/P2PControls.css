@@ -18,6 +18,15 @@
   text-align: center;
 }
 
+.peer-id-section.clickable {
+    cursor: pointer;
+}
+
+.peer-id-section.clickable:hover {
+    color: #a0a0ff;
+}
+
+
 .connection-status {
   text-align: center;
   font-weight: bold;

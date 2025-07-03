@@ -6,6 +6,8 @@ interface P2PControlsProps {
   peerId: string | null;
   onHost: (username: string) => void;
   onJoin: (hostId: string, username: string) => void;
+  onDisconnect: () => void;
+  onStopHosting: () => void;
   isConnected: boolean;
   connectedPlayers: { id: string; username: string }[];
   kickPlayer: (peerId: string) => void;
@@ -13,9 +15,10 @@ interface P2PControlsProps {
   hostUsername: string;
 }
 
-const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, isConnected, connectedPlayers, kickPlayer, isHost, hostUsername }) => {
+const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onDisconnect, onStopHosting, isConnected, connectedPlayers, kickPlayer, isHost, hostUsername }) => {
   const [hostIdToJoin, setHostIdToJoin] = useState('');
   const [username, setUsername] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const handleHostClick = () => {
     if (username.trim()) {
@@ -26,6 +29,14 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, isCon
   const handleJoinClick = () => {
     if (hostIdToJoin.trim() && username.trim()) {
       onJoin(hostIdToJoin.trim(), username.trim());
+    }
+  };
+
+  const handleCopyPeerId = () => {
+    if (peerId) {
+      navigator.clipboard.writeText(peerId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
     }
   };
 
@@ -45,23 +56,30 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, isCon
         />
       </div>
 
+      {peerId && !isConnected && (
+         <div className="peer-id-section clickable" onClick={handleCopyPeerId}>
+          Your Peer ID: <strong>{peerId}</strong> {copied && <span>Copied!</span>}
+        </div>
+      )}
+      
       {isHost && isConnected && (
-         <div className="peer-id-section">
-          Your Peer ID: <strong>{peerId}</strong>
+         <div className="peer-id-section clickable" onClick={handleCopyPeerId}>
+          Your Peer ID: <strong>{peerId}</strong> {copied && <span>Copied!</span>}
         </div>
       )}
 
       {isConnected ? (
-        <div className="connection-status">
+        <div>
+          <div className="connection-status">
             {isHost ? 'Hosting Game' : `Connected to ${hostUsername}`}
+          </div>
+          {isHost ? (
+             <button onClick={onStopHosting}>Stop Hosting</button>
+          ) : (
+            <button onClick={onDisconnect}>Disconnect</button>
+          )}
         </div>
       ) : (
-        peerId && <div className="peer-id-section">
-          Your Peer ID: <strong>{peerId}</strong>
-        </div>
-      )}
-
-      {!isConnected && (
         <div className="connection-actions">
           <button onClick={handleHostClick} disabled={!username.trim()}>Host a Game</button>
           <div className="input-group join-section">

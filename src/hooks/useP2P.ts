@@ -1,5 +1,5 @@
 // src/hooks/useP2P.ts
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 import type { GameState, PeerInfo } from '../types';
@@ -12,11 +12,28 @@ export const useP2P = (
     onPlayerConnected: (peerInfo: PeerInfo) => void,
     onPlayerDisconnected: (peerId: string) => void,
     onKicked: () => void,
+    onConnect: () => void,
 ) => {
     const [peerId, setPeerId] = useState<string | null>(null);
     const [connections, setConnections] = useState<DataConnection[]>([]);
     const peerInstance = useRef<Peer | null>(null);
     const [hostUsername, setHostUsername] = useState('');
+
+    const disconnect = useCallback(() => {
+        if (peerInstance.current) {
+            // For hosts, explicitly close all connections to notify clients.
+            if (isHost) {
+                connections.forEach(conn => {
+                    conn.send({ type: 'kicked' }); // Use the existing 'kicked' message to inform clients
+                    setTimeout(() => conn.close(), 500);
+                });
+            }
+            peerInstance.current.destroy();
+        }
+        setPeerId(null);
+        setConnections([]);
+        setHostUsername('');
+    }, [connections, isHost]);
 
 
     useEffect(() => {
@@ -34,6 +51,7 @@ export const useP2P = (
                 const conn = peer.connect(hostIdToConnect, { metadata: { username } });
                 conn.on('open', () => {
                     console.log('Connected to host:', hostIdToConnect);
+                    onConnect();
                     setConnections([conn]);
                     conn.on('data', (data: any) => {
                         if (data.type === 'game-state') {
@@ -50,6 +68,7 @@ export const useP2P = (
                         // This prevents a double notification. The user will be
                         // returned to the setup screen regardless.
                         console.log('Connection to host closed.');
+                        onKicked();
                     });
                 });
                 conn.on('error', (err) => {
@@ -86,7 +105,7 @@ export const useP2P = (
         return () => {
             peer.destroy();
         };
-    }, [isHost, hostIdToConnect, onGameStateReceived, onPlayerConnected, onPlayerDisconnected, onKicked, username]);
+    }, [isHost, hostIdToConnect, onGameStateReceived, onPlayerConnected, onPlayerDisconnected, onKicked, username, onConnect]);
 
     const broadcastGameState = (gameState: GameState) => {
         if (isHost) {
@@ -106,5 +125,5 @@ export const useP2P = (
         }
     };
 
-    return { peerId, broadcastGameState, kickPlayer, hostUsername, connections };
+    return { peerId, broadcastGameState, kickPlayer, hostUsername, connections, disconnect };
 };

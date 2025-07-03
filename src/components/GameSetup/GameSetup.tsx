@@ -14,6 +14,8 @@ interface GameSetupProps {
   peerId: string | null;
   onHost: (username: string) => void;
   onJoin: (hostId: string, username: string) => void;
+  onDisconnect: () => void;
+  onStopHosting: () => void;
   isConnected: boolean;
   connectedPlayers: PeerInfo[];
   kickPlayer: (peerId: string) => void;
@@ -72,6 +74,8 @@ const GameSetup: React.FC<GameSetupProps> = ({
     peerId,
     onHost,
     onJoin,
+    onDisconnect,
+    onStopHosting,
     isConnected,
     connectedPlayers,
     kickPlayer,
@@ -259,6 +263,8 @@ const GameSetup: React.FC<GameSetupProps> = ({
                   peerId={peerId}
                   onHost={onHost}
                   onJoin={onJoin}
+                  onDisconnect={onDisconnect}
+                  onStopHosting={onStopHosting}
                   isConnected={isConnected}
                   connectedPlayers={connectedPlayers}
                   kickPlayer={kickPlayer}

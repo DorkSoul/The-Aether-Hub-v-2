@@ -519,8 +519,28 @@ function App() {
     setView('game-setup');
   }, []);
 
-  const { peerId, broadcastGameState, kickPlayer, hostUsername } = useP2P(username, isHost, hostId, handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked);
+  const handleClientConnected = useCallback(() => {
+    setIsConnected(true);
+  }, []);
   
+  const { peerId, broadcastGameState, kickPlayer, hostUsername, disconnect } = useP2P(username, isHost, hostId, handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked, handleClientConnected);
+  
+  const handleDisconnect = () => {
+    disconnect();
+    setIsConnected(false);
+    setIsHost(false);
+    setHostId(null);
+  };
+
+  const handleStopHosting = () => {
+    disconnect();
+    setIsConnected(false);
+    setIsHost(false);
+    setHostId(null);
+    setConnectedPlayers([]);
+    setView('game-setup');
+  };
+
   const handleStartGame = async (settings: GameSettings, isMultiplayer: boolean) => {
     setGameSettings(settings);
     setCurrentPlayerIndex(0);
@@ -790,6 +810,8 @@ function App() {
                 setIsHost(false);
                 setHostId(id);
               }}
+              onDisconnect={handleDisconnect}
+              onStopHosting={handleStopHosting}
               isConnected={isConnected}
               connectedPlayers={connectedPlayers}
               kickPlayer={kickPlayer}
