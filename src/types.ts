@@ -68,6 +68,7 @@ export interface PlayerConfig {
     name: string;
     deckFile: FileSystemFileHandle | null;
     color: string;
+    username: string;
 }
 
 export interface GameSettings {
@@ -85,6 +86,7 @@ export type ManaPool = {
 export interface PlayerState {
   id: string;
   name: string;
+  username: string;
   color: string;
   life: number;
   mana: ManaPool; 
@@ -132,4 +134,9 @@ export interface GameState {
     handHeights?: { [playerId: string]: number };
     freeformCardSizes?: { [playerId: string]: number };
     isTopRotated?: boolean;
+}
+
+export interface PeerInfo {
+    id: string;
+    username: string;
 }

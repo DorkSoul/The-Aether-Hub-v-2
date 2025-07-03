@@ -125,7 +125,7 @@ const Decks: React.FC<DecksProps> = ({
           const currentDeckData: { name: string } = JSON.parse(await file.text());
 
           const allCards = [...commandersToSave, ...mainDeckToSave];
-          const commanderIds = commandersToSave.map(c => c.instanceId!);
+          const commanderIds = commandersToSave.map(c => c.id);
 
           const deckDataToSave = { name: currentDeckData.name, cards: allCards, commanders: commanderIds };
           const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
@@ -264,16 +264,16 @@ const Decks: React.FC<DecksProps> = ({
       const deckData: { name: string; cards: CardType[]; commanders?: string[] } = JSON.parse(text);
 
       const cardsWithInstanceIds = deckData.cards.map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
-      const commanderInstanceIds = new Set(deckData.commanders || []);
+      const commanderIds = new Set(deckData.commanders || []);
 
-      const loadedCommanders = cardsWithInstanceIds.filter(c => c.instanceId && commanderInstanceIds.has(c.instanceId));
-      const mainDeckCards = cardsWithInstanceIds.filter(c => !c.instanceId || !commanderInstanceIds.has(c.instanceId));
-
+      const loadedCommanders = cardsWithInstanceIds.filter(c => commanderIds.has(c.id));
+      const mainDeckCards = cardsWithInstanceIds.filter(c => !commanderIds.has(c.id));
+      
       if (deckData.cards.length > 0 && (!deckData.cards[0].instanceId || (deckData.commanders && deckData.commanders.length > 0 && !deckData.cards.find(c => c.instanceId === deckData.commanders![0])))) {
           const deckToSave = {
               name: deckData.name,
               cards: cardsWithInstanceIds,
-              commanders: loadedCommanders.map(c => c.instanceId!)
+              commanders: loadedCommanders.map(c => c.id)
           };
           const writable = await deckInfo.fileHandle.createWritable();
           await writable.write(JSON.stringify(deckToSave, null, 2));
@@ -308,12 +308,12 @@ const Decks: React.FC<DecksProps> = ({
 
   const handleSetAsCommander = async () => {
     if (!cardContextMenu) return;
-    const { cardIndex } = cardContextMenu;
+    const { card } = cardContextMenu;
     const allCards = Object.values(groupedCards).flat();
-    const cardToMove = allCards[cardIndex];
+    const cardToMove = allCards.find(c => c.instanceId === card.instanceId);
 
     if (cardToMove) {
-        const newMainDeck = allCards.filter((_, i) => i !== cardIndex);
+        const newMainDeck = allCards.filter(c => c.instanceId !== card.instanceId);
         const newCommanders = [...commanders, cardToMove];
         setCommanders(newCommanders);
         setGroupedCards(groupCardsByType(newMainDeck));
@@ -323,11 +323,11 @@ const Decks: React.FC<DecksProps> = ({
 
   const handleRemoveAsCommander = async () => {
     if (!cardContextMenu) return;
-    const { cardIndex } = cardContextMenu;
-    const cardToMove = commanders[cardIndex];
+    const { card } = cardContextMenu;
+    const cardToMove = commanders.find(c => c.instanceId === card.instanceId);
 
     if (cardToMove) {
-        const newCommanders = commanders.filter((_, i) => i !== cardIndex);
+        const newCommanders = commanders.filter(c => c.instanceId !== card.instanceId);
         const allCards = Object.values(groupedCards).flat();
         const newMainDeck = [...allCards, cardToMove];
         setCommanders(newCommanders);
@@ -358,15 +358,15 @@ const Decks: React.FC<DecksProps> = ({
 
   const handleRemoveCard = () => {
       if (!cardContextMenu) return;
-      const { cardIndex, isCommander } = cardContextMenu;
+      const { card, isCommander } = cardContextMenu;
 
       if (isCommander) {
-          const newCommanders = commanders.filter((_, i) => i !== cardIndex);
+          const newCommanders = commanders.filter(c => c.instanceId !== card.instanceId);
           setCommanders(newCommanders);
           saveDeck(newCommanders, Object.values(groupedCards).flat());
       } else {
           const allCards = Object.values(groupedCards).flat();
-          const newMainDeck = allCards.filter((_, i) => i !== cardIndex);
+          const newMainDeck = allCards.filter(c => c.instanceId !== card.instanceId);
           setGroupedCards(groupCardsByType(newMainDeck));
           saveDeck(commanders, newMainDeck);
       }
@@ -384,7 +384,7 @@ const Decks: React.FC<DecksProps> = ({
           setInputDialogState(null);
           return;
         };
-        const { card: originalCard, cardIndex, isCommander } = cardContextMenu;
+        const { card: originalCard, isCommander } = cardContextMenu;
 
         setIsLoading(true);
         setLoadingMessage('Fetching replacement card...');
@@ -408,18 +408,26 @@ const Decks: React.FC<DecksProps> = ({
 
             modifiedCard.is_custom = true;
             modifiedCard.layout = 'transform';
-
+            
+            let allCards;
             if(isCommander) {
-                const newCommanders = [...commanders];
-                newCommanders[cardIndex] = modifiedCard;
-                setCommanders(newCommanders);
-                await saveDeck(newCommanders, Object.values(groupedCards).flat());
+                allCards = [...commanders];
             } else {
-                const allCards = Object.values(groupedCards).flat();
-                allCards[cardIndex] = modifiedCard;
-                setGroupedCards(groupCardsByType(allCards));
-                await saveDeck(commanders, allCards);
+                allCards = Object.values(groupedCards).flat();
             }
+
+            const cardIndex = allCards.findIndex(c => c.instanceId === originalCard.instanceId);
+            if (cardIndex !== -1) {
+                allCards[cardIndex] = modifiedCard;
+                if (isCommander) {
+                    setCommanders(allCards);
+                    await saveDeck(allCards, Object.values(groupedCards).flat());
+                } else {
+                    setGroupedCards(groupCardsByType(allCards));
+                    await saveDeck(commanders, allCards);
+                }
+            }
+            
             await saveCardsToDB([newCardData]);
 
         } catch (err) {
@@ -446,7 +454,7 @@ const Decks: React.FC<DecksProps> = ({
             setInputDialogState(null);
             return;
         }
-        const { card: frontCard, cardIndex, isCommander } = cardContextMenu;
+        const { card: frontCard, isCommander } = cardContextMenu;
 
         setIsLoading(true);
         setLoadingMessage('Fetching back face card...');
@@ -466,18 +474,26 @@ const Decks: React.FC<DecksProps> = ({
                 image_uris: undefined,
                 card_faces: [frontFace, backFace],
             };
-
+            
+            let allCards;
             if(isCommander) {
-                const newCommanders = [...commanders];
-                newCommanders[cardIndex] = newDfc;
-                setCommanders(newCommanders);
-                await saveDeck(newCommanders, Object.values(groupedCards).flat());
+                allCards = [...commanders];
             } else {
-                const allCards = Object.values(groupedCards).flat();
-                allCards[cardIndex] = newDfc;
-                setGroupedCards(groupCardsByType(allCards));
-                await saveDeck(commanders, allCards);
+                allCards = Object.values(groupedCards).flat();
             }
+
+            const cardIndex = allCards.findIndex(c => c.instanceId === frontCard.instanceId);
+            if (cardIndex !== -1) {
+                allCards[cardIndex] = newDfc;
+                if (isCommander) {
+                    setCommanders(allCards);
+                    await saveDeck(allCards, Object.values(groupedCards).flat());
+                } else {
+                    setGroupedCards(groupCardsByType(allCards));
+                    await saveDeck(commanders, allCards);
+                }
+            }
+
             await saveCardsToDB([backCardData]);
 
         } catch (err) {
@@ -493,7 +509,7 @@ const Decks: React.FC<DecksProps> = ({
   };
 
   const buildCardContextMenuOptions = (context: CardContextMenuState) => {
-      const { card, isCommander } = context;
+      const { isCommander } = context;
       const baseOptions = [
           { label: 'Add another copy', action: handleAddCard },
           { label: 'Remove this copy', action: handleRemoveCard }
@@ -505,10 +521,10 @@ const Decks: React.FC<DecksProps> = ({
           baseOptions.unshift({ label: 'Set as Commander', action: handleSetAsCommander });
       }
 
-      const isDfc = card.card_faces && card.card_faces.length > 0;
+      const isDfc = context.card.card_faces && context.card.card_faces.length > 0;
       if (isDfc) {
           baseOptions.push({ label: 'Replace Front Face from URL...', action: () => handleReplaceCard(0) });
-          if (card.card_faces && card.card_faces.length > 1) {
+          if (context.card.card_faces && context.card.card_faces.length > 1) {
               baseOptions.push({ label: 'Replace Back Face from URL...', action: () => handleReplaceCard(1) });
           } else {
               baseOptions.push({ label: 'Add Back Face from URL...', action: () => handleReplaceCard(1) });

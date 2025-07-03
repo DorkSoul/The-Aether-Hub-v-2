@@ -4,42 +4,92 @@ import './P2PControls.css';
 
 interface P2PControlsProps {
   peerId: string | null;
-  onHost: () => void;
-  onJoin: (hostId: string) => void;
+  onHost: (username: string) => void;
+  onJoin: (hostId: string, username: string) => void;
   isConnected: boolean;
+  connectedPlayers: { id: string; username: string }[];
+  kickPlayer: (peerId: string) => void;
+  isHost: boolean;
+  hostUsername: string;
 }
 
-const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, isConnected }) => {
+const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, isConnected, connectedPlayers, kickPlayer, isHost, hostUsername }) => {
   const [hostIdToJoin, setHostIdToJoin] = useState('');
+  const [username, setUsername] = useState('');
 
+  const handleHostClick = () => {
+    if (username.trim()) {
+      onHost(username.trim());
+    }
+  };
+  
   const handleJoinClick = () => {
-    if (hostIdToJoin.trim()) {
-      onJoin(hostIdToJoin.trim());
+    if (hostIdToJoin.trim() && username.trim()) {
+      onJoin(hostIdToJoin.trim(), username.trim());
     }
   };
 
   return (
     <div className="p2p-controls">
       <h4>Multiplayer</h4>
-      {peerId && !isConnected && (
-        <div className="peer-id-section">
+      <div className="input-group">
+        <label htmlFor="username-input">Username:</label>
+        <input
+          id="username-input"
+          type="text"
+          placeholder="Your name"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isConnected}
+          className="p2p-input"
+        />
+      </div>
+
+      {isHost && isConnected && (
+         <div className="peer-id-section">
           Your Peer ID: <strong>{peerId}</strong>
         </div>
       )}
-      {isConnected && <div className="connection-status">Connected</div>}
+
+      {isConnected ? (
+        <div className="connection-status">
+            {isHost ? 'Hosting Game' : `Connected to ${hostUsername}`}
+        </div>
+      ) : (
+        peerId && <div className="peer-id-section">
+          Your Peer ID: <strong>{peerId}</strong>
+        </div>
+      )}
 
       {!isConnected && (
         <div className="connection-actions">
-          <button onClick={onHost}>Host a Game</button>
-          <div className="join-section">
+          <button onClick={handleHostClick} disabled={!username.trim()}>Host a Game</button>
+          <div className="input-group join-section">
+            <label htmlFor="host-id-input">Host ID:</label>
             <input
+              id="host-id-input"
               type="text"
-              placeholder="Enter Host ID to Join"
+              placeholder="Enter Host ID"
               value={hostIdToJoin}
               onChange={(e) => setHostIdToJoin(e.target.value)}
+              className="p2p-input"
             />
-            <button onClick={handleJoinClick}>Join</button>
+            <button onClick={handleJoinClick} disabled={!hostIdToJoin.trim() || !username.trim()}>Join</button>
           </div>
+        </div>
+      )}
+
+      {isHost && isConnected && (
+        <div className="connected-players">
+          <h4>Connected Players:</h4>
+          <ul>
+            {connectedPlayers.map(player => (
+              <li key={player.id}>
+                <span>{player.username}</span>
+                <button onClick={() => kickPlayer(player.id)} className="kick-button">Kick</button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

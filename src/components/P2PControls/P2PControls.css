@@ -30,11 +30,61 @@
   gap: 1rem;
 }
 
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.input-group label {
+  flex-shrink: 0;
+}
+
+.p2p-input {
+  flex-grow: 1;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: white;
+}
+
 .join-section {
   display: flex;
   gap: 0.5rem;
 }
 
-.join-section input {
+.join-section .p2p-input {
   flex-grow: 1;
+}
+
+.connected-players ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.connected-players li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid #444;
+}
+
+.connected-players li:last-child {
+  border-bottom: none;
+}
+
+.kick-button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  background-color: #a04040;
+  border: 1px solid #c05050;
+  border-radius: 4px;
+}
+.kick-button:hover {
+    background-color: #ff4d4d;
+    border-color: #ff6b6b;
 }

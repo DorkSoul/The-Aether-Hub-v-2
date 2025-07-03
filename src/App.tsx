@@ -8,12 +8,11 @@ import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, Enter
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getPreviewWidth, saveTopRotated, getTopRotated, savePreviewWidth } from './utils/settings';
 import { saveGameState, loadGameState } from './utils/gameUtils';
 import { getCardsFromDB } from './utils/db';
-import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig, PlayerState } from './types';
+import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig, PlayerState, PeerInfo } from './types';
 import Tabs from './components/Tabs/Tabs';
 import Card from './components/Card/Card';
 import ContextMenu from './components/ContextMenu/ContextMenu';
 import { TextWithMana } from './components/TextWithMana/TextWithMana';
-import P2PControls from './components/P2PControls/P2PControls';
 import { useP2P } from './hooks/useP2P';
 import './App.css';
 
@@ -157,12 +156,15 @@ function App() {
   const [showFullscreenNotification, setShowFullscreenNotification] = useState(false);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [turnNotification, setTurnNotification] = useState('');
+  const [appNotification, setAppNotification] = useState<string | null>(null);
   const [orderMenu, setOrderMenu] = useState<{ x: number, y: number, players: PlayerConfig[] } | null>(null);
   const draggedItemIndex = useRef<number | null>(null);
   const dragOverItemIndex = useRef<number | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [hostId, setHostId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [username, setUsername] = useState('');
+  const [connectedPlayers, setConnectedPlayers] = useState<PeerInfo[]>([]);
 
   const handleOrderDragStart = (index: number) => {
     draggedItemIndex.current = index;
@@ -499,8 +501,25 @@ function App() {
     setView('game');
     setIsConnected(true);
   }, []);
+  
+  const handlePlayerConnected = useCallback((peerInfo: PeerInfo) => {
+    setConnectedPlayers(prev => [...prev, peerInfo]);
+  }, []);
+  
+  const handlePlayerDisconnected = useCallback((peerId: string) => {
+    setConnectedPlayers(prev => prev.filter(p => p.id !== peerId));
+  }, []);
+  
+  const handleKicked = useCallback(() => {
+    setAppNotification("You have been kicked by the host or the host has disconnected.");
+    setIsConnected(false);
+    setIsHost(false);
+    setHostId(null);
+    setConnectedPlayers([]);
+    setView('game-setup');
+  }, []);
 
-  const { peerId, broadcastGameState } = useP2P(isHost, hostId, handleGameStateReceived);
+  const { peerId, broadcastGameState, kickPlayer, hostUsername } = useP2P(username, isHost, hostId, handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked);
   
   const handleStartGame = async (settings: GameSettings, isMultiplayer: boolean) => {
     setGameSettings(settings);
@@ -549,6 +568,7 @@ function App() {
             return {
                 id: playerConfig.id,
                 name: playerConfig.name,
+                username: playerConfig.username,
                 color: playerConfig.color,
                 life: 40,
                 mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
@@ -567,6 +587,17 @@ function App() {
         if (settings.layout === 'tabs' && settings.players.length > 1) {
             setActiveOpponentId(settings.players[1].id);
         }
+        
+        if (isMultiplayer) {
+          const gameState = {
+            playerStates: initialPlayerStates,
+            activeOpponentId: settings.layout === 'tabs' && settings.players.length > 1 ? settings.players[1].id : null,
+            gameSettings: settings,
+            isTopRotated,
+          };
+          broadcastGameState(gameState);
+        }
+        
         setView('game');
 
     } catch (error) {
@@ -593,10 +624,11 @@ function App() {
     if (gameState && savesDirectoryHandle) {
         try {
             await saveGameState(gameState, savesDirectoryHandle);
-            alert('Game saved successfully!');
+            setAppNotification('Game saved successfully!');
+            setTimeout(() => setAppNotification(null), 3000);
         } catch (err) {
             console.error("Failed to save game:", err);
-            alert(`Could not save game. Error: ${err instanceof Error ? err.message : 'Unknown'}`);
+            setAppNotification(`Could not save game. Error: ${err instanceof Error ? err.message : 'Unknown'}`);
         }
     }
   };
@@ -747,15 +779,22 @@ function App() {
               onLoadGame={handleLoadGame}
               savesDirectoryHandle={savesDirectoryHandle}
               peerId={peerId}
-              onHost={() => {
+              onHost={(username) => {
+                setUsername(username);
                 setIsHost(true);
                 setHostId(null);
+                setIsConnected(true);
               }}
-              onJoin={(id) => {
+              onJoin={(id, username) => {
+                setUsername(username);
                 setIsHost(false);
                 setHostId(id);
               }}
               isConnected={isConnected}
+              connectedPlayers={connectedPlayers}
+              kickPlayer={kickPlayer}
+              isHost={isHost}
+              hostUsername={hostUsername}
             />
         );
       case 'game':
@@ -815,6 +854,15 @@ function App() {
       <div className={`turn-notification ${turnNotification ? 'visible' : ''}`}>
         {turnNotification}
       </div>
+
+       {appNotification && (
+        <div className="app-notification-backdrop">
+            <div className="app-notification">
+                <p>{appNotification}</p>
+                <button onClick={() => setAppNotification(null)}>OK</button>
+            </div>
+        </div>
+      )}
 
       <header className="app-header">
         <div className="header-left">

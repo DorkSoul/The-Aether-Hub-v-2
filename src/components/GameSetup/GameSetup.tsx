@@ -1,6 +1,6 @@
-// src/components/GameSetup.tsx
+// src/components/GameSetup/GameSetup.tsx
 import React, { useState, useEffect } from 'react';
-import type { PlayerConfig, GameSettings, GameState } from '../../types';
+import type { PlayerConfig, GameSettings, GameState, PeerInfo } from '../../types';
 import PlayerSetupRow from '../PlayerSetupRow/PlayerSetupRow';
 import { loadGameState } from '../../utils/gameUtils';
 import P2PControls from '../P2PControls/P2PControls';
@@ -12,9 +12,13 @@ interface GameSetupProps {
   onStartGame: (settings: GameSettings, isMultiplayer: boolean) => void;
   onLoadGame: (gameState: GameState) => void;
   peerId: string | null;
-  onHost: () => void;
-  onJoin: (hostId: string) => void;
+  onHost: (username: string) => void;
+  onJoin: (hostId: string, username: string) => void;
   isConnected: boolean;
+  connectedPlayers: PeerInfo[];
+  kickPlayer: (peerId: string) => void;
+  isHost: boolean;
+  hostUsername: string;
 }
 
 // Helper function to convert HEX to HSL color values
@@ -68,11 +72,15 @@ const GameSetup: React.FC<GameSetupProps> = ({
     peerId,
     onHost,
     onJoin,
-    isConnected
+    isConnected,
+    connectedPlayers,
+    kickPlayer,
+    isHost,
+    hostUsername,
 }) => {
   const [players, setPlayers] = useState<PlayerConfig[]>([
-    { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000' },
-    { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff' },
+    { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000', username: '' },
+    { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff', username: '' },
   ]);
   const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
   const [layout, setLayout] = useState<GameSettings['layout']>('tabs');
@@ -123,7 +131,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
       // Generate a bright, non-pastel color and convert to HEX
       const vibrantColor = hslToHex(newHue, 90, 55); // High saturation, mid-range lightness
 
-      setPlayers([...players, { id: newPlayerId, name: `Player ${newPlayerId}`, deckFile: deckFiles.length > 0 ? deckFiles[0] : null, color: vibrantColor }]);
+      setPlayers([...players, { id: newPlayerId, name: `Player ${newPlayerId}`, deckFile: deckFiles.length > 0 ? deckFiles[0] : null, color: vibrantColor, username: '' }]);
     }
   };
 
@@ -252,6 +260,10 @@ const GameSetup: React.FC<GameSetupProps> = ({
                   onHost={onHost}
                   onJoin={onJoin}
                   isConnected={isConnected}
+                  connectedPlayers={connectedPlayers}
+                  kickPlayer={kickPlayer}
+                  isHost={isHost}
+                  hostUsername={hostUsername}
                 />
             </div>
         )}
