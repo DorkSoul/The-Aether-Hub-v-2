@@ -508,99 +508,71 @@ function App() {
     setLoadedGameState(null);
   
     try {
-      const deckFilePromises = settings.players.map(p => {
-        if (!p.deckFile) throw new Error(`Player ${p.name} has no deck file.`);
-        return p.deckFile.getFile().then(file => file.text().then(text => JSON.parse(text)));
-      });
-      const parsedDecks: { name: string; cards: CardType[]; commanders?: string[] }[] = await Promise.all(deckFilePromises);
-  
-      const allCardIds = new Set<string>();
-      parsedDecks.forEach(deck => {
-        deck.cards.forEach(card => allCardIds.add(card.id));
-      });
-  
-      const cachedCards = await getCardsFromDB(Array.from(allCardIds));
-      const cardDataMap = new Map(cachedCards.map(c => [c.id, c]));
-  
-      const initialPlayerStates: PlayerState[] = settings.players.map((playerConfig, index) => {
-        const deckData = JSON.parse(JSON.stringify(parsedDecks[index]));
-        const oldIdToNewIdMap = new Map<string, string>();
-  
-        const allPlayerCards: CardType[] = deckData.cards.map((cardStub: CardType): CardType | null => {
-          const fullCardData = cardDataMap.get(cardStub.id);
-          if (!fullCardData) return null;
-  
-          const newInstanceId = crypto.randomUUID();
-          if (cardStub.instanceId) {
-            oldIdToNewIdMap.set(cardStub.instanceId, newInstanceId);
-          }
-  
-          return {
-            ...fullCardData,
-            ...cardStub,
-            instanceId: newInstanceId,
-            isTapped: false,
-            isFlipped: false,
-            counters: {},
-            customCounters: {},
-          };
-        }).filter((c: CardType | null): c is CardType => c !== null);
-  
-        const commanderInstanceIds = new Set(
-          (deckData.commanders || []).map((oldId: string) => oldIdToNewIdMap.get(oldId)).filter(Boolean)
-        );
-  
-        const commanders: CardType[] = [];
-        const mainDeck: CardType[] = [];
-  
-        allPlayerCards.forEach(card => {
-          if (card.instanceId && commanderInstanceIds.has(card.instanceId)) {
-            commanders.push(card);
-          } else {
-            mainDeck.push(card);
-          }
+        const deckFilePromises = settings.players.map(p => {
+            if (!p.deckFile) throw new Error(`Player ${p.name} has no deck file.`);
+            return p.deckFile.getFile().then(file => file.text().then(text => JSON.parse(text)));
         });
-  
-        const shuffledLibrary = shuffleDeck(mainDeck);
-        const initialHand = shuffledLibrary.slice(0, 7);
-        const library = shuffledLibrary.slice(7);
-  
-        return {
-          id: playerConfig.id,
-          name: playerConfig.name,
-          color: playerConfig.color,
-          life: 40,
-          mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
-          counters: {},
-          hand: initialHand,
-          library: library,
-          graveyard: [],
-          exile: [],
-          commandZone: commanders,
-          battlefield: [[], [], [], []],
-        };
-      });
-  
-      setPlayerStates(initialPlayerStates);
-  
-      if (settings.layout === 'tabs' && settings.players.length > 1) {
-        setActiveOpponentId(settings.players[1].id);
-      }
-      setView('game');
-  
-      if (isHost) {
-        const gameState: GameState = {
-          playerStates: initialPlayerStates,
-          gameSettings: settings,
-          activeOpponentId: settings.players.length > 1 ? settings.players[1].id : null,
-          isTopRotated,
-        };
-        broadcastGameState(gameState);
-      }
+        const parsedDecks: { name: string; cards: CardType[]; commanders?: string[] }[] = await Promise.all(deckFilePromises);
+
+        const allCardIds = new Set<string>();
+        parsedDecks.forEach(deck => {
+            deck.cards.forEach(card => allCardIds.add(card.id));
+        });
+
+        const cachedCards = await getCardsFromDB(Array.from(allCardIds));
+        const cardDataMap = new Map(cachedCards.map(c => [c.id, c]));
+
+        const initialPlayerStates: PlayerState[] = settings.players.map((playerConfig, index) => {
+            const deckData = parsedDecks[index];
+            
+            const allPlayerCards: CardType[] = deckData.cards.map((cardStub: CardType) => {
+                const fullCardData = cardDataMap.get(cardStub.id);
+                return {
+                    ...(fullCardData || {}),
+                    ...cardStub,
+                    instanceId: crypto.randomUUID(),
+                    isTapped: false,
+                    isFlipped: false,
+                    counters: {},
+                    customCounters: {},
+                };
+            });
+
+            const commanderInstanceIds = new Set(deckData.commanders || []);
+            const commanders = allPlayerCards.filter(card => commanderInstanceIds.has(card.id));
+            const mainDeck = allPlayerCards.filter(card => !commanderInstanceIds.has(card.id));
+
+            const shuffledLibrary = shuffleDeck(mainDeck);
+            const initialHand = shuffledLibrary.slice(0, 7);
+            const library = shuffledLibrary.slice(7);
+
+            return {
+                id: playerConfig.id,
+                name: playerConfig.name,
+                color: playerConfig.color,
+                life: 40,
+                mana: { white: 0, blue: 0, black: 0, red: 0, green: 0, colorless: 0 },
+                counters: {},
+                hand: initialHand,
+                library: library,
+                graveyard: [],
+                exile: [],
+                commandZone: commanders,
+                battlefield: [[], [], [], []],
+            };
+        });
+
+        setPlayerStates(initialPlayerStates);
+
+        if (settings.layout === 'tabs' && settings.players.length > 1) {
+            setActiveOpponentId(settings.players[1].id);
+        }
+        setView('game');
+
     } catch (error) {
-      console.error("Failed to start game:", error);
+        console.error("Failed to start game:", error);
     }
-  };
+};
 
   const handleLoadGame = (gameState: GameState) => {
       if (!gameState.gameSettings.playAreaLayout) {
