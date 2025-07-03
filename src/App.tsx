@@ -486,6 +486,10 @@ function App() {
     setActiveDeckCardCount(cardCount);
   }, []);
 
+  const handleConnected = useCallback(() => {
+    setIsConnected(true);
+  }, []);
+
   const handleGameStateReceived = useCallback((gameState: GameState) => {
     // Logic to handle incoming game state from the host
     console.log('Received game state:', gameState);
@@ -500,14 +504,21 @@ function App() {
     setIsConnected(true);
   }, []);
   
+  const handleKicked = useCallback(() => {
+    alert('You have been disconnected from the host.');
+    handleDisconnect();
+    setView('game-setup');
+  }, []);
+  
   const handleDisconnect = () => {
     disconnect();
     setIsHost(false);
     setHostId(null);
     setIsConnected(false);
+    setView('game-setup');
   };
 
-  const { peerId, broadcastGameState, connectedPeers, disconnect, kickPeer } = useP2P(isHost, hostId, handleGameStateReceived);
+  const { peerId, broadcastGameState, connectedPeers, disconnect, kickPeer } = useP2P(isHost, hostId, handleGameStateReceived, handleKicked, handleConnected);
   
   const handleStartGame = async (settings: GameSettings) => {
     setGameSettings(settings);

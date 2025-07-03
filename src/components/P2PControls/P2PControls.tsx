@@ -22,26 +22,6 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onLea
     }
   };
 
-  if (!peerId && !isConnected) {
-    return (
-      <div className="p2p-controls">
-        <h4>Multiplayer</h4>
-        <div className="connection-actions">
-          <button onClick={onHost}>Host a Game</button>
-          <div className="join-section">
-            <input
-              type="text"
-              placeholder="Enter Host ID to Join"
-              value={hostIdToJoin}
-              onChange={(e) => setHostIdToJoin(e.target.value)}
-            />
-            <button onClick={handleJoinClick}>Join</button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="p2p-controls">
       <h4>Multiplayer</h4>
@@ -72,6 +52,7 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onLea
         </>
       ) : (
         <div className="connection-actions">
+           <button onClick={onHost}>Host a Game</button>
           <div className="join-section">
             <input
               type="text"

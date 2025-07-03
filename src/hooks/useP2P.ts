@@ -5,9 +5,11 @@ import type { DataConnection } from 'peerjs';
 import type { GameState } from '../types';
 
 export const useP2P = (
-    isHost: boolean, 
-    hostIdToConnect: string | null, 
-    onGameStateReceived: (gameState: GameState) => void
+    isHost: boolean,
+    hostIdToConnect: string | null,
+    onGameStateReceived: (gameState: GameState) => void,
+    onKicked: () => void,
+    onConnected: () => void
 ) => {
     const [peerId, setPeerId] = useState<string | null>(null);
     const [connections, setConnections] = useState<DataConnection[]>([]);
@@ -61,16 +63,17 @@ export const useP2P = (
                         console.log('Connected to host:', hostIdToConnect);
                         setConnections([conn]);
                         setConnectedPeers([conn.peer]);
+                        onConnected();
                     });
                     conn.on('data', (data) => {
                         onGameStateReceived(data as GameState);
                     });
                     conn.on('error', (err) => {
                         console.error('P2P connection error:', err);
+                        onKicked();
                     });
                     conn.on('close', () => {
-                        setConnections(prev => prev.filter(c => c.peer !== conn.peer));
-                        setConnectedPeers(prev => prev.filter(p => p !== conn.peer));
+                        onKicked();
                     });
                 }
             });
@@ -102,7 +105,7 @@ export const useP2P = (
         } catch (error) {
             console.error("Failed to initialize PeerJS:", error);
         }
-    }, [isHost, hostIdToConnect, onGameStateReceived]);
+    }, [isHost, hostIdToConnect, onGameStateReceived, onKicked, onConnected]);
 
     const broadcastGameState = (gameState: GameState) => {
         if (isHost) {
