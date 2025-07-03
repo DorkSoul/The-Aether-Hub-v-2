@@ -9,6 +9,32 @@
   gap: 2rem;
 }
 
+.game-type-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.game-type-tabs button {
+    padding: 0.8rem 1.6rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-bottom-color 0.2s;
+}
+
+.game-type-tabs button.active {
+    color: #646cff;
+    border-bottom-color: #646cff;
+}
+
+.game-type-tabs button:not(.active):hover {
+    color: #8c92ff;
+}
+
 .game-setup-actions {
   display: flex;
   gap: 1rem;
@@ -94,4 +120,10 @@
 
 .layout-options button:not(.active):hover {
     background-color: #444;
+}
+
+.singleplayer-content, .multiplayer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
 }

@@ -502,7 +502,7 @@ function App() {
 
   const { peerId, broadcastGameState } = useP2P(isHost, hostId, handleGameStateReceived);
   
-  const handleStartGame = async (settings: GameSettings) => {
+  const handleStartGame = async (settings: GameSettings, isMultiplayer: boolean) => {
     setGameSettings(settings);
     setCurrentPlayerIndex(0);
     setLoadedGameState(null);
@@ -741,14 +741,11 @@ function App() {
         );
       case 'game-setup':
         return (
-          <div className="game-setup-container">
             <GameSetup
               decksDirectoryHandle={decksDirectoryHandle}
               onStartGame={handleStartGame}
               onLoadGame={handleLoadGame}
               savesDirectoryHandle={savesDirectoryHandle}
-            />
-            <P2PControls
               peerId={peerId}
               onHost={() => {
                 setIsHost(true);
@@ -760,7 +757,6 @@ function App() {
               }}
               isConnected={isConnected}
             />
-          </div>
         );
       case 'game':
         if (gameSettings && playerStates) {
