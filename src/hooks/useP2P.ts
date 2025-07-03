@@ -1,19 +1,19 @@
 // src/hooks/useP2P.ts
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Peer from 'peerjs';
-import type { DataConnection } from 'peerjs';
+import Peer, { type DataConnection } from 'peerjs';
 import type { GameState } from '../types';
 
 export const useP2P = (
+    username: string,
     isHost: boolean,
     hostIdToConnect: string | null,
     onGameStateReceived: (gameState: GameState) => void,
     onKicked: () => void,
-    onConnected: () => void
+    onConnected: (hostUsername: string) => void
 ) => {
     const [peerId, setPeerId] = useState<string | null>(null);
     const [connections, setConnections] = useState<DataConnection[]>([]);
-    const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
+    const [connectedPeers, setConnectedPeers] = useState<{ id: string; username: string }[]>([]);
     const peerInstance = useRef<Peer | null>(null);
 
     const disconnect = useCallback(() => {
@@ -29,16 +29,17 @@ export const useP2P = (
     const kickPeer = useCallback((peerIdToKick: string) => {
         const connToKick = connections.find(c => c.peer === peerIdToKick);
         if (connToKick) {
+            connToKick.send({ type: 'KICK' });
             connToKick.close();
             setConnections(prev => prev.filter(c => c.peer !== peerIdToKick));
-            setConnectedPeers(prev => prev.filter(p => p !== peerIdToKick));
+            setConnectedPeers(prev => prev.filter(p => p.id !== peerIdToKick));
         }
     }, [connections]);
 
     useEffect(() => {
-        if (!isHost && !hostIdToConnect) {
+        if (!username || (!isHost && !hostIdToConnect)) {
             if (peerInstance.current) {
-                peerInstance.current.destroy();
+                disconnect();
             }
             return;
         };
@@ -47,42 +48,53 @@ export const useP2P = (
             const peer = new Peer();
             peerInstance.current = peer;
 
-            const updateConnectedPeers = () => {
-                const connectedIds = connections.map(c => c.peer).filter(id => id !== peer.id);
-                setConnectedPeers(connectedIds);
-            };
-
             peer.on('open', (id) => {
                 setPeerId(id);
                 if (isHost) {
                     console.log('P2P Host is ready with ID:', id);
                 } else if (hostIdToConnect) {
                     console.log('Attempting to connect to host:', hostIdToConnect);
-                    const conn = peer.connect(hostIdToConnect);
+                    const conn = peer.connect(hostIdToConnect, { metadata: { username } });
+                    
+                    let isDisconnected = false;
+                    const handleDisconnection = () => {
+                        if (!isDisconnected) {
+                            isDisconnected = true;
+                            onKicked();
+                        }
+                    };
+
                     conn.on('open', () => {
-                        console.log('Connected to host:', hostIdToConnect);
                         setConnections([conn]);
-                        setConnectedPeers([conn.peer]);
-                        onConnected();
                     });
-                    conn.on('data', (data) => {
-                        onGameStateReceived(data as GameState);
+                    conn.on('data', (data: any) => {
+                        if (data.type === 'KICK') {
+                            handleDisconnection();
+                        } else if (data.type === 'HOST_USERNAME') {
+                            onConnected(data.username);
+                        } 
+                        else {
+                            onGameStateReceived(data as GameState);
+                        }
                     });
                     conn.on('error', (err) => {
                         console.error('P2P connection error:', err);
-                        onKicked();
+                        handleDisconnection();
                     });
                     conn.on('close', () => {
-                        onKicked();
+                        handleDisconnection();
                     });
                 }
             });
 
             if (isHost) {
                 peer.on('connection', (conn) => {
-                    console.log('New player connected:', conn.peer);
-                    setConnections(prev => [...prev, conn]);
-                    setConnectedPeers(prev => [...prev, conn.peer]);
+                    conn.on('open', () => {
+                        console.log('New player connected:', conn.peer, 'Username:', conn.metadata.username);
+                        setConnections(prev => [...prev, conn]);
+                        setConnectedPeers(prev => [...prev, { id: conn.peer, username: conn.metadata.username }]);
+                        conn.send({ type: 'HOST_USERNAME', username });
+                    });
 
                     conn.on('data', (data) => {
                         // Host would receive actions from clients and update the state
@@ -90,7 +102,7 @@ export const useP2P = (
                     });
                     conn.on('close', () => {
                         setConnections(prev => prev.filter(c => c.peer !== conn.peer));
-                        setConnectedPeers(prev => prev.filter(p => p !== conn.peer));
+                        setConnectedPeers(prev => prev.filter(p => p.id !== conn.peer));
                     });
                 });
             }
@@ -105,7 +117,7 @@ export const useP2P = (
         } catch (error) {
             console.error("Failed to initialize PeerJS:", error);
         }
-    }, [isHost, hostIdToConnect, onGameStateReceived, onKicked, onConnected]);
+    }, [isHost, hostIdToConnect, username, onGameStateReceived, onKicked, onConnected, disconnect]);
 
     const broadcastGameState = (gameState: GameState) => {
         if (isHost) {

@@ -4,27 +4,56 @@ import './P2PControls.css';
 
 interface P2PControlsProps {
   peerId: string | null;
-  onHost: () => void;
-  onJoin: (hostId: string) => void;
+  onHost: (username: string) => void;
+  onJoin: (hostId: string, username: string) => void;
   onLeave: () => void;
   onKick: (peerId: string) => void;
   isConnected: boolean;
   isHost: boolean;
-  connectedPeers: string[];
+  connectedPeers: { id: string; username: string }[];
+  hostUsername: string | null;
 }
 
-const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onLeave, onKick, isConnected, isHost, connectedPeers }) => {
+const P2PControls: React.FC<P2PControlsProps> = ({ 
+  peerId, 
+  onHost, 
+  onJoin, 
+  onLeave, 
+  onKick, 
+  isConnected, 
+  isHost, 
+  connectedPeers,
+  hostUsername
+}) => {
   const [hostIdToJoin, setHostIdToJoin] = useState('');
+  const [username, setUsername] = useState('');
 
   const handleJoinClick = () => {
-    if (hostIdToJoin.trim()) {
-      onJoin(hostIdToJoin.trim());
+    if (hostIdToJoin.trim() && username.trim()) {
+      onJoin(hostIdToJoin.trim(), username.trim());
     }
+  };
+  
+  const handleHostClick = () => {
+      if (username.trim()) {
+          onHost(username.trim());
+      }
   };
 
   return (
     <div className="p2p-controls">
       <h4>Multiplayer</h4>
+      <div className="username-section">
+        <input
+          type="text"
+          placeholder="Enter Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="username-input"
+          disabled={isConnected || isHost}
+        />
+      </div>
+
       {isHost ? (
         <>
           <div className="peer-id-section">
@@ -35,9 +64,9 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onLea
             {connectedPeers.length > 0 ? (
               <ul>
                 {connectedPeers.map(peer => (
-                  <li key={peer}>
-                    {peer}
-                    <button onClick={() => onKick(peer)} className="kick-button">Kick</button>
+                  <li key={peer.id}>
+                    {peer.username}
+                    <button onClick={() => onKick(peer.id)} className="kick-button">Kick</button>
                   </li>
                 ))}
               </ul>
@@ -47,12 +76,12 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onLea
         </>
       ) : isConnected ? (
         <>
-          <div className="connection-status">Connected to Host</div>
+          <div className="connection-status">Connected to {hostUsername || 'Host'}</div>
           <button onClick={onLeave} className="leave-game-btn">Leave Game</button>
         </>
       ) : (
         <div className="connection-actions">
-           <button onClick={onHost}>Host a Game</button>
+           <button onClick={handleHostClick} disabled={!username.trim()}>Host a Game</button>
           <div className="join-section">
             <input
               type="text"
@@ -60,7 +89,7 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onLea
               value={hostIdToJoin}
               onChange={(e) => setHostIdToJoin(e.target.value)}
             />
-            <button onClick={handleJoinClick}>Join</button>
+            <button onClick={handleJoinClick} disabled={!username.trim() || !hostIdToJoin.trim()}>Join</button>
           </div>
         </div>
       )}

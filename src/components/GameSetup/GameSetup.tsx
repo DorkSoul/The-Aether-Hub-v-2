@@ -12,15 +12,17 @@ interface GameSetupProps {
   onStartGame: (settings: GameSettings) => void;
   onLoadGame: (gameState: GameState) => void;
   peerId: string | null;
-  onHost: () => void;
-  onJoin: (hostId: string) => void;
+  onHost: (username: string) => void;
+  onJoin: (hostId: string, username: string) => void;
   onLeave: () => void;
   onKick: (peerId: string) => void;
   isConnected: boolean;
   isHost: boolean;
-  connectedPeers: string[];
+  connectedPeers: { id: string; username: string }[];
+  hostUsername: string | null;
 }
 
+// ... (rest of the file is the same, just the props for GameSetupProps are updated)
 // Helper function to convert HEX to HSL color values
 const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
     hex = hex.replace(/^#/, '');
@@ -64,7 +66,21 @@ const hslToHex = (h: number, s: number, l: number): string => {
   return `#${f(0)}${f(8)}${f(4)}`;
 };
 
-const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirectoryHandle, onStartGame, onLoadGame, peerId, onHost, onJoin, onLeave, onKick, isConnected, isHost, connectedPeers }) => {
+const GameSetup: React.FC<GameSetupProps> = ({ 
+    decksDirectoryHandle, 
+    savesDirectoryHandle, 
+    onStartGame, 
+    onLoadGame, 
+    peerId, 
+    onHost, 
+    onJoin, 
+    onLeave, 
+    onKick, 
+    isConnected, 
+    isHost, 
+    connectedPeers,
+    hostUsername
+}) => {
   const [players, setPlayers] = useState<PlayerConfig[]>([
     { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000' },
     { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff' },
@@ -164,6 +180,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ decksDirectoryHandle, savesDirect
         isConnected={isConnected}
         isHost={isHost}
         connectedPeers={connectedPeers}
+        hostUsername={hostUsername}
       />
       <div className="game-setup-actions">
         <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">

@@ -14,6 +14,16 @@
   text-align: center;
 }
 
+.username-section {
+  display: flex;
+}
+
+.username-input {
+  flex-grow: 1;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
 .peer-id-section {
   text-align: center;
 }
@@ -37,4 +47,21 @@
 
 .join-section input {
   flex-grow: 1;
+}
+
+.connected-players ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.connected-players li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.kick-button {
+    margin-left: 1rem;
 }

@@ -163,6 +163,8 @@ function App() {
   const [isHost, setIsHost] = useState(false);
   const [hostId, setHostId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [username, setUsername] = useState('');
+  const [hostUsername, setHostUsername] = useState<string | null>(null);
 
   const handleOrderDragStart = (index: number) => {
     draggedItemIndex.current = index;
@@ -486,9 +488,12 @@ function App() {
     setActiveDeckCardCount(cardCount);
   }, []);
 
-  const handleConnected = useCallback(() => {
+  const handleConnected = useCallback((peerUsername: string) => {
     setIsConnected(true);
-  }, []);
+    if (!isHost) {
+      setHostUsername(peerUsername);
+    }
+  }, [isHost]);
 
   const handleGameStateReceived = useCallback((gameState: GameState) => {
     // Logic to handle incoming game state from the host
@@ -510,23 +515,52 @@ function App() {
     setView('game-setup');
   }, []);
   
+  const handleHost = (user: string) => {
+    setUsername(user);
+    setIsHost(true);
+    setHostId(null);
+  };
+  
+  const handleJoin = (id: string, user: string) => {
+    setUsername(user);
+    setIsHost(false);
+    setHostId(id);
+  };
+  
   const handleDisconnect = () => {
     disconnect();
     setIsHost(false);
     setHostId(null);
     setIsConnected(false);
+    setHostUsername(null);
     setView('game-setup');
   };
 
-  const { peerId, broadcastGameState, connectedPeers, disconnect, kickPeer } = useP2P(isHost, hostId, handleGameStateReceived, handleKicked, handleConnected);
+  const { peerId, broadcastGameState, connectedPeers, disconnect, kickPeer } = useP2P(
+    username,
+    isHost, 
+    hostId, 
+    handleGameStateReceived, 
+    handleKicked, 
+    handleConnected
+  );
   
   const handleStartGame = async (settings: GameSettings) => {
-    setGameSettings(settings);
+    const playersWithUsernames = settings.players.map(p => {
+        if (p.id === '1') { // Assuming player 1 is the local player
+            return { ...p, name: username || p.name };
+        }
+        const peer = connectedPeers.find(peer => peer.id === p.id);
+        return { ...p, name: peer ? peer.username : p.name };
+    });
+
+    const newSettings = { ...settings, players: playersWithUsernames };
+    setGameSettings(newSettings);
     setCurrentPlayerIndex(0);
     setLoadedGameState(null);
   
     try {
-      const deckFilePromises = settings.players.map(p => {
+      const deckFilePromises = newSettings.players.map(p => {
         if (!p.deckFile) throw new Error(`Player ${p.name} has no deck file.`);
         return p.deckFile.getFile().then(file => file.text().then(text => JSON.parse(text)));
       });
@@ -540,7 +574,7 @@ function App() {
       const cachedCards = await getCardsFromDB(Array.from(allCardIds));
       const cardDataMap = new Map(cachedCards.map(c => [c.id, c]));
   
-      const initialPlayerStates: PlayerState[] = settings.players.map((playerConfig, index) => {
+      const initialPlayerStates: PlayerState[] = newSettings.players.map((playerConfig, index) => {
         const deckData = JSON.parse(JSON.stringify(parsedDecks[index]));
         const oldIdToNewIdMap = new Map<string, string>();
   
@@ -601,16 +635,16 @@ function App() {
   
       setPlayerStates(initialPlayerStates);
   
-      if (settings.layout === 'tabs' && settings.players.length > 1) {
-        setActiveOpponentId(settings.players[1].id);
+      if (newSettings.layout === 'tabs' && newSettings.players.length > 1) {
+        setActiveOpponentId(newSettings.players[1].id);
       }
       setView('game');
   
       if (isHost) {
         const gameState: GameState = {
           playerStates: initialPlayerStates,
-          gameSettings: settings,
-          activeOpponentId: settings.players.length > 1 ? settings.players[1].id : null,
+          gameSettings: newSettings,
+          activeOpponentId: newSettings.players.length > 1 ? newSettings.players[1].id : null,
           isTopRotated,
         };
         broadcastGameState(gameState);
@@ -794,19 +828,14 @@ function App() {
               onStartGame={handleStartGame}
               onLoadGame={handleLoadGame}
               peerId={peerId}
-              onHost={() => {
-                setIsHost(true);
-                setHostId(null);
-              }}
-              onJoin={(id) => {
-                setIsHost(false);
-                setHostId(id);
-              }}
+              onHost={handleHost}
+              onJoin={handleJoin}
               onLeave={handleDisconnect}
               onKick={kickPeer}
               isConnected={isConnected}
               isHost={isHost}
               connectedPeers={connectedPeers}
+              hostUsername={hostUsername}
             />
           </div>
         );
