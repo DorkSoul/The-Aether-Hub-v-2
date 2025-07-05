@@ -41,6 +41,7 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         fetchDeckNames();
     }, [deckFiles]);
 
+  const isMultiplayer = isHost || isMultiplayerClient;
 
   return (
     <div className="player-setup-row">
@@ -52,44 +53,51 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         title="Select player color"
         disabled={!isLocalPlayer}
       />
-      <input
-        type="text"
-        placeholder={`Player ${player.id}`}
-        value={player.name}
-        onChange={(e) => onUpdate('name', e.target.value)}
-        className="player-name-input"
-        disabled={!isLocalPlayer && isMultiplayerClient}
-      />
-      {isLocalPlayer || !isMultiplayerClient ? (
-        <select
-          value={player.deckFile?.name || ''}
-          onChange={(e) => {
-            const selectedFile = deckFiles.find(f => f.name === e.target.value);
-            onUpdate('deckFile', selectedFile || null);
-          }}
-          className="player-deck-select"
-          required
-        >
-          <option value="" disabled>Select a deck</option>
-          {deckInfos.map(info => (
-            <option key={info.fileHandle.name} value={info.fileHandle.name}>
-              {info.displayName}
-            </option>
-          ))}
-        </select>
+      {isMultiplayer ? (
+        <div className="player-name-display">{player.name}</div>
       ) : (
-        <div className="player-deck-display">{player.deckName || 'No deck selected'}</div>
+        <input
+          type="text"
+          placeholder={`Player ${player.id}`}
+          value={player.name}
+          onChange={(e) => onUpdate('name', e.target.value)}
+          className="player-name-input"
+        />
       )}
-      {isHost && !isLocalPlayer && (
-        <button onClick={onKick} className="remove-player-btn">
-          Kick
-        </button>
-      )}
-      {!isHost && isRemoveable && (
-        <button onClick={onRemove} className="remove-player-btn">
-          Remove
-        </button>
-      )}
+      <div className="player-deck-container">
+        {isLocalPlayer || !isMultiplayerClient ? (
+          <select
+            value={player.deckFile?.name || ''}
+            onChange={(e) => {
+              const selectedFile = deckFiles.find(f => f.name === e.target.value);
+              onUpdate('deckFile', selectedFile || null);
+            }}
+            className="player-deck-select"
+            required
+          >
+            <option value="" disabled>Select a deck</option>
+            {deckInfos.map(info => (
+              <option key={info.fileHandle.name} value={info.fileHandle.name}>
+                {info.displayName}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="player-deck-display">{player.deckName || 'No deck selected'}</div>
+        )}
+      </div>
+      <div className="player-action-cell">
+        {isHost && !isLocalPlayer && (
+          <button onClick={onKick} className="remove-player-btn">
+            Kick
+          </button>
+        )}
+        {!isHost && isRemoveable && (
+          <button onClick={onRemove} className="remove-player-btn">
+            Remove
+          </button>
+        )}
+      </div>
     </div>
   );
 };

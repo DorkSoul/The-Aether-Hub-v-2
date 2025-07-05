@@ -70,24 +70,35 @@
   border: none;
   background: none;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.player-name-input {
-  flex-grow: 1;
+.player-name-input, .player-name-display {
+  flex: 1 1 30%;
   padding: 0.5rem;
   font-size: 1rem;
 }
 
-.player-deck-select {
-  flex-grow: 2;
+.player-name-display {
+    background-color: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #ccc;
+    text-align: left;
+}
+
+.player-deck-container {
+    flex: 1 1 50%;
+    display: flex;
+}
+
+.player-deck-select, .player-deck-display {
+  width: 100%;
   padding: 0.5rem;
   font-size: 1rem;
 }
 
 .player-deck-display {
-    flex-grow: 2;
-    padding: 0.5rem;
-    font-size: 1rem;
     background-color: #1a1a1a;
     border: 1px solid #555;
     border-radius: 4px;
@@ -95,8 +106,15 @@
     text-align: center;
 }
 
+.player-action-cell {
+    width: 100px;
+    flex-shrink: 0;
+    text-align: right;
+}
+
 .remove-player-btn {
   font-weight: bold;
+  width: 100%;
 }
 
 .start-game-btn {
