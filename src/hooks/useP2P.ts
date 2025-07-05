@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 import Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
-import type { GameState, PeerInfo } from '../types';
+import type { GameState, PeerInfo, DeckPayload } from '../types';
 
 export const useP2P = (
     onGameStateReceived: (gameState: GameState) => void,
@@ -10,6 +10,7 @@ export const useP2P = (
     onPlayerDisconnected: (peerId: string) => void,
     onKicked: () => void,
     onConnect: () => void,
+    onDeckSelected: (peerId: string, deck: DeckPayload) => void
 ) => {
     const [peerId, setPeerId] = useState<string | null>(null);
     const [connections, setConnections] = useState<DataConnection[]>([]);
@@ -64,8 +65,11 @@ export const useP2P = (
                 onPlayerConnected({ id: conn.peer, username: conn.metadata.username });
                 conn.send({ type: 'host-username', payload: username });
 
-                conn.on('data', (data) => {
+                conn.on('data', (data: any) => {
                     console.log('Received data from client:', data);
+                    if (data.type === 'deck-selection') {
+                        onDeckSelected(conn.peer, data.payload as DeckPayload);
+                    }
                 });
                 conn.on('close', () => {
                     console.log('Player disconnected:', conn.peer);
@@ -115,6 +119,12 @@ export const useP2P = (
             });
         }
     };
+    
+    const sendDeckSelection = (deck: DeckPayload) => {
+        if (!isHost && connections.length > 0) {
+            connections[0].send({ type: 'deck-selection', payload: deck });
+        }
+    };
 
     const kickPlayer = (peerIdToKick: string) => {
         const connToKick = connections.find(c => c.peer === peerIdToKick);
@@ -126,5 +136,5 @@ export const useP2P = (
         }
     };
 
-    return { peerId, isHost, hostUsername, connections, startHosting, startConnecting, broadcastGameState, kickPlayer, disconnect };
+    return { peerId, isHost, hostUsername, connections, startHosting, startConnecting, broadcastGameState, kickPlayer, disconnect, sendDeckSelection };
 };

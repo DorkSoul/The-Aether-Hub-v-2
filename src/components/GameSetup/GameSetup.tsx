@@ -1,6 +1,6 @@
 // src/components/GameSetup/GameSetup.tsx
 import React, { useState, useEffect } from 'react';
-import type { PlayerConfig, GameSettings, GameState, PeerInfo } from '../../types';
+import type { PlayerConfig, GameSettings, GameState, PeerInfo, DeckPayload } from '../../types';
 import PlayerSetupRow from '../PlayerSetupRow/PlayerSetupRow';
 import { loadGameState } from '../../utils/gameUtils';
 import P2PControls from '../P2PControls/P2PControls';
@@ -21,6 +21,9 @@ interface GameSetupProps {
   kickPlayer: (peerId: string) => void;
   isHost: boolean;
   hostUsername: string;
+  sendDeckSelection: (deck: DeckPayload) => void;
+  players: PlayerConfig[];
+  setPlayers: React.Dispatch<React.SetStateAction<PlayerConfig[]>>;
 }
 
 // Helper function to convert HEX to HSL color values
@@ -81,15 +84,15 @@ const GameSetup: React.FC<GameSetupProps> = ({
     kickPlayer,
     isHost,
     hostUsername,
+    sendDeckSelection,
+    players,
+    setPlayers
 }) => {
-  const [players, setPlayers] = useState<PlayerConfig[]>([
-    { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000', username: '' },
-    { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff', username: '' },
-  ]);
   const [deckFiles, setDeckFiles] = useState<FileSystemFileHandle[]>([]);
   const [layout, setLayout] = useState<GameSettings['layout']>('tabs');
   const [playAreaLayout, setPlayAreaLayout] = useState<GameSettings['playAreaLayout']>('rows');
   const [activeTab, setActiveTab] = useState<'singleplayer' | 'multiplayer'>('singleplayer');
+  const [multiplayerView, setMultiplayerView] = useState<'initial' | 'setup'>('initial');
 
   useEffect(() => {
     const loadDecks = async () => {
@@ -101,7 +104,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
         }
       }
       setDeckFiles(files);
-      if (files.length > 0) {
+      if (files.length > 0 && players.every(p => p.deckFile === null)) {
         setPlayers(prevPlayers => prevPlayers.map(p => ({
           ...p,
           deckFile: p.deckFile || files[0],
@@ -109,7 +112,13 @@ const GameSetup: React.FC<GameSetupProps> = ({
       }
     };
     loadDecks();
-  }, [decksDirectoryHandle]);
+  }, [decksDirectoryHandle, players, setPlayers]);
+
+  useEffect(() => {
+    if (!isConnected) {
+        setMultiplayerView('initial');
+    }
+  }, [isConnected]);
 
   const handleAddPlayer = () => {
     if (players.length < 8) {
@@ -146,6 +155,16 @@ const GameSetup: React.FC<GameSetupProps> = ({
   const handleUpdatePlayer = (id: string, field: keyof PlayerConfig, value: any) => {
     setPlayers(players.map(p => (p.id === id ? { ...p, [field]: value } : p)));
   };
+
+  const handleClientDeckSelect = async (id: string, fileHandle: FileSystemFileHandle | null) => {
+    handleUpdatePlayer(id, 'deckFile', fileHandle);
+    if(fileHandle){
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        const deckData: DeckPayload = JSON.parse(text);
+        sendDeckSelection(deckData);
+    }
+  }
   
   const handleLoadGameClick = async () => {
       const gameState = await loadGameState(savesDirectoryHandle);
@@ -154,13 +173,85 @@ const GameSetup: React.FC<GameSetupProps> = ({
       }
   };
 
-  const isSetupComplete = players.every(p => p.name.trim() !== '' && p.deckFile !== null);
+  const isSetupComplete = players.every(p => p.name.trim() !== '' && (p.deckFile !== null || p.deckName));
 
   const handleStart = () => {
     if (isSetupComplete) {
       onStartGame({ players, layout, playAreaLayout }, activeTab === 'multiplayer');
     }
   };
+
+  const handleProceedToHostSetup = (username: string) => {
+    onHost(username);
+    setMultiplayerView('setup');
+  };
+
+  const renderGameSettings = () => (
+    <>
+      <div className="setup-section">
+        <h3>Players</h3>
+        <div className="player-list">
+          {players.map(p => (
+            <PlayerSetupRow
+              key={p.id}
+              player={p}
+              deckFiles={deckFiles}
+              onUpdate={(field, value) => {
+                if (activeTab === 'multiplayer' && !isHost && field === 'deckFile') {
+                    handleClientDeckSelect(p.id, value);
+                } else {
+                    handleUpdatePlayer(p.id, field, value);
+                }
+              }}
+              onRemove={() => handleRemovePlayer(p.id)}
+              isRemoveable={players.length > 1}
+              isLocalPlayer={!isHost ? p.id === peerId : true}
+              isMultiplayerClient={activeTab === 'multiplayer' && !isHost}
+            />
+          ))}
+        </div>
+        <button onClick={handleAddPlayer} disabled={players.length >= 8}>
+          Add Player
+        </button>
+      </div>
+
+      <div className="setup-section">
+        <h3>Game Layout</h3>
+        <div className="layout-options">
+          <button
+            className={layout === 'tabs' ? 'active' : ''}
+            onClick={() => setLayout('tabs')}
+          >
+            Tabbed opponents
+          </button>
+          <button
+            className={layout === 'split' ? 'active' : ''}
+            onClick={() => setLayout('split')}
+          >
+            Split Screen
+          </button>
+        </div>
+      </div>
+      
+      <div className="setup-section">
+        <h3>Play Area</h3>
+        <div className="layout-options">
+           <button
+            className={playAreaLayout === 'rows' ? 'active' : ''}
+            onClick={() => setPlayAreaLayout('rows')}
+          >
+            4 Rows
+          </button>
+          <button
+            className={playAreaLayout === 'freeform' ? 'active' : ''}
+            onClick={() => setPlayAreaLayout('freeform')}
+          >
+            Freeform
+          </button>
+        </div>
+      </div>
+    </>
+  );
 
   if (!decksDirectoryHandle) {
     return (
@@ -190,87 +281,72 @@ const GameSetup: React.FC<GameSetupProps> = ({
         
         {activeTab === 'singleplayer' && (
             <div className='singleplayer-content'>
-                <div className="game-setup-actions">
-                    <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
-                        Start New Game
-                    </button>
-                    <button onClick={handleLoadGameClick} className="start-game-btn">
-                        Load Game
-                    </button>
-                </div>
-
+              <div className="game-setup-actions">
+                  <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
+                      Start New Game
+                  </button>
+                  <button onClick={handleLoadGameClick} className="start-game-btn">
+                      Load Game
+                  </button>
+              </div>
               <h2>New Game Setup</h2>
-              
-              <div className="setup-section">
-                <h3>Players</h3>
-                <div className="player-list">
-                  {players.map(p => (
-                    <PlayerSetupRow
-                      key={p.id}
-                      player={p}
-                      deckFiles={deckFiles}
-                      onUpdate={(field, value) => handleUpdatePlayer(p.id, field, value)}
-                      onRemove={() => handleRemovePlayer(p.id)}
-                      isRemoveable={true}
-                    />
-                  ))}
-                </div>
-                <button onClick={handleAddPlayer} disabled={players.length >= 8}>
-                  Add Player
-                </button>
-              </div>
-
-              <div className="setup-section">
-                <h3>Game Layout</h3>
-                <div className="layout-options">
-                  <button
-                    className={layout === 'tabs' ? 'active' : ''}
-                    onClick={() => setLayout('tabs')}
-                  >
-                    Tabbed opponents
-                  </button>
-                  <button
-                    className={layout === 'split' ? 'active' : ''}
-                    onClick={() => setLayout('split')}
-                  >
-                    Split Screen
-                  </button>
-                </div>
-              </div>
-              
-              <div className="setup-section">
-                <h3>Play Area</h3>
-                <div className="layout-options">
-                   <button
-                    className={playAreaLayout === 'rows' ? 'active' : ''}
-                    onClick={() => setPlayAreaLayout('rows')}
-                  >
-                    4 Rows
-                  </button>
-                  <button
-                    className={playAreaLayout === 'freeform' ? 'active' : ''}
-                    onClick={() => setPlayAreaLayout('freeform')}
-                  >
-                    Freeform
-                  </button>
-                </div>
-              </div>
+              {renderGameSettings()}
             </div>
         )}
+
         {activeTab === 'multiplayer' && (
             <div className="multiplayer-content">
-                <P2PControls
-                  peerId={peerId}
-                  onHost={onHost}
-                  onJoin={onJoin}
-                  onDisconnect={onDisconnect}
-                  onStopHosting={onStopHosting}
-                  isConnected={isConnected}
-                  connectedPlayers={connectedPlayers}
-                  kickPlayer={kickPlayer}
-                  isHost={isHost}
-                  hostUsername={hostUsername}
-                />
+                {(multiplayerView === 'initial' || isHost) && (
+                    <P2PControls
+                        peerId={peerId}
+                        onProceedToHostSetup={handleProceedToHostSetup}
+                        onJoin={onJoin}
+                        onDisconnect={onDisconnect}
+                        onStopHosting={onStopHosting}
+                        isConnected={isConnected}
+                        connectedPlayers={connectedPlayers}
+                        kickPlayer={kickPlayer}
+                        isHost={isHost}
+                        hostUsername={hostUsername}
+                    />
+                )}
+                
+                {multiplayerView === 'setup' && isHost && (
+                    <>
+                        <div className="game-setup-actions">
+                            <button onClick={handleStart} disabled={!isSetupComplete} className="start-game-btn">
+                                Start Game for Everyone
+                            </button>
+                        </div>
+                        <h2>Host Game Setup</h2>
+                        {renderGameSettings()}
+                    </>
+                )}
+
+                {isConnected && !isHost && (
+                    <div className="setup-section">
+                        <h4>Connected to {hostUsername}</h4>
+                        <p>Select your deck below. The host will start the game.</p>
+                        {players.find(p => p.id === peerId) && (
+                            <PlayerSetupRow
+                                key={peerId}
+                                player={players.find(p => p.id === peerId)!}
+                                deckFiles={deckFiles}
+                                onUpdate={(field, value) => {
+                                    if (field === 'deckFile') {
+                                        handleClientDeckSelect(peerId!, value);
+                                    } else {
+                                        handleUpdatePlayer(peerId!, field, value);
+                                    }
+                                }}
+                                onRemove={() => {}}
+                                isRemoveable={false}
+                                isLocalPlayer={true}
+                                isMultiplayerClient={true}
+                            />
+                        )}
+                    </div>
+                )}
             </div>
         )}
     </div>

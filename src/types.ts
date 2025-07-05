@@ -67,6 +67,7 @@ export interface PlayerConfig {
     id: string;
     name: string;
     deckFile: FileSystemFileHandle | null;
+    deckName?: string;
     color: string;
     username: string;
 }
@@ -139,4 +140,10 @@ export interface GameState {
 export interface PeerInfo {
     id: string;
     username: string;
+}
+
+export interface DeckPayload {
+    name: string;
+    cards: Card[];
+    commanders?: string[];
 }

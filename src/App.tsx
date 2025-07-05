@@ -8,7 +8,7 @@ import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, Enter
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getPreviewWidth, saveTopRotated, getTopRotated, savePreviewWidth } from './utils/settings';
 import { saveGameState, loadGameState } from './utils/gameUtils';
 import { getCardsFromDB } from './utils/db';
-import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig, PlayerState, PeerInfo } from './types';
+import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig, PlayerState, PeerInfo, DeckPayload } from './types';
 import Tabs from './components/Tabs/Tabs';
 import Card from './components/Card/Card';
 import ContextMenu from './components/ContextMenu/ContextMenu';
@@ -131,6 +131,10 @@ function App() {
   const [activeDeckName, setActiveDeckName] = useState('');
   const [activeDeckCardCount, setActiveDeckCardCount] = useState(0);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
+  const [players, setPlayers] = useState<PlayerConfig[]>([
+    { id: '1', name: 'Player 1', deckFile: null, color: '#ff0000', username: '' },
+    { id: '2', name: 'Player 2', deckFile: null, color: '#0000ff', username: '' },
+  ]);
   const [playerStates, setPlayerStates] = useState<PlayerState[] | null>(null);
   const [activeOpponentId, setActiveOpponentId] = useState<string | null>(null);
   const [loadedGameState, setLoadedGameState] = useState<GameState | null>(null);
@@ -162,6 +166,8 @@ function App() {
   const dragOverItemIndex = useRef<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectedPlayers, setConnectedPlayers] = useState<PeerInfo[]>([]);
+  const [hostingUsername, setHostingUsername] = useState<string | null>(null);
+  const [clientUsername, setClientUsername] = useState<string>('');
 
   const handleOrderDragStart = (index: number) => {
     draggedItemIndex.current = index;
@@ -501,10 +507,12 @@ function App() {
   
   const handlePlayerConnected = useCallback((peerInfo: PeerInfo) => {
     setConnectedPlayers(prev => [...prev, peerInfo]);
+    setPlayers(prev => [...prev, { id: peerInfo.id, name: peerInfo.username, deckFile: null, color: '#cccccc', username: peerInfo.username }]);
   }, []);
   
   const handlePlayerDisconnected = useCallback((peerId: string) => {
     setConnectedPlayers(prev => prev.filter(p => p.id !== peerId));
+    setPlayers(prev => prev.filter(p => p.id !== peerId));
   }, []);
   
   const handleKicked = useCallback(() => {
@@ -517,15 +525,33 @@ function App() {
   const handleClientConnected = useCallback(() => {
     setIsConnected(true);
   }, []);
+
+  const handleDeckSelectedByClient = useCallback((peerId: string, deck: DeckPayload) => {
+    setPlayers(prev => prev.map(p => p.id === peerId ? { ...p, deckName: deck.name } : p));
+  }, []);
   
-  const { peerId, isHost, hostUsername, broadcastGameState, kickPlayer, startHosting, startConnecting, disconnect } = useP2P(handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked, handleClientConnected);
+  const { peerId, isHost, hostUsername, startHosting, startConnecting, broadcastGameState, kickPlayer, disconnect, sendDeckSelection } = useP2P(handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked, handleClientConnected, handleDeckSelectedByClient);
+
+  useEffect(() => {
+    if (isHost && peerId && hostingUsername) {
+        setPlayers([{ id: peerId, name: hostingUsername, deckFile: null, color: '#ff0000', username: hostingUsername }]);
+        setHostingUsername(null);
+    }
+  }, [isHost, peerId, hostingUsername]);
+
+  useEffect(() => {
+    if (isConnected && !isHost && peerId && clientUsername) {
+        setPlayers([{ id: peerId, name: clientUsername, deckFile: null, color: '#00ff00', username: clientUsername }]);
+    }
+  }, [isConnected, isHost, peerId, clientUsername]);
   
   const handleOnHost = (username: string) => {
     startHosting(username);
-    setIsConnected(true);
+    setHostingUsername(username);
   };
 
   const handleOnJoin = (hostId: string, username: string) => {
+    setClientUsername(username);
     startConnecting(username, hostId);
   }
 
@@ -808,6 +834,9 @@ function App() {
               kickPlayer={kickPlayer}
               isHost={isHost}
               hostUsername={hostUsername}
+              sendDeckSelection={sendDeckSelection}
+              players={players}
+              setPlayers={setPlayers}
             />
         );
       case 'game':

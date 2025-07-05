@@ -8,6 +8,8 @@ interface PlayerSetupRowProps {
   onUpdate: (field: keyof PlayerConfig, value: any) => void;
   onRemove: () => void;
   isRemoveable: boolean;
+  isLocalPlayer: boolean;
+  isMultiplayerClient: boolean;
 }
 
 interface DeckInfo {
@@ -15,7 +17,7 @@ interface DeckInfo {
     displayName: string;
 }
 
-const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUpdate, onRemove, isRemoveable }) => {
+const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUpdate, onRemove, isRemoveable, isLocalPlayer, isMultiplayerClient }) => {
     const [deckInfos, setDeckInfos] = useState<DeckInfo[]>([]);
 
     useEffect(() => {
@@ -46,6 +48,7 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         onChange={(e) => onUpdate('color', e.target.value)}
         className="player-color-input"
         title="Select player color"
+        disabled={!isLocalPlayer}
       />
       <input
         type="text"
@@ -53,22 +56,28 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         value={player.name}
         onChange={(e) => onUpdate('name', e.target.value)}
         className="player-name-input"
+        disabled={!isLocalPlayer && isMultiplayerClient}
       />
-      <select
-        value={player.deckFile?.name || ''}
-        onChange={(e) => {
-          const selectedFile = deckFiles.find(f => f.name === e.target.value);
-          onUpdate('deckFile', selectedFile || null);
-        }}
-        className="player-deck-select"
-        required
-      >
-        {deckInfos.map(info => (
-          <option key={info.fileHandle.name} value={info.fileHandle.name}>
-            {info.displayName}
-          </option>
-        ))}
-      </select>
+      {isLocalPlayer || !isMultiplayerClient ? (
+        <select
+          value={player.deckFile?.name || ''}
+          onChange={(e) => {
+            const selectedFile = deckFiles.find(f => f.name === e.target.value);
+            onUpdate('deckFile', selectedFile || null);
+          }}
+          className="player-deck-select"
+          required
+        >
+          <option value="" disabled>Select a deck</option>
+          {deckInfos.map(info => (
+            <option key={info.fileHandle.name} value={info.fileHandle.name}>
+              {info.displayName}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div className="player-deck-display">{player.deckName || 'No deck selected'}</div>
+      )}
       {isRemoveable && (
         <button onClick={onRemove} className="remove-player-btn">
           Remove

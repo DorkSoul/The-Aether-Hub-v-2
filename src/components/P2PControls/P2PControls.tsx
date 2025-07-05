@@ -4,7 +4,7 @@ import './P2PControls.css';
 
 interface P2PControlsProps {
   peerId: string | null;
-  onHost: (username: string) => void;
+  onProceedToHostSetup: (username: string) => void;
   onJoin: (hostId: string, username: string) => void;
   onDisconnect: () => void;
   onStopHosting: () => void;
@@ -15,14 +15,14 @@ interface P2PControlsProps {
   hostUsername: string;
 }
 
-const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onHost, onJoin, onDisconnect, onStopHosting, isConnected, connectedPlayers, kickPlayer, isHost, hostUsername }) => {
+const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onProceedToHostSetup, onJoin, onDisconnect, onStopHosting, isConnected, connectedPlayers, kickPlayer, isHost, hostUsername }) => {
   const [hostIdToJoin, setHostIdToJoin] = useState('');
   const [username, setUsername] = useState('');
   const [copied, setCopied] = useState(false);
 
   const handleHostClick = () => {
     if (username.trim()) {
-      onHost(username.trim());
+      onProceedToHostSetup(username.trim());
     }
   };
   
