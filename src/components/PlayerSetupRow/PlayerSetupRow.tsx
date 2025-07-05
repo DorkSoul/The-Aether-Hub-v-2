@@ -51,7 +51,7 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         onChange={(e) => onUpdate('color', e.target.value)}
         className="player-color-input"
         title="Select player color"
-        disabled={!isLocalPlayer}
+        disabled={!isLocalPlayer && isMultiplayer}
       />
       {isMultiplayer ? (
         <div className="player-name-display">{player.name}</div>
@@ -65,7 +65,7 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
         />
       )}
       <div className="player-deck-container">
-        {isLocalPlayer || !isMultiplayerClient ? (
+        {isLocalPlayer || !isMultiplayer ? (
           <select
             value={player.deckFile?.name || ''}
             onChange={(e) => {

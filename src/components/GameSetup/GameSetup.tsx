@@ -104,7 +104,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
         }
       }
       setDeckFiles(files);
-      if (files.length > 0 && players.every(p => p.deckFile === null)) {
+      if (files.length > 0 && players.every(p => p.deckFile === null) && activeTab === 'singleplayer') {
         setPlayers(prevPlayers => prevPlayers.map(p => ({
           ...p,
           deckFile: p.deckFile || files[0],
@@ -112,7 +112,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
       }
     };
     loadDecks();
-  }, [decksDirectoryHandle, players, setPlayers]);
+  }, [decksDirectoryHandle, players, setPlayers, activeTab]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -217,9 +217,11 @@ const GameSetup: React.FC<GameSetupProps> = ({
             />
           ))}
         </div>
-        <button onClick={handleAddPlayer} disabled={players.length >= 8}>
-          Add Player
-        </button>
+        {activeTab === 'singleplayer' && (
+          <button onClick={handleAddPlayer} disabled={players.length >= 8}>
+            Add Player
+          </button>
+        )}
       </div>
 
       <div className="setup-section">
