@@ -10,7 +10,8 @@ export const useP2P = (
     onPlayerDisconnected: (peerId: string) => void,
     onKicked: () => void,
     onConnect: () => void,
-    onDeckSelected: (peerId: string, deck: DeckPayload) => void
+    onDeckSelected: (peerId: string, deck: DeckPayload, username: string) => void,
+    decksDirectoryHandle: FileSystemDirectoryHandle | null
 ) => {
     const [peerId, setPeerId] = useState<string | null>(null);
     const [connections, setConnections] = useState<DataConnection[]>([]);
@@ -65,10 +66,24 @@ export const useP2P = (
                 onPlayerConnected({ id: conn.peer, username: conn.metadata.username });
                 conn.send({ type: 'host-username', payload: username });
 
-                conn.on('data', (data: any) => {
+                conn.on('data', async (data: any) => {
                     console.log('Received data from client:', data);
                     if (data.type === 'deck-selection') {
-                        onDeckSelected(conn.peer, data.payload as DeckPayload);
+                        const deckPayload = data.payload as DeckPayload;
+                        onDeckSelected(conn.peer, deckPayload, conn.metadata.username);
+                        if (decksDirectoryHandle) {
+                            try {
+                                const friendsDecksHandle = await decksDirectoryHandle.getDirectoryHandle('friends_decks', { create: true });
+                                const userDecksHandle = await friendsDecksHandle.getDirectoryHandle(conn.metadata.username, { create: true });
+                                const fileName = `${deckPayload.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+                                const fileHandle = await userDecksHandle.getFileHandle(fileName, { create: true });
+                                const writable = await fileHandle.createWritable();
+                                await writable.write(JSON.stringify(deckPayload, null, 2));
+                                await writable.close();
+                            } catch (error) {
+                                console.error("Error saving friend's deck:", error);
+                            }
+                        }
                     }
                 });
                 conn.on('close', () => {

@@ -1,6 +1,6 @@
 // src/components/Decks.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Card as CardType, CardIdentifier, CardFace } from '../../types';
+import type { Card as CardType, CardIdentifier, CardFace, DeckPayload } from '../../types';
 import { getCardsFromNames, getCardByUri, getCardByUrl, delay } from '../../api/scryfall';
 import { groupCardsByType } from '../../utils/cardUtils';
 import { parseDecklist } from '../../utils/parsing';
@@ -19,6 +19,7 @@ interface DecksProps {
   cardSize: number;
   onDeckLoaded: (deckName: string, cardCount: number) => void;
   onCardHover: (card: CardType | null) => void;
+  friendsDecks: DeckPayload[];
 }
 
 interface DeckInfo {
@@ -38,7 +39,7 @@ interface CardContextMenuState {
 interface DeckContextMenuState {
     x: number;
     y: number;
-    deckInfo: DeckInfo;
+    deckInfo: DeckInfo | DeckPayload;
 }
 
 type GroupedCards = Record<string, CardType[]>;
@@ -64,8 +65,9 @@ const Decks: React.FC<DecksProps> = ({
   cardSize,
   onDeckLoaded,
   onCardHover,
+  friendsDecks,
 }) => {
-  const [activeDeckFile, setActiveDeckFile] = useState<FileSystemFileHandle | null>(null);
+  const [activeDeck, setActiveDeck] = useState<DeckInfo | DeckPayload | null>(null);
   const [decks, setDecks] = useState<DeckInfo[]>([]);
   const [groupedCards, setGroupedCards] = useState<GroupedCards>({});
   const [commanders, setCommanders] = useState<CardType[]>([]);
@@ -111,17 +113,17 @@ const Decks: React.FC<DecksProps> = ({
         refreshDeckList(decksDirectoryHandle);
         setGroupedCards({});
         setCommanders([]);
-        setActiveDeckFile(null);
+        setActiveDeck(null);
         onDeckLoaded('', 0);
     }
   }, [decksDirectoryHandle, onDeckLoaded, refreshDeckList]);
 
   const saveDeck = async (commandersToSave: CardType[], mainDeckToSave: CardType[]) => {
-      if (!activeDeckFile || !decksDirectoryHandle) return;
+      if (!activeDeck || !('fileHandle' in activeDeck) || !decksDirectoryHandle) return;
 
       setNotification('Saving...');
       try {
-          const file = await activeDeckFile.getFile();
+          const file = await (activeDeck.fileHandle as FileSystemFileHandle).getFile();
           const currentDeckData: { name: string } = JSON.parse(await file.text());
 
           const allCards = [...commandersToSave, ...mainDeckToSave];
@@ -130,14 +132,14 @@ const Decks: React.FC<DecksProps> = ({
           const deckDataToSave = { name: currentDeckData.name, cards: allCards, commanders: commanderIds };
           const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
 
-          const writable = await activeDeckFile.createWritable();
+          const writable = await (activeDeck.fileHandle as FileSystemFileHandle).createWritable();
           await writable.write(deckJsonString);
           await writable.close();
 
           setNotification('Deck saved successfully!');
           // Update card count in the UI without a full refresh
           setDecks(currentDecks => currentDecks.map(deck =>
-            deck.fileHandle.name === activeDeckFile.name
+            deck.fileHandle.name === (activeDeck.fileHandle as FileSystemFileHandle).name
               ? { ...deck, cardCount: allCards.length }
               : deck
           ));
@@ -237,7 +239,7 @@ const Decks: React.FC<DecksProps> = ({
 
       setCommanders(importedCommanders);
       setGroupedCards(groupCardsByType(mainDeckCards));
-      setActiveDeckFile(fileHandle);
+      setActiveDeck({fileHandle, name: deckName, cardCount: cardsWithInstanceIds.length});
       onDeckLoaded(deckName, cardsWithInstanceIds.length);
 
       setNotification('Deck imported! Card images are downloading for the first time. This may be slow, but future loads will be instant from your local cache.');
@@ -251,17 +253,22 @@ const Decks: React.FC<DecksProps> = ({
     }
   };
 
-  const handleDeckSelected = async (deckInfo: DeckInfo) => {
+  const handleDeckSelected = async (deckInfo: DeckInfo | DeckPayload) => {
     setNotification('');
     setError('');
     setIsLoading(true);
     setLoadingMessage('Loading deck from local file...');
-    setActiveDeckFile(deckInfo.fileHandle);
+    setActiveDeck(deckInfo);
 
     try {
-      const file = await deckInfo.fileHandle.getFile();
-      const text = await file.text();
-      const deckData: { name: string; cards: CardType[]; commanders?: string[] } = JSON.parse(text);
+        let deckData: DeckPayload;
+        if ('fileHandle' in deckInfo) {
+            const file = await (deckInfo.fileHandle as FileSystemFileHandle).getFile();
+            const text = await file.text();
+            deckData = JSON.parse(text);
+        } else {
+            deckData = deckInfo;
+        }
 
       const cardsWithInstanceIds = deckData.cards.map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
       const commanderIds = new Set(deckData.commanders || []);
@@ -269,13 +276,13 @@ const Decks: React.FC<DecksProps> = ({
       const loadedCommanders = cardsWithInstanceIds.filter(c => commanderIds.has(c.id));
       const mainDeckCards = cardsWithInstanceIds.filter(c => !commanderIds.has(c.id));
       
-      if (deckData.cards.length > 0 && (!deckData.cards[0].instanceId || (deckData.commanders && deckData.commanders.length > 0 && !deckData.cards.find(c => c.instanceId === deckData.commanders![0])))) {
+      if ('fileHandle' in deckInfo && (deckData.cards.length > 0 && (!deckData.cards[0].instanceId || (deckData.commanders && deckData.commanders.length > 0 && !deckData.cards.find(c => c.instanceId === deckData.commanders![0])))) ) {
           const deckToSave = {
               name: deckData.name,
               cards: cardsWithInstanceIds,
               commanders: loadedCommanders.map(c => c.id)
           };
-          const writable = await deckInfo.fileHandle.createWritable();
+          const writable = await (deckInfo.fileHandle as FileSystemFileHandle).createWritable();
           await writable.write(JSON.stringify(deckToSave, null, 2));
           await writable.close();
       }
@@ -301,7 +308,7 @@ const Decks: React.FC<DecksProps> = ({
     setCardContextMenu({ x: event.clientX, y: event.clientY, card, cardIndex, isCommander });
   };
 
-  const handleDeckRightClick = (event: React.MouseEvent, deckInfo: DeckInfo) => {
+  const handleDeckRightClick = (event: React.MouseEvent, deckInfo: DeckInfo | DeckPayload) => {
       event.preventDefault();
       setDeckContextMenu({ x: event.clientX, y: event.clientY, deckInfo });
   };
@@ -515,30 +522,34 @@ const Decks: React.FC<DecksProps> = ({
           { label: 'Remove this copy', action: handleRemoveCard }
       ];
 
-      if (isCommander) {
-          baseOptions.unshift({ label: 'Remove as Commander', action: handleRemoveAsCommander });
-      } else {
-          baseOptions.unshift({ label: 'Set as Commander', action: handleSetAsCommander });
+      if ('fileHandle' in activeDeck!) {
+        if (isCommander) {
+            baseOptions.unshift({ label: 'Remove as Commander', action: handleRemoveAsCommander });
+        } else {
+            baseOptions.unshift({ label: 'Set as Commander', action: handleSetAsCommander });
+        }
       }
 
       const isDfc = context.card.card_faces && context.card.card_faces.length > 0;
-      if (isDfc) {
-          baseOptions.push({ label: 'Replace Front Face from URL...', action: () => handleReplaceCard(0) });
-          if (context.card.card_faces && context.card.card_faces.length > 1) {
-              baseOptions.push({ label: 'Replace Back Face from URL...', action: () => handleReplaceCard(1) });
-          } else {
-              baseOptions.push({ label: 'Add Back Face from URL...', action: () => handleReplaceCard(1) });
-          }
-      } else {
-          baseOptions.push({ label: 'Replace Card from URL...', action: () => handleReplaceCard(0) });
-          baseOptions.push({ label: 'Add Back Face from URL...', action: () => handleAddBackFace() });
+      if ('fileHandle' in activeDeck!) {
+        if (isDfc) {
+            baseOptions.push({ label: 'Replace Front Face from URL...', action: () => handleReplaceCard(0) });
+            if (context.card.card_faces && context.card.card_faces.length > 1) {
+                baseOptions.push({ label: 'Replace Back Face from URL...', action: () => handleReplaceCard(1) });
+            } else {
+                baseOptions.push({ label: 'Add Back Face from URL...', action: () => handleReplaceCard(1) });
+            }
+        } else {
+            baseOptions.push({ label: 'Replace Card from URL...', action: () => handleReplaceCard(0) });
+            baseOptions.push({ label: 'Add Back Face from URL...', action: () => handleAddBackFace() });
+        }
       }
       return baseOptions;
   }
 
   const handleDeleteDeckRequest = () => {
-    if (!deckContextMenu) return;
-    setDeleteConfirmation(deckContextMenu.deckInfo);
+    if (!deckContextMenu || !('fileHandle' in deckContextMenu.deckInfo)) return;
+    setDeleteConfirmation(deckContextMenu.deckInfo as DeckInfo);
     setDeckContextMenu(null);
   };
 
@@ -551,8 +562,8 @@ const Decks: React.FC<DecksProps> = ({
         setNotification(`Deck "${deleteConfirmation.name}" deleted.`);
         setTimeout(() => setNotification(''), 3000);
 
-        if (activeDeckFile?.name === deleteConfirmation.fileHandle.name) {
-            setActiveDeckFile(null);
+        if (activeDeck && 'fileHandle' in activeDeck && activeDeck.fileHandle.name === deleteConfirmation.fileHandle.name) {
+            setActiveDeck(null);
             setGroupedCards({});
             setCommanders([]);
             onDeckLoaded('', 0);
@@ -571,6 +582,7 @@ const Decks: React.FC<DecksProps> = ({
   const handleDuplicateDeck = async () => {
       if (!deckContextMenu || !decksDirectoryHandle) return;
       const { deckInfo } = deckContextMenu;
+      if (!('fileHandle' in deckInfo)) return
 
       const newDeckName = prompt(`Enter name for the duplicated deck:`, `${deckInfo.name} - Copy`);
       if (!newDeckName || newDeckName.trim() === '') return;
@@ -602,7 +614,7 @@ const Decks: React.FC<DecksProps> = ({
   };
 
   const handleRenameDeck = async () => {
-    if (!deckContextMenu || !decksDirectoryHandle) return;
+    if (!deckContextMenu || !decksDirectoryHandle || !('fileHandle' in deckContextMenu.deckInfo)) return;
     const { deckInfo } = deckContextMenu;
     const originalFileHandle = deckInfo.fileHandle;
 
@@ -627,8 +639,8 @@ const Decks: React.FC<DecksProps> = ({
 
         await decksDirectoryHandle.removeEntry(originalFileHandle.name);
 
-        if (activeDeckFile?.name === originalFileHandle.name) {
-            setActiveDeckFile(newFileHandle);
+        if (activeDeck && 'fileHandle' in activeDeck && activeDeck.fileHandle.name === originalFileHandle.name) {
+            setActiveDeck({...deckInfo, fileHandle: newFileHandle, name: newDeckName});
             onDeckLoaded(newDeckName, deckData.cards.length);
         }
 
@@ -643,7 +655,7 @@ const Decks: React.FC<DecksProps> = ({
   };
 
   const handleAddCardByUrl = () => {
-    if (!deckContextMenu) return;
+    if (!deckContextMenu || !('fileHandle' in deckContextMenu.deckInfo)) return;
     const { deckInfo } = deckContextMenu;
 
     setInputDialogState({
@@ -666,7 +678,7 @@ const Decks: React.FC<DecksProps> = ({
 
             setLoadingMessage('Adding card to deck file...');
 
-            const file = await deckInfo.fileHandle.getFile();
+            const file = await (deckInfo as DeckInfo).fileHandle.getFile();
             const text = await file.text();
             const deckData: { name: string; cards: CardType[]; commanders?: string[] } = JSON.parse(text);
 
@@ -676,7 +688,7 @@ const Decks: React.FC<DecksProps> = ({
             const deckDataToSave = { ...deckData, cards: updatedCards };
             const deckJsonString = JSON.stringify(deckDataToSave, null, 2);
 
-            const writable = await deckInfo.fileHandle.createWritable();
+            const writable = await (deckInfo as DeckInfo).fileHandle.createWritable();
             await writable.write(deckJsonString);
             await writable.close();
             await saveCardsToDB([newCardData]);
@@ -686,7 +698,7 @@ const Decks: React.FC<DecksProps> = ({
 
             await refreshDeckList(decksDirectoryHandle);
 
-            if (activeDeckFile?.name === deckInfo.fileHandle.name) {
+            if (activeDeck && 'fileHandle' in activeDeck && activeDeck.fileHandle.name === (deckInfo as DeckInfo).fileHandle.name) {
                 const commanderInstanceIds = new Set(deckDataToSave.commanders || []);
                 const loadedCommanders = updatedCards.filter(c => c.instanceId && commanderInstanceIds.has(c.instanceId));
                 const mainDeckCards = updatedCards.filter(c => !c.instanceId || !commanderInstanceIds.has(c.instanceId));
@@ -765,7 +777,7 @@ const Decks: React.FC<DecksProps> = ({
         {decksDirectoryHandle && (
           <div className="deck-content">
             <div className="deck-list-pane">
-              <h3>Decks</h3>
+              <h3>My Decks</h3>
               <ul>{decks.map(deck => (
                   <li
                     key={deck.fileHandle.name}
@@ -777,6 +789,32 @@ const Decks: React.FC<DecksProps> = ({
                       {deck.name} ({deck.cardCount} cards)
                   </li>
               ))}</ul>
+              {Object.entries(
+                  friendsDecks.reduce((acc, deck) => {
+                      const username = deck.username || 'Unknown Friend';
+                      if (!acc[username]) {
+                          acc[username] = [];
+                      }
+                      acc[username].push(deck);
+                      return acc;
+                  }, {} as Record<string, DeckPayload[]>)
+              ).map(([username, userDecks]) => (
+                <div key={username}>
+                    <hr />
+                    <h3>{username}'s Decks</h3>
+                    <ul>{userDecks.map(deck => (
+                        <li
+                        key={deck.name}
+                        onClick={() => handleDeckSelected(deck)}
+                        onContextMenu={(e) => handleDeckRightClick(e, deck)}
+                        className="list-item"
+                        title={deck.name}
+                        >
+                            {deck.name} ({deck.cards.length} cards)
+                        </li>
+                    ))}</ul>
+                </div>
+              ))}
             </div>
             <div className="spoiler-view-pane">
               {notification && <p className="notification-message">{notification}</p>}

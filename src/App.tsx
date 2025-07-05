@@ -8,6 +8,7 @@ import { PlusIcon, MinusIcon, SaveIcon, EyeIcon, MinimizeIcon, PopOutIcon, Enter
 import { saveDirectoryHandle, getDirectoryHandle, saveCardSize, getPreviewWidth, saveTopRotated, getTopRotated, savePreviewWidth } from './utils/settings';
 import { saveGameState, loadGameState } from './utils/gameUtils';
 import { getCardsFromDB } from './utils/db';
+import { getAndCacheCardImageUrl } from './utils/imageCaching';
 import type { GameSettings, GameState, Card as CardType, StackItem, PlayerConfig, PlayerState, PeerInfo, DeckPayload } from './types';
 import Tabs from './components/Tabs/Tabs';
 import Card from './components/Card/Card';
@@ -168,6 +169,7 @@ function App() {
   const [connectedPlayers, setConnectedPlayers] = useState<PeerInfo[]>([]);
   const [hostingUsername, setHostingUsername] = useState<string | null>(null);
   const [clientUsername, setClientUsername] = useState<string>('');
+  const [friendsDecks, setFriendsDecks] = useState<DeckPayload[]>([]);
 
   const handleOrderDragStart = (index: number) => {
     draggedItemIndex.current = index;
@@ -423,6 +425,28 @@ function App() {
     };
   }, [stackPopout]);
 
+  const loadFriendsDecks = async (decksHandle: FileSystemDirectoryHandle) => {
+    const friendsDecks: DeckPayload[] = [];
+    try {
+        const friendsDecksHandle = await decksHandle.getDirectoryHandle('friends_decks', { create: true });
+        for await (const userHandle of friendsDecksHandle.values()) {
+            if (userHandle.kind === 'directory') {
+                for await (const deckFile of userHandle.values()) {
+                    if (deckFile.kind === 'file' && deckFile.name.endsWith('.json')) {
+                        const file = await deckFile.getFile();
+                        const text = await file.text();
+                        const deckData: DeckPayload = JSON.parse(text);
+                        friendsDecks.push({ ...deckData, username: userHandle.name });
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Could not load friends' decks", e);
+    }
+    return friendsDecks;
+  };
+
   useEffect(() => {
     const loadSavedHandles = async () => {
       try {
@@ -435,6 +459,8 @@ function App() {
           setDecksDirectoryHandle(decksHandle);
           setImagesDirectoryHandle(imagesHandle);
           setSavesDirectoryHandle(savesHandle);
+          const loadedFriendsDecks = await loadFriendsDecks(decksHandle);
+          setFriendsDecks(loadedFriendsDecks);
           setView('game-setup');
         } else {
           // If no handle is found, stay on the loading/prompting view
@@ -467,6 +493,8 @@ function App() {
       setImagesDirectoryHandle(imagesHandle);
       setSavesDirectoryHandle(savesHandle);
       await saveDirectoryHandle('root', rootHandle);
+      const loadedFriendsDecks = await loadFriendsDecks(decksHandle);
+      setFriendsDecks(loadedFriendsDecks);
       setActiveDeckName('');
       setActiveDeckCardCount(0);
       setView('game-setup'); // Move to the setup view after successful selection
@@ -526,11 +554,41 @@ function App() {
     setIsConnected(true);
   }, []);
 
-  const handleDeckSelectedByClient = useCallback((peerId: string, deck: DeckPayload) => {
+  const downloadDeckImages = useCallback(async (deck: DeckPayload) => {
+    if (!imagesDirectoryHandle) return;
+
+    for (const card of deck.cards) {
+        try {
+            await getAndCacheCardImageUrl(card, imagesDirectoryHandle, 0);
+            if (card.card_faces && card.card_faces.length > 1) {
+                await getAndCacheCardImageUrl(card, imagesDirectoryHandle, 1);
+            }
+        } catch (error) {
+            console.error(`Failed to download image for ${card.name}`, error);
+        }
+    }
+  }, [imagesDirectoryHandle]);
+
+  const addFriendDeck = useCallback((peerId: string, deck: DeckPayload, username: string) => {
+    const newDeck = { ...deck, username };
+    setFriendsDecks(prev => {
+        const existingDeckIndex = prev.findIndex(d => (d as any).peerId === peerId && d.name === deck.name);
+        if (existingDeckIndex > -1) {
+            const newDecks = [...prev];
+            newDecks[existingDeckIndex] = newDeck;
+            return newDecks;
+        }
+        return [...prev, newDeck];
+    });
+    downloadDeckImages(deck);
+  },[downloadDeckImages]);
+
+  const handleDeckSelectedByClient = useCallback((peerId: string, deck: DeckPayload, username: string) => {
     setPlayers(prev => prev.map(p => p.id === peerId ? { ...p, deckName: deck.name } : p));
-  }, []);
+    addFriendDeck(peerId, deck, username);
+  }, [addFriendDeck]);
   
-  const { peerId, isHost, hostUsername, startHosting, startConnecting, broadcastGameState, kickPlayer, disconnect, sendDeckSelection } = useP2P(handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked, handleClientConnected, handleDeckSelectedByClient);
+  const { peerId, isHost, hostUsername, startHosting, startConnecting, broadcastGameState, kickPlayer, disconnect, sendDeckSelection } = useP2P(handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked, handleClientConnected, handleDeckSelectedByClient, decksDirectoryHandle);
 
   useEffect(() => {
     if (isHost && peerId && hostingUsername) {
@@ -878,6 +936,7 @@ function App() {
             cardSize={cardSize}
             onDeckLoaded={handleDeckLoaded}
             onCardHover={handleCardHover}
+            friendsDecks={friendsDecks}
           />
         );
     }

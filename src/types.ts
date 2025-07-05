@@ -57,10 +57,10 @@ export interface Card {
 }
 
 export interface StackItem {
-  id: string; 
-  text: string; 
-  cardInstanceId: string; 
-  sourceCardName: string; 
+  id: string;
+  text: string;
+  cardInstanceId: string;
+  sourceCardName: string;
 }
 
 export interface PlayerConfig {
@@ -90,7 +90,7 @@ export interface PlayerState {
   username: string;
   color: string;
   life: number;
-  mana: ManaPool; 
+  mana: ManaPool;
   hand: Card[];
   library: Card[];
   graveyard: Card[];
@@ -110,20 +110,20 @@ export interface CardIdentifier {
 export interface CardLocation {
     playerId: string;
     zone: 'hand' | 'library' | 'graveyard' | 'exile' | 'commandZone' | 'battlefield';
-    row?: number; 
+    row?: number;
 }
 
 export interface DraggedCard {
     type: 'card';
     card: Card;
     source: CardLocation;
-    offset: { x: number; y: number; }; 
+    offset: { x: number; y: number; };
 }
 
 export interface DraggedLibraryCard {
     type: 'library';
     source: CardLocation;
-    offset: { x: number; y: number; }; 
+    offset: { x: number; y: number; };
 }
 
 export type DraggedItem = DraggedCard | DraggedLibraryCard;
@@ -146,4 +146,5 @@ export interface DeckPayload {
     name: string;
     cards: Card[];
     commanders?: string[];
+    username?: string;
 }
