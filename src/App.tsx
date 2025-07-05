@@ -160,10 +160,7 @@ function App() {
   const [orderMenu, setOrderMenu] = useState<{ x: number, y: number, players: PlayerConfig[] } | null>(null);
   const draggedItemIndex = useRef<number | null>(null);
   const dragOverItemIndex = useRef<number | null>(null);
-  const [isHost, setIsHost] = useState(false);
-  const [hostId, setHostId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [username, setUsername] = useState('');
   const [connectedPlayers, setConnectedPlayers] = useState<PeerInfo[]>([]);
 
   const handleOrderDragStart = (index: number) => {
@@ -513,8 +510,6 @@ function App() {
   const handleKicked = useCallback(() => {
     setAppNotification("You have been kicked by the host or the host has disconnected.");
     setIsConnected(false);
-    setIsHost(false);
-    setHostId(null);
     setConnectedPlayers([]);
     setView('game-setup');
   }, []);
@@ -523,20 +518,25 @@ function App() {
     setIsConnected(true);
   }, []);
   
-  const { peerId, broadcastGameState, kickPlayer, hostUsername, disconnect } = useP2P(username, isHost, hostId, handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked, handleClientConnected);
+  const { peerId, isHost, hostUsername, broadcastGameState, kickPlayer, startHosting, startConnecting, disconnect } = useP2P(handleGameStateReceived, handlePlayerConnected, handlePlayerDisconnected, handleKicked, handleClientConnected);
   
+  const handleOnHost = (username: string) => {
+    startHosting(username);
+    setIsConnected(true);
+  };
+
+  const handleOnJoin = (hostId: string, username: string) => {
+    startConnecting(username, hostId);
+  }
+
   const handleDisconnect = () => {
     disconnect();
     setIsConnected(false);
-    setIsHost(false);
-    setHostId(null);
   };
 
   const handleStopHosting = () => {
     disconnect();
     setIsConnected(false);
-    setIsHost(false);
-    setHostId(null);
     setConnectedPlayers([]);
     setView('game-setup');
   };
@@ -799,17 +799,8 @@ function App() {
               onLoadGame={handleLoadGame}
               savesDirectoryHandle={savesDirectoryHandle}
               peerId={peerId}
-              onHost={(username) => {
-                setUsername(username);
-                setIsHost(true);
-                setHostId(null);
-                setIsConnected(true);
-              }}
-              onJoin={(id, username) => {
-                setUsername(username);
-                setIsHost(false);
-                setHostId(id);
-              }}
+              onHost={handleOnHost}
+              onJoin={handleOnJoin}
               onDisconnect={handleDisconnect}
               onStopHosting={handleStopHosting}
               isConnected={isConnected}
