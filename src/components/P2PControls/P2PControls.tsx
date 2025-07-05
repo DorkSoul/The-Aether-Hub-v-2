@@ -45,57 +45,53 @@ const P2PControls: React.FC<P2PControlsProps> = ({ peerId, onProceedToHostSetup,
       <h4>Multiplayer</h4>
       <div className="input-group">
         <label htmlFor="username-input">Username:</label>
-        <input
-          id="username-input"
-          type="text"
-          placeholder="Your name"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          disabled={isConnected}
-          className="p2p-input"
-        />
+        {isHost || isConnected ? (
+          <span className="username-display">{isHost ? username : hostUsername}</span>
+        ) : (
+          <input
+            id="username-input"
+            type="text"
+            placeholder="Your name"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="p2p-input"
+          />
+        )}
       </div>
 
-      {peerId && !isConnected && (
-         <div className="peer-id-section clickable" onClick={handleCopyPeerId}>
-          Your Peer ID: <strong>{peerId}</strong> {copied && <span>Copied!</span>}
-        </div>
-      )}
-      
-      {isHost && isConnected && (
-         <div className="peer-id-section clickable" onClick={handleCopyPeerId}>
-          Your Peer ID: <strong>{peerId}</strong> {copied && <span>Copied!</span>}
+      {isHost && peerId && (
+        <div className="host-info">
+          <div className="peer-id-section clickable" onClick={handleCopyPeerId}>
+            Your Peer ID: <strong>{peerId}</strong> {copied && <span>Copied!</span>}
+          </div>
+          <button onClick={onStopHosting}>Stop Hosting</button>
         </div>
       )}
 
-      {isConnected ? (
-        <div>
-          <div className="connection-status">
-            {isHost ? 'Hosting Game' : `Connected to ${hostUsername}`}
-          </div>
-          {isHost ? (
-             <button onClick={onStopHosting}>Stop Hosting</button>
-          ) : (
-            <button onClick={onDisconnect}>Disconnect</button>
-          )}
-        </div>
-      ) : (
-        <div className="connection-actions">
-          <button onClick={handleHostClick} disabled={!username.trim()}>Host a Game</button>
-          <div className="input-group join-section">
-            <label htmlFor="host-id-input">Host ID:</label>
-            <input
-              id="host-id-input"
-              type="text"
-              placeholder="Enter Host ID"
-              value={hostIdToJoin}
-              onChange={(e) => setHostIdToJoin(e.target.value)}
-              className="p2p-input"
-            />
-            <button onClick={handleJoinClick} disabled={!hostIdToJoin.trim() || !username.trim()}>Join</button>
-          </div>
-        </div>
+      {!isHost && !isConnected && (
+        <>
+          <div className="connection-actions">
+            <button onClick={handleHostClick} disabled={!username.trim()}>Host a Game</button>
+            <div className="input-group join-section">
+                <label htmlFor="host-id-input">Host ID:</label>
+                <input
+                id="host-id-input"
+                type="text"
+                placeholder="Enter Host ID"
+                value={hostIdToJoin}
+                onChange={(e) => setHostIdToJoin(e.target.value)}
+                className="p2p-input"
+                />
+                <button onClick={handleJoinClick} disabled={!hostIdToJoin.trim() || !username.trim()}>Join</button>
+            </div>
+            </div>
+        </>
       )}
+
+      {isConnected && !isHost && (
+          <button onClick={onDisconnect}>Disconnect</button>
+      )}
+
 
       {isHost && isConnected && (
         <div className="connected-players">

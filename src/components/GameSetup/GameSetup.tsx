@@ -186,6 +186,11 @@ const GameSetup: React.FC<GameSetupProps> = ({
     setMultiplayerView('setup');
   };
 
+  const handleStopHostingClick = () => {
+    onStopHosting();
+    setMultiplayerView('initial');
+  };
+
   const renderGameSettings = () => (
     <>
       <div className="setup-section">
@@ -204,9 +209,11 @@ const GameSetup: React.FC<GameSetupProps> = ({
                 }
               }}
               onRemove={() => handleRemovePlayer(p.id)}
+              onKick={() => kickPlayer(p.id)}
               isRemoveable={players.length > 1}
-              isLocalPlayer={!isHost ? p.id === peerId : true}
+              isLocalPlayer={p.id === peerId}
               isMultiplayerClient={activeTab === 'multiplayer' && !isHost}
+              isHost={isHost}
             />
           ))}
         </div>
@@ -296,13 +303,13 @@ const GameSetup: React.FC<GameSetupProps> = ({
 
         {activeTab === 'multiplayer' && (
             <div className="multiplayer-content">
-                {(multiplayerView === 'initial' || isHost) && (
+                {(multiplayerView === 'initial' || (isHost && !isConnected)) && (
                     <P2PControls
                         peerId={peerId}
                         onProceedToHostSetup={handleProceedToHostSetup}
                         onJoin={onJoin}
                         onDisconnect={onDisconnect}
-                        onStopHosting={onStopHosting}
+                        onStopHosting={handleStopHostingClick}
                         isConnected={isConnected}
                         connectedPlayers={connectedPlayers}
                         kickPlayer={kickPlayer}
@@ -340,9 +347,11 @@ const GameSetup: React.FC<GameSetupProps> = ({
                                     }
                                 }}
                                 onRemove={() => {}}
+                                onKick={() => {}}
                                 isRemoveable={false}
                                 isLocalPlayer={true}
                                 isMultiplayerClient={true}
+                                isHost={isHost}
                             />
                         )}
                     </div>

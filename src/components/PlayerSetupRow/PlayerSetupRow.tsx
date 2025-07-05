@@ -7,9 +7,11 @@ interface PlayerSetupRowProps {
   deckFiles: FileSystemFileHandle[];
   onUpdate: (field: keyof PlayerConfig, value: any) => void;
   onRemove: () => void;
+  onKick: () => void;
   isRemoveable: boolean;
   isLocalPlayer: boolean;
   isMultiplayerClient: boolean;
+  isHost: boolean;
 }
 
 interface DeckInfo {
@@ -17,7 +19,7 @@ interface DeckInfo {
     displayName: string;
 }
 
-const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUpdate, onRemove, isRemoveable, isLocalPlayer, isMultiplayerClient }) => {
+const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUpdate, onRemove, onKick, isRemoveable, isLocalPlayer, isMultiplayerClient, isHost }) => {
     const [deckInfos, setDeckInfos] = useState<DeckInfo[]>([]);
 
     useEffect(() => {
@@ -78,7 +80,12 @@ const PlayerSetupRow: React.FC<PlayerSetupRowProps> = ({ player, deckFiles, onUp
       ) : (
         <div className="player-deck-display">{player.deckName || 'No deck selected'}</div>
       )}
-      {isRemoveable && (
+      {isHost && !isLocalPlayer && (
+        <button onClick={onKick} className="remove-player-btn">
+          Kick
+        </button>
+      )}
+      {!isHost && isRemoveable && (
         <button onClick={onRemove} className="remove-player-btn">
           Remove
         </button>
